@@ -419,7 +419,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
     <!-- Monthly breakdown table -->
     <div class="table-wrap">
-      <div class="table-header" style="grid-template-columns:130px 1fr 1fr 1fr 1fr">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
+        <div class="th">Year</div>
         <div class="th">Month</div>
         <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
         <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
@@ -672,18 +673,18 @@ function buildRow(listKey, r) {
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||r.devpaystat||'',
-             clipay:r.clipay||'', inv:r.inv||'', done,
+             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', comp:r.comp||'',
-             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done,
+             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
              func_rate:parseFloat(r.funcRate)||null };
   if (listKey==='proj'||listKey==='projDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||'',
-             clipay:r.clipay||'', inv:r.inv||'', done,
+             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='setoffActive')
     return { id:r.id, code:r.code||'', from_project:r.fromProject||'',
@@ -702,13 +703,16 @@ function parseRow(table, row) {
   if (table==='dev_support')
     return { ...row,
       devpaystat: row.devpay||'',
+      year: row.year||'2026',
       funcRate: String(row.func_rate || getFuncRate()),
       devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='func_support')
     return { ...row,
+      year: row.year||'2026',
       funcRate: String(row.func_rate || getFuncRate()) };
   if (table==='projects')
     return { ...row,
+      year: row.year||'2026',
       funcRate: String(row.func_rate || getFuncRate()),
       devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='setoff_active'||table==='setoff_archived')
@@ -1077,49 +1081,25 @@ function renderDashboard(){
 // PROFIT TABLE + CHARTS
 // ══════════════════════════════════════════════════════════════════════
 function renderProfit(){
-  // ── Correct profit sources ──────────────────────────────────────────
-  // Func Support profit  = Completed Func → Invoiced Full Amount = Act Func Hrs × 8000
-  // Dev Support profit   = Completed Dev  → Profit = Inv Full - Dev Payment
-  // Projects profit      = Completed Projects → Profit = Inv Full - Dev Payment
+  // Group by year+month key
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+  const ymData={};
+  const ymKey=(d)=>`${d.year||'2026'}__${d.month||''}`;
 
-  const monthlyData={};
-  MONTHS.forEach(m=>monthlyData[m]={func:0,dev:0,proj:0,notPaid:0});
+  // Gather unique year+month combos
+  const ensureKey=(d)=>{
+    const k=ymKey(d);
+    if(!ymData[k]) ymData[k]={year:d.year||'2026',month:d.month||'',func:0,dev:0,proj:0};
+  };
 
-  // Func: invFull = actf * 8000
-  DB.funcDone.forEach(d=>{
-    if(monthlyData[d.month]) {
-      const invFull = (parseFloat(d.actf)||0) * 8000;
-      monthlyData[d.month].func += invFull;
-    }
-  });
+  DB.funcDone.forEach(d=>{ ensureKey(d); ymData[ymKey(d)].func += calcFunc(d); });
+  DB.devDone.forEach(d=>{  ensureKey(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
+  DB.projDone.forEach(d=>{ ensureKey(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
 
-  // Dev: profit = (actf*8000 + actd*8000) - (actd*5000)
-  DB.devDone.forEach(d=>{
-    if(monthlyData[d.month]) {
-      const c = calcDev(d);
-      monthlyData[d.month].dev += c.profit;
-    }
-  });
-
-  // Projects: profit = (actf*8000 + actd*8000) - (actd*5000)
-  DB.projDone.forEach(d=>{
-    if(monthlyData[d.month]) {
-      const c = calcProj(d);
-      monthlyData[d.month].proj += c.profit;
-    }
-  });
-
-  // Client NOT paid count (active tasks only)
-  [...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT')).forEach(d=>{
-    if(monthlyData[d.month]) monthlyData[d.month].notPaid++;
-  });
-
-  // ── KPI totals ──────────────────────────────────────────────────────
-  const totalFunc  = DB.funcDone.reduce((s,d)=>s+(parseFloat(d.actf)||0)*8000, 0);
+  const totalFunc  = DB.funcDone.reduce((s,d)=>s+calcFunc(d), 0);
   const totalDev   = DB.devDone.reduce((s,d)=>s+calcDev(d).profit, 0);
   const totalProj  = DB.projDone.reduce((s,d)=>s+calcProj(d).profit, 0);
   const grandTotal = totalFunc + totalDev + totalProj;
-  const totalNotPaid = [...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
 
   document.getElementById('profit-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit</div><div class="dash-val green">${fmt(grandTotal)}</div></div>
@@ -1127,37 +1107,45 @@ function renderProfit(){
     <div class="dash-card"><div class="dash-label">Dev Support Profit</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
     <div class="dash-card"><div class="dash-label">Projects Profit</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
 
-  // ── Bar chart helper ────────────────────────────────────────────────
-  const activeMonths = MONTHS.filter(m=>{ const r=monthlyData[m]; return r.func||r.dev||r.proj; });
+  // ── Bar charts — use monthly totals across all years ───────────────
+  const monthlyTotals={};
+  MONTHS.forEach(m=>monthlyTotals[m]={func:0,dev:0,proj:0});
+  Object.values(ymData).forEach(r=>{
+    if(monthlyTotals[r.month]){
+      monthlyTotals[r.month].func+=r.func;
+      monthlyTotals[r.month].dev +=r.dev;
+      monthlyTotals[r.month].proj+=r.proj;
+    }
+  });
+  const activeMonths = MONTHS.filter(m=>{ const r=monthlyTotals[m]; return r.func||r.dev||r.proj; });
   const chartMonths  = activeMonths.length ? activeMonths.map(m=>m.substring(0,3).toUpperCase()) : MONTH_LABELS.slice(0,6);
 
-  function renderBarChart(elId, vals, color) {
+  function renderBarChart(elId, vals, color, fillColor) {
     const el=document.getElementById(elId); if(!el) return;
     const maxV=Math.max(...vals,1);
     el.innerHTML=chartMonths.map((m,i)=>`
       <div class="chart-bar-col">
-        <div class="chart-bar-val" style="color:${color};font-size:10px">${vals[i]>0?Math.round(vals[i]/1000)+'k':''}</div>
-        <div class="chart-bar ${color==='var(--green)'?'green-bar':''}" style="height:${Math.max(4,Math.round(vals[i]/maxV*100))}px;border-color:${color};background:${color}22"></div>
+        <div class="chart-bar-val" style="color:${color};font-size:10px;font-weight:600">${vals[i]>0?Math.round(vals[i]/1000)+'k':''}</div>
+        <div style="width:100%;background:${fillColor};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(vals[i]/maxV*100))}px;transition:height .4s"></div>
         <div class="chart-bar-label">${m}</div>
       </div>`).join('');
   }
 
-  const getMonthFull = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag) || tag;
-  const totalVals    = chartMonths.map(m=>{ const r=monthlyData[getMonthFull(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
-  const funcVals     = chartMonths.map(m=>{ return (monthlyData[getMonthFull(m)]||{}).func||0; });
-  const devprojVals  = chartMonths.map(m=>{ const r=monthlyData[getMonthFull(m)]||{}; return (r.dev||0)+(r.proj||0); });
+  const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
+  const totalVals   = chartMonths.map(m=>{ const r=monthlyTotals[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const funcVals    = chartMonths.map(m=>{ return (monthlyTotals[getMF(m)]||{}).func||0; });
+  const devprojVals = chartMonths.map(m=>{ const r=monthlyTotals[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
 
-  renderBarChart('profit-bar-total',   totalVals,   'var(--green)');
-  renderBarChart('profit-bar-func',    funcVals,    'var(--accent)');
-  renderBarChart('profit-bar-devproj', devprojVals, 'var(--yellow)');
+  renderBarChart('profit-bar-total',   totalVals,   '#16a34a', '#16a34a');
+  renderBarChart('profit-bar-func',    funcVals,    '#2563eb', '#2563eb');
+  renderBarChart('profit-bar-devproj', devprojVals, '#d97706', '#d97706');
 
-  // ── Monthly breakdown table ─────────────────────────────────────────
-  const COLS = '130px 1fr 1fr 1fr 1fr';
-  // Update profit table header
+  // ── Monthly breakdown table — sorted by year then month ─────────────
   const profitHeader = document.querySelector('#tab-profit .table-header');
   if (profitHeader) {
     profitHeader.style.gridTemplateColumns = COLS;
     profitHeader.innerHTML = `
+      <div class="th">Year</div>
       <div class="th">Month</div>
       <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
       <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
@@ -1165,12 +1153,22 @@ function renderProfit(){
       <div class="th">Total Profit</div>`;
   }
 
-  const rows = MONTHS.map(m=>{
-    const r = monthlyData[m];
-    const total = r.func + r.dev + r.proj;
-    if (!total && !r.notPaid) return '';
-    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default">
-      <div class="td fw">${m.substring(0,3).toUpperCase()}</div>
+  const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
+  const sortedKeys = Object.keys(ymData).sort((a,b)=>{
+    const [ay,am]= a.split('__'); const [by,bm]=b.split('__');
+    return ay!==by ? ay.localeCompare(by) : (monthOrder[am]||0)-(monthOrder[bm]||0);
+  });
+
+  let prevYear='';
+  const rows = sortedKeys.map(k=>{
+    const r=ymData[k];
+    const total=r.func+r.dev+r.proj;
+    if(!total) return '';
+    const showYear = r.year!==prevYear;
+    prevYear=r.year;
+    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear?';border-top:2px solid var(--b2)':''}">
+      <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
+      <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${r.func?'green':'muted'} mono">${r.func?fmt(r.func):'—'}</div>
       <div class="td ${r.dev?'green':'muted'} mono">${r.dev?fmt(r.dev):'—'}</div>
       <div class="td ${r.proj?'green':'muted'} mono">${r.proj?fmt(r.proj):'—'}</div>
@@ -1180,6 +1178,7 @@ function renderProfit(){
 
   const totalsRow = `<div class="table-row" style="grid-template-columns:${COLS};background:#eef2f7;cursor:default;border-top:2px solid var(--b2)">
     <div class="td fw" style="color:var(--t2)">TOTAL</div>
+    <div class="td"></div>
     <div class="td green fw mono">${fmt(totalFunc)}</div>
     <div class="td green fw mono">${fmt(totalDev)}</div>
     <div class="td green fw mono">${fmt(totalProj)}</div>
@@ -1195,8 +1194,10 @@ function renderProfit(){
 // ══════════════════════════════════════════════════════════════════════
 let currentDetail={tab:null,id:null,done:false};
 
+const YEARS=['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
 const SCHEMAS={
   dev:[
+    {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
@@ -1209,6 +1210,7 @@ const SCHEMAS={
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
   func:[
+    {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
@@ -1219,6 +1221,7 @@ const SCHEMAS={
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
   proj:[
+    {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
@@ -1434,7 +1437,7 @@ function buildMField(field,rec){
 document.getElementById('modalSave').addEventListener('click',()=>{
   const sk=currentTab.replace(/^c.+/,'')||currentTab;
   const schema=SCHEMAS[sk]||SCHEMAS.dev;
-  const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate())};
+  const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate()),year:'2026'};
   schema.forEach(f=>{ const el=document.getElementById('mf-'+f.key); if(el) rec[f.key]=el.value; });
   if(!rec.dev){ alert('Please enter a development description.'); return; }
   const listKey={dev:'dev',func:'func',proj:'proj'}[sk];
