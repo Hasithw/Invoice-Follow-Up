@@ -182,6 +182,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab done" data-tab="cpdone">Completed Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
     <div class="nav-tab" data-tab="setoff">Set Off</div>
+    <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
     <button class="btn btn-sm" id="exportBtn" title="Export to Excel">⬇ Export</button>
@@ -557,6 +558,47 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 </div>
 
 
+<!-- ════ SETTINGS ════ -->
+<div class="tab-panel" id="tab-settings">
+  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:640px">
+    <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
+
+    <!-- Current Rates -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Current Rates
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Functional Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
+        <span style="color:#16a34a;font-size:16px">✓</span>
+        Changes apply to new records only — existing data keeps its original calculated values.
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /body -->
 </div><!-- /app -->
@@ -619,7 +661,8 @@ const STORE_KEY = 'techstar2026_v3';
 
 function initStore() {
   return { dev:[], devDone:[], func:[], funcDone:[], proj:[], projDone:[],
-           setoff:[], setoffActive:[], setoffArchived:[] };
+           setoff:[], setoffActive:[], setoffArchived:[],
+           settings:{ funcRate:'8000.00', devRate:'5000.00' } };
 }
 
 // ── Row builders (in-memory → Supabase flat row) ───────────────────
@@ -629,16 +672,19 @@ function buildRow(listKey, r) {
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||r.devpaystat||'',
-             clipay:r.clipay||'', inv:r.inv||'', done };
+             clipay:r.clipay||'', inv:r.inv||'', done,
+             func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', comp:r.comp||'',
-             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done };
+             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done,
+             func_rate:parseFloat(r.funcRate)||null };
   if (listKey==='proj'||listKey==='projDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||'',
-             clipay:r.clipay||'', inv:r.inv||'', done };
+             clipay:r.clipay||'', inv:r.inv||'', done,
+             func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='setoffActive')
     return { id:r.id, code:r.code||'', from_project:r.fromProject||'',
              func_rate:parseFloat(r.funcRate)||0, dev_rate:parseFloat(r.devRate)||0,
@@ -654,7 +700,7 @@ function buildRow(listKey, r) {
 // ── Row parsers (Supabase flat row → in-memory) ────────────────────
 function parseRow(table, row) {
   if (table==='dev_support')
-    return { ...row, devpaystat:row.devpay||'' };
+    return { ...row, devpaystat:row.devpay||'', funcRate:String(row.func_rate||''), devRate:String(row.dev_rate||'') };
   if (table==='setoff_active'||table==='setoff_archived')
     return { ...row,
       fromProject: row.from_project||'',
@@ -745,17 +791,53 @@ function showLoader(show) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// CALCULATIONS
+// SETTINGS
+// ══════════════════════════════════════════════════════════════════════
+function getSettings() {
+  if (!DB.settings) DB.settings = { funcRate:'8000.00', devRate:'5000.00' };
+  return DB.settings;
+}
+function getFuncRate() { return parseFloat(getSettings().funcRate) || 8000; }
+function getDevRate()  { return parseFloat(getSettings().devRate)  || 5000; }
+
+function saveSettings() {
+  const fr = document.getElementById('settings-func-rate')?.value || '';
+  const dr = document.getElementById('settings-dev-rate')?.value  || '';
+  if (!DB.settings) DB.settings = {};
+  DB.settings.funcRate = fr;
+  DB.settings.devRate  = dr;
+  saveStore();
+  showToast('Settings saved ✓', 'green');
+}
+
+function loadSettingsUI() {
+  const s = getSettings();
+  const frEl = document.getElementById('settings-func-rate');
+  const drEl = document.getElementById('settings-dev-rate');
+  if (frEl) frEl.value = s.funcRate || '8000.00';
+  if (drEl) drEl.value = s.devRate  || '5000.00';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CALCULATIONS — use per-record rates if set, else fall back to record-level stored rate
 // ══════════════════════════════════════════════════════════════════════
 function calcDev(d){
-  const af=parseFloat(d.actf)||0,ad=parseFloat(d.actd)||0;
-  const devPmt=ad*5000,invF=af*8000,invD=ad*8000,invFull=invF+invD,profit=invFull-devPmt;
+  // Use rates stored on the record (snapshotted at creation time)
+  const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
+  const fRate=parseFloat(d.funcRate)||getFuncRate();
+  const dRate=parseFloat(d.devRate) ||getDevRate();
+  const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
   return {devPmt,invF,invD,invFull,profit};
 }
-function calcFunc(d){ return (parseFloat(d.actf)||0)*8000; }
+function calcFunc(d){
+  const fRate=parseFloat(d.funcRate)||getFuncRate();
+  return (parseFloat(d.actf)||0)*fRate;
+}
 function calcProj(d){
-  const af=parseFloat(d.actf)||0,ad=parseFloat(d.actd)||0;
-  const devPmt=ad*5000,invF=af*8000,invD=ad*8000,invFull=invF+invD,profit=invFull-devPmt;
+  const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
+  const fRate=parseFloat(d.funcRate)||getFuncRate();
+  const dRate=parseFloat(d.devRate) ||getDevRate();
+  const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
   return {devPmt,invF,invD,invFull,profit};
 }
 function fmt(n){ return n===0?'0':n.toLocaleString(); }
@@ -1292,7 +1374,7 @@ function buildMField(field,rec){
 document.getElementById('modalSave').addEventListener('click',()=>{
   const sk=currentTab.replace(/^c.+/,'')||currentTab;
   const schema=SCHEMAS[sk]||SCHEMAS.dev;
-  const rec={id:newId(),done:false};
+  const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate())};
   schema.forEach(f=>{ const el=document.getElementById('mf-'+f.key); if(el) rec[f.key]=el.value; });
   if(!rec.dev){ alert('Please enter a development description.'); return; }
   const listKey={dev:'dev',func:'func',proj:'proj'}[sk];
@@ -1309,7 +1391,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',setoff:'','setoff-detail':'','setoff-archived':''};
+const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',setoff:'','setoff-detail':'','setoff-archived':'',settings:''};
 const SIDEBAR_DEFS={
   dashboard:[],
   dev:[],func:[],proj:[],cdone:[],cfdone:[],cpdone:[],profit:[],setoff:[],
@@ -1354,9 +1436,11 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','setoff','setoff-detail','setoff-archived','dashboard'].includes(t))?'none':'';
+  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','setoff','setoff-detail','setoff-archived','dashboard','settings'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
+  // Load settings UI
+  if(t==='settings'){ loadSettingsUI(); }
   // Sidebar removed - always hidden
   const sb=document.getElementById('sidebar');
   sb.style.width='0';
@@ -1586,7 +1670,7 @@ function renderSoArchivedList() {
 // ── Open / create setoff detail page ───────────────────────────────
 function openNewSetoff() {
   if(!DB.setoffActive) DB.setoffActive=[];
-  const newSo={id:'so'+Date.now(),code:nextSoCode(),fromProject:'',funcRate:'',devRate:'',from:[],to:[]};
+  const newSo={id:'so'+Date.now(),code:nextSoCode(),fromProject:'',funcRate:String(getFuncRate()),devRate:String(getDevRate()),from:[],to:[]};
   DB.setoffActive.unshift(newSo);
   saveStore();
   saveRecord('setoffActive', newSo);
@@ -1808,6 +1892,7 @@ function renderSetoff(){
 renderAll();
 renderSidebar('dashboard');
 renderSetoff();
+loadSettingsUI();
 // Load fresh data from Supabase (updates UI when done)
 loadFromSupabase();
 // Sidebar removed
