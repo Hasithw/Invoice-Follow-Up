@@ -730,6 +730,7 @@ async function loadFromSupabase() {
     DB.setoffActive   = soActive.map(r=>parseRow('setoff_active',r));
     DB.setoffArchived = soArch.map(r=>parseRow('setoff_archived',r));
     try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch(e) {}
+    stampMissingRates();
     showLoader(false);
     renderAll();
     renderSetoff();
@@ -819,24 +820,52 @@ function loadSettingsUI() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// CALCULATIONS — use per-record rates if set, else fall back to record-level stored rate
+// CALCULATIONS
+// Rates are ALWAYS read from the record itself (frozen at creation/first-load).
+// Settings rates are ONLY used when creating brand new records.
+// Changing Settings NEVER affects existing records.
 // ══════════════════════════════════════════════════════════════════════
+
+// One-time migration: stamp current settings rates onto any record
+// that was created before rate-snapshotting was added.
+// Called once after DB loads. Safe to call multiple times (idempotent).
+function stampMissingRates() {
+  const fR = String(getFuncRate());
+  const dR = String(getDevRate());
+  let changed = false;
+  [...DB.dev,...DB.devDone].forEach(r=>{
+    if (!r.funcRate){ r.funcRate=fR; changed=true; }
+    if (!r.devRate ){ r.devRate =dR; changed=true; }
+  });
+  [...DB.func,...DB.funcDone].forEach(r=>{
+    if (!r.funcRate){ r.funcRate=fR; changed=true; }
+  });
+  [...DB.proj,...DB.projDone].forEach(r=>{
+    if (!r.funcRate){ r.funcRate=fR; changed=true; }
+    if (!r.devRate ){ r.devRate =dR; changed=true; }
+  });
+  if (changed) saveStore();
+}
+
 function calcDev(d){
-  // Use rates stored on the record (snapshotted at creation time)
   const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
-  const fRate=parseFloat(d.funcRate)||getFuncRate();
-  const dRate=parseFloat(d.devRate) ||getDevRate();
+  // Use ONLY the rate frozen on the record — never the live settings
+  const fRate=parseFloat(d.funcRate)||0;
+  const dRate=parseFloat(d.devRate) ||0;
+  if (!fRate && !dRate) return {devPmt:0,invF:0,invD:0,invFull:0,profit:0};
   const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
   return {devPmt,invF,invD,invFull,profit};
 }
 function calcFunc(d){
-  const fRate=parseFloat(d.funcRate)||getFuncRate();
+  const fRate=parseFloat(d.funcRate)||0;
+  if (!fRate) return 0;
   return (parseFloat(d.actf)||0)*fRate;
 }
 function calcProj(d){
   const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
-  const fRate=parseFloat(d.funcRate)||getFuncRate();
-  const dRate=parseFloat(d.devRate) ||getDevRate();
+  const fRate=parseFloat(d.funcRate)||0;
+  const dRate=parseFloat(d.devRate) ||0;
+  if (!fRate && !dRate) return {devPmt:0,invF:0,invD:0,invFull:0,profit:0};
   const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
   return {devPmt,invF,invD,invFull,profit};
 }
@@ -1893,6 +1922,7 @@ renderAll();
 renderSidebar('dashboard');
 renderSetoff();
 loadSettingsUI();
+stampMissingRates();
 // Load fresh data from Supabase (updates UI when done)
 loadFromSupabase();
 // Sidebar removed
