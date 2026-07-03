@@ -673,18 +673,18 @@ function buildRow(listKey, r) {
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||r.devpaystat||'',
-             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
+             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', comp:r.comp||'',
-             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
+             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null };
   if (listKey==='proj'||listKey==='projDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||'',
-             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||'2026',
+             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='setoffActive')
     return { id:r.id, code:r.code||'', from_project:r.fromProject||'',
@@ -703,16 +703,16 @@ function parseRow(table, row) {
   if (table==='dev_support')
     return { ...row,
       devpaystat: row.devpay||'',
-      year: row.year||'2026',
+      year: row.year||CURRENT_YEAR,
       funcRate: String(row.func_rate || getFuncRate()),
       devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='func_support')
     return { ...row,
-      year: row.year||'2026',
+      year: row.year||CURRENT_YEAR,
       funcRate: String(row.func_rate || getFuncRate()) };
   if (table==='projects')
     return { ...row,
-      year: row.year||'2026',
+      year: row.year||CURRENT_YEAR,
       funcRate: String(row.func_rate || getFuncRate()),
       devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='setoff_active'||table==='setoff_archived')
@@ -1084,12 +1084,12 @@ function renderProfit(){
   // Group by year+month key
   const COLS = '80px 130px 1fr 1fr 1fr 1fr';
   const ymData={};
-  const ymKey=(d)=>`${d.year||'2026'}__${d.month||''}`;
+  const ymKey=(d)=>`${d.year||CURRENT_YEAR}__${d.month||''}`;
 
   // Gather unique year+month combos
   const ensureKey=(d)=>{
     const k=ymKey(d);
-    if(!ymData[k]) ymData[k]={year:d.year||'2026',month:d.month||'',func:0,dev:0,proj:0};
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
   };
 
   DB.funcDone.forEach(d=>{ ensureKey(d); ymData[ymKey(d)].func += calcFunc(d); });
@@ -1336,7 +1336,12 @@ function buildDpField(field,rec){
   let inp;
   if(field.type==='select'){
     inp=document.createElement('select'); inp.className='dp-input';
-    (field.options||[]).forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; if(rec[field.key]===o) opt.selected=true; inp.appendChild(opt); });
+    (field.options||[]).forEach(o=>{
+      const opt=document.createElement('option'); opt.value=o; opt.textContent=o;
+      const recVal = rec[field.key];
+      if(recVal ? recVal===o : (field.key==='year' && o===CURRENT_YEAR)) opt.selected=true;
+      inp.appendChild(opt);
+    });
   } else {
     inp=document.createElement('input'); inp.className='dp-input';
     inp.type=field.type||'text'; inp.value=rec[field.key]||'';
@@ -1420,16 +1425,23 @@ document.getElementById('addBtn').addEventListener('click',()=>{
   openModal();
 });
 
-function buildMField(field,rec){
+function buildMField(field, rec){
   const wrap=document.createElement('div'); wrap.className='mfield';
   const lbl=document.createElement('div'); lbl.className='mlabel'; lbl.textContent=field.label;
   wrap.appendChild(lbl);
   let inp;
   if(field.type==='select'){
     inp=document.createElement('select'); inp.className='minput';
-    (field.options||[]).forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; inp.appendChild(opt); });
+    (field.options||[]).forEach(o=>{
+      const opt=document.createElement('option'); opt.value=o; opt.textContent=o;
+      // Default year to current year, default month to January
+      if(field.key==='year' && o===CURRENT_YEAR) opt.selected=true;
+      else if(rec && rec[field.key]===o) opt.selected=true;
+      inp.appendChild(opt);
+    });
   } else {
     inp=document.createElement('input'); inp.className='minput'; inp.type=field.type||'text';
+    if(rec && rec[field.key]) inp.value=rec[field.key];
   }
   inp.id='mf-'+field.key; wrap.appendChild(inp); return wrap;
 }
@@ -1437,8 +1449,11 @@ function buildMField(field,rec){
 document.getElementById('modalSave').addEventListener('click',()=>{
   const sk=currentTab.replace(/^c.+/,'')||currentTab;
   const schema=SCHEMAS[sk]||SCHEMAS.dev;
-  const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate()),year:'2026'};
+  // Start with frozen rates; year and other fields read from form below
+  const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate()),year:CURRENT_YEAR};
   schema.forEach(f=>{ const el=document.getElementById('mf-'+f.key); if(el) rec[f.key]=el.value; });
+  // Ensure year has a value
+  if(!rec.year) rec.year=CURRENT_YEAR;
   if(!rec.dev){ alert('Please enter a development description.'); return; }
   const listKey={dev:'dev',func:'func',proj:'proj'}[sk];
   if(!listKey) return;
