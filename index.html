@@ -1105,11 +1105,15 @@ function badge(val,pos,neg){
 }
 function mtag(d){ return d.month?`<span class="month-tag">${d.month.substring(0,3).toUpperCase()}</span>`:''; }
 
+// Precise check for "client hasn't paid" — matches ONLY the exact unpaid status text,
+// never a loose substring match (which previously also matched "Invoice NOT Sent").
+function isClientUnpaid(clipay){ return clipay==='Customer NOT Paid'; }
+
 // ══════════════════════════════════════════════════════════════════════
 // ROW HTML RENDERERS
 // ══════════════════════════════════════════════════════════════════════
 function rowDev(d){
-  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   const DCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : DEV_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cdone" data-id="${d.id}">✏</button>
@@ -1129,7 +1133,7 @@ function rowDev(d){
   </div>`;
 }
 function rowFunc(d){
-  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   const FCOLS = d.done ? '1fr 120px 140px 140px 140px 150px 155px 150px 88px' : FUNC_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cfdone" data-id="${d.id}">✏</button>
@@ -1147,7 +1151,7 @@ function rowFunc(d){
   </div>`;
 }
 function rowProj(d){
-  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   const PCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : PROJ_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cpdone" data-id="${d.id}">✏</button>
@@ -1240,7 +1244,7 @@ function renderStats(){
   // Dev stats
   const devAll=[...DB.dev,...DB.devDone];
   const devProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0);
-  const devNotPaid=DB.dev.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
+  const devNotPaid=DB.dev.filter(d=>isClientUnpaid(d.clipay)).length;
   document.getElementById('dev-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.dev.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.devDone.length}</div></div>
@@ -1248,7 +1252,7 @@ function renderStats(){
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(devProfit)}</div></div>`;
   // Func stats
   const funcProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0);
-  const funcNotPaid=DB.func.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
+  const funcNotPaid=DB.func.filter(d=>isClientUnpaid(d.clipay)).length;
   document.getElementById('func-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.func.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.funcDone.length}</div></div>
@@ -1256,7 +1260,7 @@ function renderStats(){
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(funcProfit)}</div></div>`;
   // Proj stats
   const projProfit=DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const projNotPaid=DB.proj.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
+  const projNotPaid=DB.proj.filter(d=>isClientUnpaid(d.clipay)).length;
   document.getElementById('proj-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active projects</div><div class="stat-val accent">${DB.proj.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.projDone.length}</div></div>
@@ -1272,7 +1276,7 @@ function renderDashboard(){
   const totalProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0)+
                     DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                     DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const notPaid=[...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
+  const notPaid=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay)).length;
   const invFull=DB.devDone.reduce((s,d)=>s+calcDev(d).invFull,0)+
                 DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                 DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
@@ -1298,7 +1302,7 @@ function renderDashboard(){
       <div class="chart-bar-label">${m}</div>
     </div>`).join('');
   // Overdue list
-  const overdueItems=[...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT'));
+  const overdueItems=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay));
   const ol=document.getElementById('overdue-list');
   if(!overdueItems.length){ ol.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px 0">No unpaid items 🎉</div>'; }
   else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev}</div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
