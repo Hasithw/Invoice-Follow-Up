@@ -78,8 +78,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .dash-val.red{color:var(--red)}
 .dash-val.accent{color:var(--accent)}
 .dash-val.yellow{color:var(--yellow)}
-.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 4px}
-.chart-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;flex:1;height:100%}
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:110px;padding:4px 4px 0}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1;height:100%;min-width:0}
 .chart-bar{width:100%;background:var(--adim);border-radius:4px 4px 0 0;border:1px solid var(--accent);transition:height .4s}
 .chart-bar.green-bar{background:var(--gdim);border-color:var(--green)}
 .chart-bar-label{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace}
@@ -238,11 +238,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div class="done-section">Completed Dev Support</div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
           <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
-          <div class="th">Invoice Number</div>
+          <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="dev-done-body"></div>
       </div>
@@ -272,10 +272,10 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div class="done-section">Completed Func Support</div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px 88px">
           <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div>
+          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="func-done-body"></div>
       </div>
@@ -308,13 +308,13 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div class="done-section">Completed Projects</div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
           <div class="th"></div><div class="th">No</div><div class="th">Description</div>
           <div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div>
           <div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
-          <div class="th">Invoice Number</div>
+          <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="proj-done-body"></div>
       </div>
@@ -332,7 +332,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="md-wrap">
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed dev…" oninput="searchTable('cdone-body',this.value)"></div>
-      <div class="table-wrap">
+      <div class="table-wrap" style="overflow-x:auto">
         <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
           <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
@@ -1192,15 +1192,14 @@ function renderProfit(){
   function renderBarChart(elId, vals, color) {
     const el=document.getElementById(elId); if(!el) return;
     const maxV=Math.max(...vals,1);
+    const BAR_MAX=80; // px
     el.innerHTML = chartMonths.map((m,i)=>{
-      const pct = vals[i]>0 ? Math.max(4, Math.round(vals[i]/maxV*96)) : 0;
+      const px = vals[i]>0 ? Math.max(4, Math.round(vals[i]/maxV*BAR_MAX)) : 0;
       const label = vals[i]>0 ? (vals[i]>=1000?Math.round(vals[i]/1000)+'k':vals[i].toLocaleString()) : '';
       return `<div class="chart-bar-col">
-        <div style="font-size:9px;font-weight:700;color:${color};margin-bottom:2px;min-height:12px">${label}</div>
-        <div style="flex:1;display:flex;align-items:flex-end;width:100%">
-          <div style="width:100%;background:${color};border-radius:4px 4px 0 0;height:${pct}%;min-height:${vals[i]>0?'4px':'0'};transition:height .4s"></div>
-        </div>
-        <div class="chart-bar-label" style="margin-top:4px">${m}</div>
+        <div style="font-size:9px;font-weight:700;color:${color};min-height:13px;text-align:center">${label}</div>
+        <div style="width:100%;height:${px}px;min-height:${px>0?'4px':'0'};background:${color};border-radius:4px 4px 0 0;transition:height .4s"></div>
+        <div class="chart-bar-label" style="margin-top:3px;font-size:9px">${m}</div>
       </div>`;
     }).join('');
   }
@@ -1436,38 +1435,41 @@ function saveDetail(tab){
   const idx=list.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const rec=list[idx];
-  // Save existing rates BEFORE overwriting with form fields
-  const savedFuncRate = rec.funcRate;
-  const savedDevRate  = rec.devRate;
+  const savedFuncRate=rec.funcRate, savedDevRate=rec.devRate;
   body.querySelectorAll('.dp-input').forEach(inp=>{ rec[inp.dataset.key]=inp.value; });
-  // Restore frozen rates — form fields must never overwrite them
-  if (savedFuncRate) rec.funcRate = savedFuncRate;
-  if (savedDevRate)  rec.devRate  = savedDevRate;
-  // If still missing (brand new record path), stamp from settings now
-  if (!rec.funcRate) rec.funcRate = String(getFuncRate());
-  if (!rec.devRate && (sk==='dev'||sk==='proj')) rec.devRate = String(getDevRate());
+  if(savedFuncRate) rec.funcRate=savedFuncRate;
+  if(savedDevRate)  rec.devRate =savedDevRate;
+  if(!rec.funcRate) rec.funcRate=String(getFuncRate());
+  if(!rec.devRate&&(sk==='dev'||sk==='proj')) rec.devRate=String(getDevRate());
 
   const isFinished=rec.status==='Finished';
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
-  const doneKeys={dev:'devDone',func:'funcDone',proj:'projDone'};
-  const doneTabs={dev:'cdone',func:'cfdone',proj:'cpdone'};
+  const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
+  const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
   const doneTabLabels={dev:'Completed Dev',func:'Completed Func',proj:'Completed Projects'};
+  const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
 
-  if(isFinished && activeKeys[sk]===listKey){
-    // Move from active to done
+  if(isFinished && !isDoneList){
+    // Active → Done
     rec.done=true;
     DB[doneKeys[sk]].unshift(rec);
     DB[activeKeys[sk]].splice(idx,1);
-    saveStore(); renderAll();
+    saveStore(); saveRecord(doneKeys[sk],rec); renderAll();
     closeDetail(tab);
     showToast('Moved to '+doneTabLabels[sk]+' ✓','green');
     switchTab(doneTabs[sk]);
+  } else if(!isFinished && isDoneList){
+    // Done → Active (un-finish)
+    rec.done=false;
+    DB[activeKeys[sk]].unshift(rec);
+    DB[doneKeys[sk]].splice(idx,1);
+    saveStore(); saveRecord(activeKeys[sk],rec); renderAll();
+    closeDetail(tab);
+    showToast('Moved back to '+sk.charAt(0).toUpperCase()+sk.slice(1)+' Support ✓','green');
+    switchTab(sk==='dev'?'dev':sk==='func'?'func':'proj');
   } else {
-    saveStore();
-    // Push to Supabase
-    const _lk = isFinished && activeKeys[sk]===listKey ? doneKeys[sk] : listKey;
-    saveRecord(_lk, rec);
-    renderAll();
+    // In-place save
+    saveStore(); saveRecord(listKey,rec); renderAll();
     closeDetail(tab);
     showToast('Saved ✓','green');
   }
