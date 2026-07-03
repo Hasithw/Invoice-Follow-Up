@@ -88,7 +88,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .overdue-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--rdim);border:1px solid rgba(242,92,92,.2);border-radius:var(--r);cursor:pointer}
 .overdue-row:hover{background:rgba(242,92,92,.2)}
 /* ── table ── */
-.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;width:100%}
+.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;width:100%;flex-shrink:0}
 .table-header{display:grid;border-bottom:2px solid var(--b2);background:#eef2f7;padding:0}
 .th{font-size:11px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-right:1px solid var(--border);white-space:nowrap}
 .th:last-child{border-right:none}
@@ -240,16 +240,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         </div>
         <div id="dev-body"></div>
       </div>
-      <div class="done-section">Completed Dev Support</div>
-      <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
-          <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
-          <div class="th">Invoice Number</div><div class="th">Actions</div>
-        </div>
-        <div id="dev-done-body"></div>
-      </div>
     </div>
     <div class="detail-pane" id="dev-detail">
       <div class="dp-header"><div class="dp-title" id="dev-dp-title">Edit row</div><div class="dp-close" onclick="closeDetail('dev')">✕</div></div>
@@ -273,15 +263,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div>
         </div>
         <div id="func-body"></div>
-      </div>
-      <div class="done-section">Completed Func Support</div>
-      <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px 88px">
-          <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div><div class="th">Actions</div>
-        </div>
-        <div id="func-done-body"></div>
       </div>
     </div>
     <div class="detail-pane" id="func-detail">
@@ -309,18 +290,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           <div class="th">Invoice Number</div>
         </div>
         <div id="proj-body"></div>
-      </div>
-      <div class="done-section">Completed Projects</div>
-      <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
-          <div class="th">Description</div>
-          <div class="th">Requester</div>
-          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
-          <div class="th">Invoice Number</div><div class="th">Actions</div>
-        </div>
-        <div id="proj-done-body"></div>
       </div>
     </div>
     <div class="detail-pane" id="proj-detail">
@@ -1177,15 +1146,12 @@ function rowProj(d){
 function renderAll(){
   // Dev
   document.getElementById('dev-body').innerHTML    = renderGroupedByMonth(DB.dev, rowDev);
-  document.getElementById('dev-done-body').innerHTML = renderGroupedByMonth(DB.devDone, rowDev);
   document.getElementById('cdone-body').innerHTML  = renderGroupedByMonth(DB.devDone, rowDev);
   // Func
   document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
-  document.getElementById('func-done-body').innerHTML = renderGroupedByMonth(DB.funcDone, rowFunc);
   document.getElementById('cfdone-body').innerHTML = renderGroupedByMonth(DB.funcDone, rowFunc);
   // Proj
   document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(DB.proj, rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
-  document.getElementById('proj-done-body').innerHTML = renderGroupedByMonth(DB.projDone, rowProj);
   document.getElementById('cpdone-body').innerHTML = renderGroupedByMonth(DB.projDone, rowProj);
   // Profit
   renderProfit();
@@ -1200,13 +1166,10 @@ function renderAll(){
 function attachAllClicks(){
   const pairs=[
     ['dev-body',    'dev',   false],
-    ['dev-done-body','dev',  true],
     ['cdone-body',  'cdone', true],
     ['func-body',   'func',  false],
-    ['func-done-body','func',true],
     ['cfdone-body', 'cfdone',true],
     ['proj-body',   'proj',  false],
-    ['proj-done-body','proj',true],
     ['cpdone-body', 'cpdone',true],
   ];
   pairs.forEach(([bodyId,tab,done])=>{
