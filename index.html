@@ -400,12 +400,25 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <!-- ════ PROFIT ════ -->
 <div class="tab-panel" id="tab-profit">
   <div class="list-pane" style="overflow-y:auto;gap:16px">
+    <!-- Year filter -->
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Profit Analysis</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <div style="font-size:12px;color:var(--t2)">Filter by year:</div>
+        <select id="profit-year-filter" onchange="renderProfit()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:13px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;cursor:pointer">
+        </select>
+        <button class="btn btn-sm" onclick="document.getElementById('profit-year-filter').value='all';renderProfit()">All Years</button>
+      </div>
+    </div>
     <!-- KPI row -->
     <div class="dash-grid" id="profit-kpis"></div>
     <!-- Charts row -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;width:100%">
       <div class="dash-card">
-        <div class="dash-section-title" style="margin-bottom:12px">Monthly Total Profit</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="dash-section-title" id="chart-title-total">Monthly Total Profit</div>
+        </div>
         <div class="chart-bar-wrap" id="profit-bar-total" style="height:130px"></div>
       </div>
       <div class="dash-card">
@@ -1081,66 +1094,99 @@ function renderDashboard(){
 // PROFIT TABLE + CHARTS
 // ══════════════════════════════════════════════════════════════════════
 function renderProfit(){
-  // Group by year+month key
   const COLS = '80px 130px 1fr 1fr 1fr 1fr';
-  const ymData={};
-  const ymKey=(d)=>`${d.year||CURRENT_YEAR}__${d.month||''}`;
 
-  // Gather unique year+month combos
-  const ensureKey=(d)=>{
+  // ── Populate year filter dropdown dynamically ──────────────────────
+  const filterEl = document.getElementById('profit-year-filter');
+  if (filterEl) {
+    // Collect all years present in data
+    const dataYears = new Set([
+      ...[...DB.devDone,...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+    ]);
+    // Also always include current year and a range of years
+    YEARS.forEach(y=>dataYears.add(y));
+    const sortedYears = [...dataYears].sort();
+    const currentVal = filterEl.value || CURRENT_YEAR;
+    filterEl.innerHTML = `<option value="all">All Years</option>` +
+      sortedYears.map(y=>`<option value="${y}"${y===currentVal?' selected':''}>${y}</option>`).join('');
+    // If no value set yet, default to current year
+    if(!filterEl.value || filterEl.value==='') filterEl.value = CURRENT_YEAR;
+  }
+
+  const selectedYear = filterEl?.value || CURRENT_YEAR;
+
+  // ── Build year+month data (all years for table) ────────────────────
+  const ymData = {};
+  const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
+  const ensure = d => {
     const k=ymKey(d);
     if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
   };
 
-  DB.funcDone.forEach(d=>{ ensureKey(d); ymData[ymKey(d)].func += calcFunc(d); });
-  DB.devDone.forEach(d=>{  ensureKey(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
-  DB.projDone.forEach(d=>{ ensureKey(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
+  DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFunc(d); });
+  DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
+  DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
 
-  const totalFunc  = DB.funcDone.reduce((s,d)=>s+calcFunc(d), 0);
-  const totalDev   = DB.devDone.reduce((s,d)=>s+calcDev(d).profit, 0);
-  const totalProj  = DB.projDone.reduce((s,d)=>s+calcProj(d).profit, 0);
+  // ── KPIs — based on selected year (or all) ─────────────────────────
+  const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
+  const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0);
+  const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0);
+  const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
   const grandTotal = totalFunc + totalDev + totalProj;
 
+  const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
   document.getElementById('profit-kpis').innerHTML=`
-    <div class="dash-card"><div class="dash-label">Total Profit</div><div class="dash-val green">${fmt(grandTotal)}</div></div>
-    <div class="dash-card"><div class="dash-label">Func Support (Inv Full)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
-    <div class="dash-card"><div class="dash-label">Dev Support Profit</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
-    <div class="dash-card"><div class="dash-label">Projects Profit</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
+    <div class="dash-card"><div class="dash-label">Total Profit (${yearLabel})</div><div class="dash-val green">${fmt(grandTotal)}</div></div>
+    <div class="dash-card"><div class="dash-label">Func Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
+    <div class="dash-card"><div class="dash-label">Dev Support</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
+    <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
 
-  // ── Bar charts — use monthly totals across all years ───────────────
-  const monthlyTotals={};
-  MONTHS.forEach(m=>monthlyTotals[m]={func:0,dev:0,proj:0});
+  // ── Charts — show monthly breakdown for selected year only ─────────
+  // Build month totals for the selected year
+  const monthlyForCharts = {};
+  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,dev:0,proj:0});
+
   Object.values(ymData).forEach(r=>{
-    if(monthlyTotals[r.month]){
-      monthlyTotals[r.month].func+=r.func;
-      monthlyTotals[r.month].dev +=r.dev;
-      monthlyTotals[r.month].proj+=r.proj;
+    if((selectedYear==='all' || r.year===selectedYear) && monthlyForCharts[r.month]) {
+      monthlyForCharts[r.month].func += r.func;
+      monthlyForCharts[r.month].dev  += r.dev;
+      monthlyForCharts[r.month].proj += r.proj;
     }
   });
-  const activeMonths = MONTHS.filter(m=>{ const r=monthlyTotals[m]; return r.func||r.dev||r.proj; });
-  const chartMonths  = activeMonths.length ? activeMonths.map(m=>m.substring(0,3).toUpperCase()) : MONTH_LABELS.slice(0,6);
 
-  function renderBarChart(elId, vals, color, fillColor) {
+  // Only show months that have data
+  const activeMonths = MONTHS.filter(m=>{
+    const r=monthlyForCharts[m]; return r.func||r.dev||r.proj;
+  });
+  const chartMonths = activeMonths.length
+    ? activeMonths.map(m=>m.substring(0,3).toUpperCase())
+    : MONTH_LABELS.slice(0,6);
+
+  const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
+  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const funcVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).func||0; });
+  const devprojVals  = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+
+  // Update chart titles
+  const ct = document.getElementById('chart-title-total');
+  if(ct) ct.textContent = `Monthly Total Profit — ${yearLabel}`;
+
+  function renderBarChart(elId, vals, color) {
     const el=document.getElementById(elId); if(!el) return;
     const maxV=Math.max(...vals,1);
-    el.innerHTML=chartMonths.map((m,i)=>`
+    el.innerHTML = chartMonths.map((m,i)=>`
       <div class="chart-bar-col">
         <div class="chart-bar-val" style="color:${color};font-size:10px;font-weight:600">${vals[i]>0?Math.round(vals[i]/1000)+'k':''}</div>
-        <div style="width:100%;background:${fillColor};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(vals[i]/maxV*100))}px;transition:height .4s"></div>
+        <div style="width:100%;background:${color};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(vals[i]/maxV*100))}px;transition:height .4s;opacity:0.85"></div>
         <div class="chart-bar-label">${m}</div>
       </div>`).join('');
   }
 
-  const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
-  const totalVals   = chartMonths.map(m=>{ const r=monthlyTotals[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
-  const funcVals    = chartMonths.map(m=>{ return (monthlyTotals[getMF(m)]||{}).func||0; });
-  const devprojVals = chartMonths.map(m=>{ const r=monthlyTotals[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+  renderBarChart('profit-bar-total',   totalVals,   '#16a34a');
+  renderBarChart('profit-bar-func',    funcVals,    '#2563eb');
+  renderBarChart('profit-bar-devproj', devprojVals, '#d97706');
 
-  renderBarChart('profit-bar-total',   totalVals,   '#16a34a', '#16a34a');
-  renderBarChart('profit-bar-func',    funcVals,    '#2563eb', '#2563eb');
-  renderBarChart('profit-bar-devproj', devprojVals, '#d97706', '#d97706');
-
-  // ── Monthly breakdown table — sorted by year then month ─────────────
+  // ── Table — show all years or filtered year ────────────────────────
   const profitHeader = document.querySelector('#tab-profit .table-header');
   if (profitHeader) {
     profitHeader.style.gridTemplateColumns = COLS;
@@ -1154,10 +1200,12 @@ function renderProfit(){
   }
 
   const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
-  const sortedKeys = Object.keys(ymData).sort((a,b)=>{
-    const [ay,am]= a.split('__'); const [by,bm]=b.split('__');
-    return ay!==by ? ay.localeCompare(by) : (monthOrder[am]||0)-(monthOrder[bm]||0);
-  });
+  const sortedKeys = Object.keys(ymData)
+    .filter(k => selectedYear==='all' || k.startsWith(selectedYear+'__'))
+    .sort((a,b)=>{
+      const [ay,am]=a.split('__'), [by,bm]=b.split('__');
+      return ay!==by ? ay.localeCompare(by) : (monthOrder[am]||0)-(monthOrder[bm]||0);
+    });
 
   let prevYear='';
   const rows = sortedKeys.map(k=>{
@@ -1166,7 +1214,7 @@ function renderProfit(){
     if(!total) return '';
     const showYear = r.year!==prevYear;
     prevYear=r.year;
-    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear?';border-top:2px solid var(--b2)':''}">
+    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear&&selectedYear==='all'?';border-top:2px solid var(--b2)':''}">
       <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
       <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${r.func?'green':'muted'} mono">${r.func?fmt(r.func):'—'}</div>
@@ -1176,7 +1224,7 @@ function renderProfit(){
     </div>`;
   }).filter(Boolean).join('');
 
-  const totalsRow = `<div class="table-row" style="grid-template-columns:${COLS};background:#eef2f7;cursor:default;border-top:2px solid var(--b2)">
+  const totalsRow=`<div class="table-row" style="grid-template-columns:${COLS};background:#eef2f7;cursor:default;border-top:2px solid var(--b2)">
     <div class="td fw" style="color:var(--t2)">TOTAL</div>
     <div class="td"></div>
     <div class="td green fw mono">${fmt(totalFunc)}</div>
@@ -1186,7 +1234,7 @@ function renderProfit(){
   </div>`;
 
   document.getElementById('profit-body').innerHTML =
-    (rows || '<div style="padding:20px;color:var(--t3);text-align:center">No completed data yet</div>') + totalsRow;
+    (rows||'<div style="padding:20px;color:var(--t3);text-align:center">No data for selected year</div>') + totalsRow;
 }
 
 // ══════════════════════════════════════════════════════════════════════
