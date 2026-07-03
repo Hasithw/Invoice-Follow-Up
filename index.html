@@ -700,7 +700,17 @@ function buildRow(listKey, r) {
 // ── Row parsers (Supabase flat row → in-memory) ────────────────────
 function parseRow(table, row) {
   if (table==='dev_support')
-    return { ...row, devpaystat:row.devpay||'', funcRate:String(row.func_rate||''), devRate:String(row.dev_rate||'') };
+    return { ...row,
+      devpaystat: row.devpay||'',
+      funcRate: String(row.func_rate || getFuncRate()),
+      devRate:  String(row.dev_rate  || getDevRate()) };
+  if (table==='func_support')
+    return { ...row,
+      funcRate: String(row.func_rate || getFuncRate()) };
+  if (table==='projects')
+    return { ...row,
+      funcRate: String(row.func_rate || getFuncRate()),
+      devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='setoff_active'||table==='setoff_archived')
     return { ...row,
       fromProject: row.from_project||'',
@@ -828,23 +838,35 @@ function loadSettingsUI() {
 
 // One-time migration: stamp current settings rates onto any record
 // that was created before rate-snapshotting was added.
-// Called once after DB loads. Safe to call multiple times (idempotent).
+// Also pushes updated records to Supabase so rates persist.
 function stampMissingRates() {
   const fR = String(getFuncRate());
   const dR = String(getDevRate());
-  let changed = false;
+  const devNeedSave=[], funcNeedSave=[], projNeedSave=[];
+
   [...DB.dev,...DB.devDone].forEach(r=>{
-    if (!r.funcRate){ r.funcRate=fR; changed=true; }
-    if (!r.devRate ){ r.devRate =dR; changed=true; }
+    let changed=false;
+    if (!r.funcRate||r.funcRate==='0'){ r.funcRate=fR; changed=true; }
+    if (!r.devRate ||r.devRate ==='0'){ r.devRate =dR; changed=true; }
+    if (changed) devNeedSave.push(r);
   });
   [...DB.func,...DB.funcDone].forEach(r=>{
-    if (!r.funcRate){ r.funcRate=fR; changed=true; }
+    if (!r.funcRate||r.funcRate==='0'){ r.funcRate=fR; funcNeedSave.push(r); }
   });
   [...DB.proj,...DB.projDone].forEach(r=>{
-    if (!r.funcRate){ r.funcRate=fR; changed=true; }
-    if (!r.devRate ){ r.devRate =dR; changed=true; }
+    let changed=false;
+    if (!r.funcRate||r.funcRate==='0'){ r.funcRate=fR; changed=true; }
+    if (!r.devRate ||r.devRate ==='0'){ r.devRate =dR; changed=true; }
+    if (changed) projNeedSave.push(r);
   });
-  if (changed) saveStore();
+
+  if (devNeedSave.length||funcNeedSave.length||projNeedSave.length) {
+    saveStore();
+    // Push to Supabase in background
+    devNeedSave.forEach(r=>saveRecord('dev',r));
+    funcNeedSave.forEach(r=>saveRecord('func',r));
+    projNeedSave.forEach(r=>saveRecord('proj',r));
+  }
 }
 
 function calcDev(d){
@@ -1335,7 +1357,16 @@ function saveDetail(tab){
   const idx=list.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const rec=list[idx];
+  // Save existing rates BEFORE overwriting with form fields
+  const savedFuncRate = rec.funcRate;
+  const savedDevRate  = rec.devRate;
   body.querySelectorAll('.dp-input').forEach(inp=>{ rec[inp.dataset.key]=inp.value; });
+  // Restore frozen rates — form fields must never overwrite them
+  if (savedFuncRate) rec.funcRate = savedFuncRate;
+  if (savedDevRate)  rec.devRate  = savedDevRate;
+  // If still missing (brand new record path), stamp from settings now
+  if (!rec.funcRate) rec.funcRate = String(getFuncRate());
+  if (!rec.devRate && (sk==='dev'||sk==='proj')) rec.devRate = String(getDevRate());
 
   const isFinished=rec.status==='Finished';
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
