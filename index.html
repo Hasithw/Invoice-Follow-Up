@@ -586,60 +586,163 @@ const FUNC_COLS ='56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px';
 const PROJ_COLS ='56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 
 // ══════════════════════════════════════════════════════════════════════
-// STORE (localStorage persistence)
+// SUPABASE CONFIG
 // ══════════════════════════════════════════════════════════════════════
-const STORE_KEY='techstar2026_v3';
-function loadStore(){
-  try{ return JSON.parse(localStorage.getItem(STORE_KEY))||initStore(); }catch(e){ return initStore(); }
+const SB_URL = 'https://aqykctwstjmedgmwgtlr.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxeWtjdHdzdGptZWRnbXdndGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMzQ2MjgsImV4cCI6MjA5ODYxMDYyOH0.FAhkPoA0aVAhIa-wxtE_9Wam92tvgjjAKu67GUuvwQ8';
+const SB_HDRS = { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY };
+
+async function sbGet(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*&order=created_at.asc`, { headers: SB_HDRS });
+  if (!r.ok) throw new Error(`GET ${table} ${r.status}`);
+  return r.json();
 }
-function initStore(){
-  return {
-    dev:[
-      {id:'d1',month:'January',dev:'Correct SSCL column in Monthly sales report credit memo Section',req:'Nirasha',estf:'',actf:'',estd:'2',actd:'2',comp:'06 Jan',status:'With Developer',devpay:'Developer Paid',clipay:'Customer NOT Paid',inv:'INV-000126',done:false},
-      {id:'d2',month:'February',dev:'Plate Receive Ext. Doc. No. Modification',req:'Namal',estf:'',actf:'',estd:'1',actd:'1',comp:'',status:'With Developer',devpay:'Developer Paid',clipay:'Customer NOT Paid',inv:'',done:false},
-      {id:'d3',month:'March',dev:'Modified Posted Sales Invoice and Credit Note Formats for Preprinted',req:'Nirasha',estf:'',actf:'',estd:'1',actd:'1',comp:'',status:'Client Testing',devpay:'Developer NOT Paid',clipay:'Customer NOT Paid',inv:'',done:false},
-    ],
-    devDone:[
-      {id:'dd1',month:'January',dev:'Avoid unnecessary SSCL calculation clicks in sales orders',req:'Nadeera',estf:'',actf:'',estd:'2.5',actd:'2.5',comp:'06 Jan',status:'Finished',devpay:'Developer Paid',clipay:'Customer Paid',inv:'INV-000126',done:true},
-    ],
-    func:[
-      {id:'f1',month:'February',dev:'Verify email delivery order confirmation SO THABWH-52005292',req:'Chandima',estf:'0.50',actf:'0.50',comp:'18 Feb',status:'With Developer',clipay:'Customer NOT Paid',inv:'',done:false},
-      {id:'f2',month:'February',dev:'TECH26-01682 Get word invoice document',req:'Kaushan',estf:'0.25',actf:'0.25',comp:'23 Feb',status:'With Developer',clipay:'Customer NOT Paid',inv:'',done:false},
-    ],
-    funcDone:[
-      {id:'fd1',month:'January',dev:'IPO/25/10535 Inventory insufficient error',req:'Lakshan',estf:'0.25',actf:'0.25',comp:'06 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-      {id:'fd2',month:'January',dev:'Employee Attendance - Jan',req:'Theekshana',estf:'2.00',actf:'2.00',comp:'07 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-      {id:'fd3',month:'January',dev:'The Reservation entry does not exits',req:'Nadeera',estf:'0.25',actf:'0.25',comp:'07 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-      {id:'fd4',month:'January',dev:'Set posted sales invoice to delete AOD attachment',req:'Nadeera',estf:'0.25',actf:'0.25',comp:'09 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-      {id:'fd5',month:'January',dev:'Change Bill to address in Sales Order SO-25-005084',req:'Chandima',estf:'0.50',actf:'0.50',comp:'16 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-      {id:'fd6',month:'January',dev:'Create credit note VEN0556 Barclays Computers vendor',req:'Udara',estf:'0.25',actf:'0.25',comp:'21 Jan',status:'Finished',clipay:'Customer Paid',inv:'',done:true},
-    ],
-    proj:[],
-    projDone:[
-      {id:'pd1',month:'January',dev:'Purchase Requisition',estf:'5',actf:'5',estd:'26',actd:'26',status:'Finished',devpay:'Developer Paid',clipay:'Customer Paid',inv:'INV-000125',done:true},
-      {id:'pd2',month:'January',dev:'Inventory Valuation by Weight',estf:'4',actf:'4',estd:'4',actd:'6',status:'Finished',devpay:'Developer Paid',clipay:'Customer Paid',inv:'INV-000124',done:true},
-      {id:'pd3',month:'February',dev:'Modified Posted Sales Invoice and Credit Note Formats',estf:'0',actf:'0',estd:'3',actd:'3',status:'Finished',devpay:'Developer Paid',clipay:'Customer Paid',inv:'INV-000130',done:true},
-      {id:'pd4',month:'February',dev:'Restricting user access to item journal',estf:'3',actf:'3',estd:'4',actd:'4',status:'Finished',devpay:'Developer Paid',clipay:'Customer Paid',inv:'INV-000131',done:true},
-    ],
-    setoff:[],
-    setoffActive:[
-      {id:'so001',code:'10000',fromProject:'Purchase Requisition',funcRate:'8000.00',devRate:'5000.00',
-       from:[
-         {id:'sf1',fromProj:'Correct SSCL column in Monthly sales report',fromFunc:'',fromDev:'2'},
-         {id:'sf2',fromProj:'Plate Receive Ext. Doc. No. Modification',fromFunc:'',fromDev:'1'},
-       ],
-       to:[
-         {id:'st1',toProj:'SRS Item Age Composition - Qty & Value',toFunc:'1',toDev:''},
-       ]
-      },
-    ],
-    setoffArchived:[],
-  };
+async function sbUpsert(table, row) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{ ...SB_HDRS, 'Prefer':'resolution=merge-duplicates,return=minimal' },
+    body:JSON.stringify(row)
+  });
+  if (!r.ok) { const t=await r.text(); throw new Error(`UPSERT ${table}: ${t}`); }
 }
-function saveStore(){ try{ localStorage.setItem(STORE_KEY,JSON.stringify(DB)); }catch(e){} }
-let DB=loadStore();
-let _id=Date.now();
-function newId(){ return 'r'+(++_id); }
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method:'DELETE', headers:SB_HDRS
+  });
+  if (!r.ok) throw new Error(`DELETE ${table} ${r.status}`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// STORE
+// ══════════════════════════════════════════════════════════════════════
+const STORE_KEY = 'techstar2026_v3';
+
+function initStore() {
+  return { dev:[], devDone:[], func:[], funcDone:[], proj:[], projDone:[],
+           setoff:[], setoffActive:[], setoffArchived:[] };
+}
+
+// ── Row builders (in-memory → Supabase flat row) ───────────────────
+function buildRow(listKey, r) {
+  const done = listKey.endsWith('Done');
+  if (listKey==='dev'||listKey==='devDone')
+    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
+             estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
+             comp:r.comp||'', status:r.status||'', devpay:r.devpay||r.devpaystat||'',
+             clipay:r.clipay||'', inv:r.inv||'', done };
+  if (listKey==='func'||listKey==='funcDone')
+    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
+             estf:r.estf||'', actf:r.actf||'', comp:r.comp||'',
+             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done };
+  if (listKey==='proj'||listKey==='projDone')
+    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
+             estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
+             comp:r.comp||'', status:r.status||'', devpay:r.devpay||'',
+             clipay:r.clipay||'', inv:r.inv||'', done };
+  if (listKey==='setoffActive')
+    return { id:r.id, code:r.code||'', from_project:r.fromProject||'',
+             func_rate:parseFloat(r.funcRate)||0, dev_rate:parseFloat(r.devRate)||0,
+             from_rows:JSON.stringify(r.from||[]), to_rows:JSON.stringify(r.to||[]) };
+  if (listKey==='setoffArchived')
+    return { id:r.id, code:r.code||'', from_project:r.fromProject||'',
+             func_rate:parseFloat(r.funcRate)||0, dev_rate:parseFloat(r.devRate)||0,
+             from_rows:JSON.stringify(r.from||[]), to_rows:JSON.stringify(r.to||[]),
+             archived_on:r.archivedOn||'' };
+  return r;
+}
+
+// ── Row parsers (Supabase flat row → in-memory) ────────────────────
+function parseRow(table, row) {
+  if (table==='dev_support')
+    return { ...row, devpaystat:row.devpay||'' };
+  if (table==='setoff_active'||table==='setoff_archived')
+    return { ...row,
+      fromProject: row.from_project||'',
+      funcRate: String(row.func_rate||''),
+      devRate:  String(row.dev_rate||''),
+      from: typeof row.from_rows==='string' ? JSON.parse(row.from_rows||'[]') : (row.from_rows||[]),
+      to:   typeof row.to_rows  ==='string' ? JSON.parse(row.to_rows  ||'[]') : (row.to_rows  ||[]),
+      archivedOn: row.archived_on||'',
+    };
+  return row;
+}
+
+// ── Load all data from Supabase ────────────────────────────────────
+async function loadFromSupabase() {
+  showLoader(true);
+  try {
+    const [devRows, funcRows, projRows, soActive, soArch] = await Promise.all([
+      sbGet('dev_support'), sbGet('func_support'), sbGet('projects'),
+      sbGet('setoff_active'), sbGet('setoff_archived'),
+    ]);
+    DB.dev      = devRows.filter(r=>!r.done).map(r=>parseRow('dev_support',r));
+    DB.devDone  = devRows.filter(r=> r.done).map(r=>parseRow('dev_support',r));
+    DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('func_support',r));
+    DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('func_support',r));
+    DB.proj     = projRows.filter(r=>!r.done).map(r=>parseRow('projects',r));
+    DB.projDone = projRows.filter(r=> r.done).map(r=>parseRow('projects',r));
+    DB.setoffActive   = soActive.map(r=>parseRow('setoff_active',r));
+    DB.setoffArchived = soArch.map(r=>parseRow('setoff_archived',r));
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch(e) {}
+    showLoader(false);
+    renderAll();
+    renderSetoff();
+    renderProfit();
+  } catch(e) {
+    showLoader(false);
+    showToast('Failed to load from Supabase: '+e.message, 'red');
+    console.error(e);
+  }
+}
+
+// ── saveRecord: persist one record to Supabase ─────────────────────
+const TABLE_MAP = {
+  dev:'dev_support', devDone:'dev_support',
+  func:'func_support', funcDone:'func_support',
+  proj:'projects', projDone:'projects',
+  setoffActive:'setoff_active', setoffArchived:'setoff_archived',
+};
+async function saveRecord(listKey, record) {
+  const table = TABLE_MAP[listKey]; if(!table) return;
+  try { await sbUpsert(table, buildRow(listKey, record)); }
+  catch(e) { console.error('saveRecord:', e); showToast('Save error — check connection','red'); }
+}
+async function deleteRecord_sb(listKey, id) {
+  const table = TABLE_MAP[listKey]; if(!table) return;
+  try { await sbDelete(table, id); }
+  catch(e) { console.error('deleteRecord_sb:', e); }
+}
+
+// saveStore: write to localStorage immediately (cache), then sync to Supabase
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch(e) {}
+}
+
+// Load localStorage as instant cache while Supabase loads
+function loadLocalCache() {
+  try { const c=localStorage.getItem(STORE_KEY); if(c) return JSON.parse(c); } catch(e) {}
+  return initStore();
+}
+
+let DB = loadLocalCache();
+let _id = Date.now();
+function newId() { return 'r'+(++_id); }
+
+// ── Loading overlay ────────────────────────────────────────────────
+function showLoader(show) {
+  let el = document.getElementById('sb-loader');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sb-loader';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif';
+    el.innerHTML = '<div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite"></div><div style="font-size:14px;color:#475569;font-weight:500">Loading from Supabase…</div>';
+    document.body.appendChild(el);
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
 
 // ══════════════════════════════════════════════════════════════════════
 // CALCULATIONS
@@ -1139,7 +1242,11 @@ function saveDetail(tab){
     showToast('Moved to '+doneTabLabels[sk]+' ✓','green');
     switchTab(doneTabs[sk]);
   } else {
-    saveStore(); renderAll();
+    saveStore();
+    // Push to Supabase
+    const _lk = isFinished && activeKeys[sk]===listKey ? doneKeys[sk] : listKey;
+    saveRecord(_lk, rec);
+    renderAll();
     closeDetail(tab);
     showToast('Saved ✓','green');
   }
@@ -1191,7 +1298,9 @@ document.getElementById('modalSave').addEventListener('click',()=>{
   const listKey={dev:'dev',func:'func',proj:'proj'}[sk];
   if(!listKey) return;
   DB[listKey].unshift(rec);
-  saveStore(); renderAll();
+  saveStore();
+  saveRecord(listKey, rec);
+  renderAll();
   closeModal();
   showToast('New '+(sk==='proj'?'project':'ticket')+' added','green');
 });
@@ -1357,6 +1466,7 @@ function deleteRecord(tab) {
     window._detailId = null;
     window._detailListKey = null;
     saveStore();
+    deleteRecord_sb(listKey, id);
     bar.remove();
     closeDetail(tab);
     renderAll();
@@ -1479,6 +1589,7 @@ function openNewSetoff() {
   const newSo={id:'so'+Date.now(),code:nextSoCode(),fromProject:'',funcRate:'',devRate:'',from:[],to:[]};
   DB.setoffActive.unshift(newSo);
   saveStore();
+  saveRecord('setoffActive', newSo);
   openSetoff(newSo.id);
 }
 
@@ -1502,6 +1613,7 @@ function updateCurrentSo(key,value) {
   const so=getCurrentSo(); if(!so) return;
   so[key]=value;
   saveStore();
+  saveRecord('setoffActive', so);
   updateSetoffKpis();
 }
 
@@ -1615,40 +1727,40 @@ function updateSetoffKpis() {
 function updateSoFrom(id,key,value){
   const so=getCurrentSo(); if(!so) return;
   const rec=(so.from||[]).find(r=>r.id===id);
-  if(rec){rec[key]=value;saveStore();renderSetoffFrom();}
+  if(rec){rec[key]=value;saveStore();saveRecord('setoffActive',so);renderSetoffFrom();}
 }
 function updateSoTo(id,key,value){
   const so=getCurrentSo(); if(!so) return;
   const rec=(so.to||[]).find(r=>r.id===id);
-  if(rec){rec[key]=value;saveStore();renderSetoffTo();}
+  if(rec){rec[key]=value;saveStore();saveRecord('setoffActive',so);renderSetoffTo();}
 }
 function addSetoffRow(side){
   const so=getCurrentSo(); if(!so){showToast('Open a set off first','red');return;}
   if(side==='from'){
     if(!so.from) so.from=[];
     so.from.push({id:'sf'+Date.now(),fromProj:'',fromFunc:'',fromFuncRate:'',fromDev:'',fromDevRate:''});
-    saveStore(); renderSetoffFrom();
+    saveStore(); saveRecord('setoffActive',so); renderSetoffFrom();
   } else {
     if(!so.to) so.to=[];
     so.to.push({id:'st'+Date.now(),toProj:'',toFunc:'',toFuncRate:'',toDev:'',toDevRate:''});
-    saveStore(); renderSetoffTo();
+    saveStore(); saveRecord('setoffActive',so); renderSetoffTo();
   }
   showToast('Row added','green');
 }
 function deleteSoFrom(id){
   const so=getCurrentSo(); if(!so) return;
   so.from=(so.from||[]).filter(r=>r.id!==id);
-  saveStore(); renderSetoffFrom();
+  saveStore(); saveRecord('setoffActive',so); renderSetoffFrom();
 }
 function deleteSoTo(id){
   const so=getCurrentSo(); if(!so) return;
   so.to=(so.to||[]).filter(r=>r.id!==id);
-  saveStore(); renderSetoffTo();
+  saveStore(); saveRecord('setoffActive',so); renderSetoffTo();
 }
 function deleteActiveSetoff(id){
   if(!confirm('Delete this set off record?')) return;
   DB.setoffActive=(DB.setoffActive||[]).filter(s=>s.id!==id);
-  saveStore(); renderSoActiveList();
+  saveStore(); deleteRecord_sb('setoffActive',id); renderSoActiveList();
   showToast('Deleted','red');
 }
 
@@ -1661,7 +1773,10 @@ function archiveSetoff(){
   DB.setoffArchived.unshift(archived);
   DB.setoffActive=(DB.setoffActive||[]).filter(s=>s.id!==so.id);
   currentSoId=null;
-  saveStore(); renderSoActiveList(); renderSoArchivedList();
+  saveStore();
+  deleteRecord_sb('setoffActive', so.id);
+  saveRecord('setoffArchived', archived);
+  renderSoActiveList(); renderSoArchivedList();
   switchTab('setoff');
   showToast('Archived successfully','green');
 }
@@ -1673,18 +1788,28 @@ function restoreSetoff(archId){
   delete restored.archivedOn;
   DB.setoffActive.unshift(restored);
   DB.setoffArchived=(DB.setoffArchived||[]).filter(a=>a.id!==archId);
-  saveStore(); renderSoActiveList(); renderSoArchivedList();
+  saveStore();
+  deleteRecord_sb('setoffArchived', archId);
+  saveRecord('setoffActive', restored);
+  renderSoActiveList(); renderSoArchivedList();
   showToast('Restored to Active','green');
 }
 function deleteArchive(archId){
   DB.setoffArchived=(DB.setoffArchived||[]).filter(a=>a.id!==archId);
-  saveStore(); renderSoArchivedList();
+  saveStore(); deleteRecord_sb('setoffArchived', archId); renderSoArchivedList();
   showToast('Archive deleted','red');
 }
 
 function renderSetoff(){
   renderSoActiveList(); renderSoArchivedList();
 }
+
+// ── Startup: show cached data instantly, then load fresh from Supabase ────────
+renderAll();
+renderSidebar('dashboard');
+renderSetoff();
+// Load fresh data from Supabase (updates UI when done)
+loadFromSupabase();
 // Sidebar removed
 </script>
 </body>
