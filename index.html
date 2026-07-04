@@ -38,6 +38,8 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn-primary:hover{background:#3d7de8}
 .btn-sm{padding:5px 12px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn:disabled:hover{background:var(--s2)}
 /* ── body ── */
 .body{display:flex;flex:1;overflow:hidden;position:relative}
 .sidebar{position:fixed;top:52px;left:0;bottom:0;width:0;background:var(--surface);border-right:1px solid var(--border);padding:10px 0;overflow-y:auto;overflow-x:hidden;z-index:50;transition:width .22s ease;box-shadow:2px 0 12px rgba(0,0,0,.08)}
@@ -181,10 +183,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="dev">Dev Support</div>
     <div class="nav-tab" data-tab="func">Func Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
-    <div class="nav-tab done" data-tab="cdone">Completed Dev</div>
-    <div class="nav-tab done" data-tab="cfdone">Completed Func</div>
-    <div class="nav-tab done" data-tab="cpdone">Completed Projects</div>
+    <div class="nav-tab done" data-tab="cdone">Invoiced Dev</div>
+    <div class="nav-tab done" data-tab="cfdone">Invoiced Func</div>
+    <div class="nav-tab done" data-tab="cpdone">Invoiced Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
+    <div class="nav-tab" data-tab="ncf">NCF</div>
     <div class="nav-tab" data-tab="setoff">Set Off</div>
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
@@ -226,7 +229,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-dev">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Dev</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Dev</div>
       <div class="stats" id="dev-stats"></div>
       <div class="toolbar">
         <input class="search-box" placeholder="Search dev support…" oninput="searchTable('dev-body',this.value)">
@@ -253,7 +256,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Func</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Func</div>
       <div class="stats" id="func-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search func support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
@@ -277,7 +280,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-proj">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Projects</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Projects</div>
       <div class="stats" id="proj-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search projects…" oninput="searchTable('proj-body',this.value)"></div>
       <div class="table-wrap">
@@ -418,6 +421,55 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   </div>
 </div>
 
+<!-- ════ NCF (Net Cash Flow) ════ -->
+<div class="tab-panel" id="tab-ncf">
+  <div class="list-pane" style="overflow-y:auto;gap:16px">
+    <!-- Year filter -->
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">NCF — Net Cash Flow</div>
+      <div style="font-size:11px;color:var(--t3)">Cash basis: revenue counted only when Client Payment = Customer Paid · dev cost counted only when Dev Pay Status = Developer Paid</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <div style="font-size:12px;color:var(--t2)">Filter by year:</div>
+        <select id="ncf-year-filter" onchange="renderNCF()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:13px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;cursor:pointer">
+        </select>
+        <button class="btn btn-sm" onclick="document.getElementById('ncf-year-filter').value='all';renderNCF()">All Years</button>
+      </div>
+    </div>
+    <!-- KPI row -->
+    <div class="dash-grid" id="ncf-kpis"></div>
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;width:100%">
+      <div class="dash-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="dash-section-title" id="chart-title-ncf-total">Monthly Net Cash Flow</div>
+        </div>
+        <div class="chart-bar-wrap" id="ncf-bar-total" style="height:130px"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-section-title" style="margin-bottom:12px">Func Support Cash Profit</div>
+        <div class="chart-bar-wrap" id="ncf-bar-func" style="height:130px"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-section-title" style="margin-bottom:12px">Dev + Projects Cash Profit</div>
+        <div class="chart-bar-wrap" id="ncf-bar-devproj" style="height:130px"></div>
+      </div>
+    </div>
+    <!-- Monthly breakdown table -->
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
+        <div class="th">Year</div>
+        <div class="th">Month</div>
+        <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
+        <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
+        <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
+        <div class="th">Total Net Cash Flow</div>
+      </div>
+      <div id="ncf-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ════ SET OFF ════ -->
 <!-- ════ SETOFF LIST (Active) ════ -->
 <div class="tab-panel" id="tab-setoff">
@@ -547,52 +599,50 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
 <!-- ════ SETTINGS ════ -->
 <div class="tab-panel" id="tab-settings">
-  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1100px">
+  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-      <!-- Current Rates (left) -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
-        <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-          Current Rates
-          <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:20px">
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Invoice Rate Per Hour</div>
-            <div style="display:flex;align-items:center;gap:0">
-              <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-              <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
-                oninput="saveSettings()"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-            </div>
-            <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
+    <!-- Current Rates (full width) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Current Rates
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Invoice Rate Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
-            <div style="display:flex;align-items:center;gap:0">
-              <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-              <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
-                oninput="saveSettings()"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-            </div>
-            <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
-          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
         </div>
-        <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <span style="color:#16a34a;font-size:16px">✓</span>
-          Changes apply to new records only — existing data keeps its original calculated values.
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
         </div>
       </div>
+      <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
+        <span style="color:#16a34a;font-size:16px">✓</span>
+        Changes apply to new records only — existing data keeps its original calculated values.
+      </div>
+    </div>
 
-      <!-- Statuses (right) -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
-        <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-          Statuses
-          <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets</span>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:24px" id="statusLists"></div>
+    <!-- Statuses (full width, one column per list) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Statuses
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets — use ▲ ▼ to reorder</span>
       </div>
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start" id="statusLists"></div>
     </div>
   </div>
 </div>
@@ -617,7 +667,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════════════
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Finished'];
+let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Invoiced'];
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -769,6 +819,7 @@ async function loadFromSupabase() {
     renderAll();
     renderSetoff();
     renderProfit();
+    renderNCF();
   } catch(e) {
     showLoader(false);
     showToast('Failed to load from Supabase: '+e.message, 'red');
@@ -815,8 +866,10 @@ function newId() { return 'r'+(++_id); }
 // (SCHEMAS captures these arrays by reference, so in-place mutation is required —
 // never reassign STATUSES/CLIENT_PAY/DEV_PAY, always push/splice).
 if (!DB.settings) DB.settings = {};
-if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length) STATUSES = DB.settings.statuses;
-else DB.settings.statuses = STATUSES;
+if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length) {
+  STATUSES = DB.settings.statuses.map(s => s === 'Finished' ? 'Invoiced' : s);
+  DB.settings.statuses = STATUSES;
+} else DB.settings.statuses = STATUSES;
 if (Array.isArray(DB.settings.clientPayStatuses) && DB.settings.clientPayStatuses.length) CLIENT_PAY = DB.settings.clientPayStatuses;
 else DB.settings.clientPayStatuses = CLIENT_PAY;
 if (Array.isArray(DB.settings.devPayStatuses) && DB.settings.devPayStatuses.length) DEV_PAY = DB.settings.devPayStatuses;
@@ -907,21 +960,25 @@ function renderStatusLists(){
       }
       return `
         <div class="status-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)">
-          <span style="flex:1;font-size:13px;color:var(--text);text-align:right">${val}</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+            <button type="button" class="btn btn-sm" style="padding:1px 7px;line-height:1.3;font-size:10px" ${idx===0?'disabled':''} onclick="moveStatusItem('${def.key}',${idx},-1)" title="Move up">▲</button>
+            <button type="button" class="btn btn-sm" style="padding:1px 7px;line-height:1.3;font-size:10px" ${idx===items.length-1?'disabled':''} onclick="moveStatusItem('${def.key}',${idx},1)" title="Move down">▼</button>
+          </div>
+          <span style="flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${val}</span>
           <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:11px" onclick="startEditStatusItem('${def.key}',${idx})" title="Edit">✏</button>
           <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" onclick="deleteStatusItem('${def.key}',${idx})" title="Delete">🗑</button>
         </div>`;
     }).join('');
     return `
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
         <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">${def.label}</div>
         <div style="font-size:11px;color:var(--t3);margin-top:-4px">${def.hint}</div>
-        <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;${items.length?'':'display:none'}">${rows}</div>
+        <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;max-height:340px;overflow-y:auto;${items.length?'':'display:none'}">${rows}</div>
         ${items.length?'':'<div style="font-size:12px;color:var(--t3);font-style:italic">No options yet — add one below</div>'}
         <div style="display:flex;gap:8px;margin-top:2px">
           <input id="statusAdd-${def.key}" type="text" placeholder="Add new option…"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addStatusItem('${def.key}')}"
-            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;outline:none"/>
+            style="flex:1;min-width:0;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;outline:none"/>
           <button class="btn btn-sm" onclick="addStatusItem('${def.key}')">+ Add</button>
         </div>
       </div>`;
@@ -1000,6 +1057,20 @@ function confirmDeleteStatusItem(listKey, idx){
   showToast('Option deleted ✓', 'green');
 }
 
+// Reorder — mutates the array IN PLACE (never reassigns STATUSES/CLIENT_PAY/DEV_PAY)
+// so SCHEMAS[...].options, which captured these arrays by reference, stays in sync.
+function moveStatusItem(listKey, idx, dir){
+  const def = STATUS_LIST_DEFS.find(d=>d.key===listKey); if(!def) return;
+  const arr = def.arr();
+  const j = idx + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[idx], arr[j]] = [arr[j], arr[idx]];
+  DB.settings[listKey] = arr;
+  saveStore();
+  renderStatusLists();
+  showToast('Order updated ✓', 'green');
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // CALCULATIONS
 // Rates are ALWAYS read from the record itself (frozen at creation/first-load).
@@ -1065,6 +1136,25 @@ function calcProj(d){
 function fmt(n){ return n===0?'0':n.toLocaleString(); }
 function fmtOr(n,has){ return has?fmt(n):'—'; }
 
+// ── Cash-basis calculations for NCF (Net Cash Flow) ────────────────
+// Revenue is only recognized once the client has actually paid.
+// Developer cost is only recognized once the developer has actually been paid.
+function calcDevCash(d){
+  const c=calcDev(d);
+  const cashIn  = d.clipay==='Customer Paid' ? c.invFull : 0;
+  const cashOut = d.devpay==='Developer Paid' ? c.devPmt : 0;
+  return {cashIn,cashOut,profit:cashIn-cashOut};
+}
+function calcFuncCash(d){
+  return d.clipay==='Customer Paid' ? calcFunc(d) : 0;
+}
+function calcProjCash(d){
+  const c=calcProj(d);
+  const cashIn  = d.clipay==='Customer Paid' ? c.invFull : 0;
+  const cashOut = d.devpay==='Developer Paid' ? c.devPmt : 0;
+  return {cashIn,cashOut,profit:cashIn-cashOut};
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════════════════════════════
@@ -1094,7 +1184,7 @@ function rowDev(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished','Client Testing'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced','Client Testing'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${d.inv||'—'}</div>
@@ -1113,7 +1203,7 @@ function rowFunc(d){
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
     ${actionBtns}
@@ -1132,7 +1222,7 @@ function rowProj(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
@@ -1155,6 +1245,7 @@ function renderAll(){
   document.getElementById('cpdone-body').innerHTML = renderGroupedByMonth(DB.projDone, rowProj);
   // Profit
   renderProfit();
+  renderNCF();
   // Attach clicks
   attachAllClicks();
   // Dashboard
@@ -1427,6 +1518,146 @@ function renderProfit(){
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// NCF (NET CASH FLOW) — same layout as Profit, but cash-basis figures:
+// revenue only counts once Client Payment = Customer Paid, and dev cost
+// only counts once Dev Pay Status = Developer Paid.
+// ══════════════════════════════════════════════════════════════════════
+function renderNCF(){
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+
+  // ── Populate year filter dropdown dynamically ──────────────────────
+  const filterEl = document.getElementById('ncf-year-filter');
+  if (filterEl) {
+    const dataYears = new Set([
+      ...[...DB.devDone,...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+    ]);
+    YEARS.forEach(y=>dataYears.add(y));
+    const sortedYears = [...dataYears].sort();
+    const currentVal = filterEl.value || CURRENT_YEAR;
+    filterEl.innerHTML = `<option value="all">All Years</option>` +
+      sortedYears.map(y=>`<option value="${y}"${y===currentVal?' selected':''}>${y}</option>`).join('');
+    if(!filterEl.value || filterEl.value==='') filterEl.value = CURRENT_YEAR;
+  }
+
+  const selectedYear = filterEl?.value || CURRENT_YEAR;
+
+  // ── Build year+month cash data (all years for table) ────────────────
+  const ymData = {};
+  const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
+  const ensure = d => {
+    const k=ymKey(d);
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
+  };
+
+  DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
+  DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDevCash(d).profit; });
+  DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
+
+  // ── KPIs — based on selected year (or all) ─────────────────────────
+  const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
+  const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFuncCash(d), 0);
+  const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDevCash(d).profit, 0);
+  const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
+  const grandTotal = totalFunc + totalDev + totalProj;
+  const gtColor = grandTotal<0 ? 'red' : 'green';
+
+  const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
+  document.getElementById('ncf-kpis').innerHTML=`
+    <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
+    <div class="dash-card"><div class="dash-label">Func Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
+    <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
+    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
+
+  // ── Charts — show monthly breakdown for selected year only ─────────
+  const monthlyForCharts = {};
+  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,dev:0,proj:0});
+
+  Object.values(ymData).forEach(r=>{
+    if((selectedYear==='all' || r.year===selectedYear) && monthlyForCharts[r.month]) {
+      monthlyForCharts[r.month].func += r.func;
+      monthlyForCharts[r.month].dev  += r.dev;
+      monthlyForCharts[r.month].proj += r.proj;
+    }
+  });
+
+  const activeMonths = MONTHS.filter(m=>{
+    const r=monthlyForCharts[m]; return r.func||r.dev||r.proj;
+  });
+  const chartMonths = activeMonths.length
+    ? activeMonths.map(m=>m.substring(0,3).toUpperCase())
+    : MONTH_LABELS.slice(0,6);
+
+  const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
+  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const funcVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).func||0; });
+  const devprojVals  = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+
+  const ct = document.getElementById('chart-title-ncf-total');
+  if(ct) ct.textContent = `Monthly Net Cash Flow — ${yearLabel}`;
+
+  // Cash flow bars can go negative — colour each bar green (positive) or red (negative)
+  function renderCashBarChart(elId, vals, posColor) {
+    const el=document.getElementById(elId); if(!el) return;
+    const maxAbs=Math.max(...vals.map(v=>Math.abs(v)),1);
+    const BAR_MAX=80; // px
+    el.innerHTML = chartMonths.map((m,i)=>{
+      const v = vals[i];
+      const color = v<0 ? '#dc2626' : posColor;
+      const px = v!==0 ? Math.max(4, Math.round(Math.abs(v)/maxAbs*BAR_MAX)) : 0;
+      const label = v!==0 ? (Math.abs(v)>=1000?(v<0?'-':'')+Math.round(Math.abs(v)/1000)+'k':v.toLocaleString()) : '';
+      return `<div class="chart-bar-col">
+        <div style="font-size:9px;font-weight:700;color:${color};min-height:13px;text-align:center">${label}</div>
+        <div style="width:100%;height:${px}px;min-height:${px>0?'4px':'0'};background:${color};border-radius:4px 4px 0 0;transition:height .4s"></div>
+        <div class="chart-bar-label" style="margin-top:3px;font-size:9px">${m}</div>
+      </div>`;
+    }).join('');
+  }
+
+  renderCashBarChart('ncf-bar-total',   totalVals,   '#16a34a');
+  renderCashBarChart('ncf-bar-func',    funcVals,    '#2563eb');
+  renderCashBarChart('ncf-bar-devproj', devprojVals, '#d97706');
+
+  // ── Table — show all years or filtered year ────────────────────────
+  const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
+  const sortedKeys = Object.keys(ymData)
+    .filter(k => selectedYear==='all' || k.startsWith(selectedYear+'__'))
+    .sort((a,b)=>{
+      const [ay,am]=a.split('__'), [by,bm]=b.split('__');
+      return ay!==by ? ay.localeCompare(by) : (monthOrder[am]||0)-(monthOrder[bm]||0);
+    });
+
+  let prevYear='';
+  const rows = sortedKeys.map(k=>{
+    const r=ymData[k];
+    const total=r.func+r.dev+r.proj;
+    if(!total) return '';
+    const showYear = r.year!==prevYear;
+    prevYear=r.year;
+    const cls = v => v>0?'green':v<0?'red':'muted';
+    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear&&selectedYear==='all'?';border-top:2px solid var(--b2)':''}">
+      <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
+      <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
+      <div class="td ${cls(r.func)} mono">${r.func?fmt(r.func):'—'}</div>
+      <div class="td ${cls(r.dev)} mono">${r.dev?fmt(r.dev):'—'}</div>
+      <div class="td ${cls(r.proj)} mono">${r.proj?fmt(r.proj):'—'}</div>
+      <div class="td ${cls(total)} fw mono">${total?fmt(total):'—'}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  const totalsRow=`<div class="table-row" style="grid-template-columns:${COLS};background:#eef2f7;cursor:default;border-top:2px solid var(--b2)">
+    <div class="td fw" style="color:var(--t2)">TOTAL</div>
+    <div class="td"></div>
+    <div class="td ${totalFunc<0?'red':'green'} fw mono">${fmt(totalFunc)}</div>
+    <div class="td ${totalDev<0?'red':'green'} fw mono">${fmt(totalDev)}</div>
+    <div class="td ${totalProj<0?'red':'green'} fw mono">${fmt(totalProj)}</div>
+    <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
+  </div>`;
+
+  document.getElementById('ncf-body').innerHTML =
+    (rows||'<div style="padding:20px;color:var(--t3);text-align:center">No data for selected year</div>') + totalsRow;
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // DETAIL PANEL (master-detail edit)
 // ══════════════════════════════════════════════════════════════════════
 let currentDetail={tab:null,id:null,done:false};
@@ -1611,11 +1842,11 @@ function saveDetail(tab){
   if(!rec.funcRate) rec.funcRate=String(getFuncRate());
   if(!rec.devRate&&(sk==='dev'||sk==='proj')) rec.devRate=String(getDevRate());
 
-  const isFinished=rec.status==='Finished';
+  const isFinished=rec.status==='Invoiced';
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
   const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
   const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
-  const doneTabLabels={dev:'Completed Dev',func:'Completed Func',proj:'Completed Projects'};
+  const doneTabLabels={dev:'Invoiced Dev',func:'Invoiced Func',proj:'Invoiced Projects'};
   const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
@@ -1711,7 +1942,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',setoff:'','setoff-detail':'','setoff-archived':'',settings:''};
+const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',settings:''};
 const SIDEBAR_DEFS={
   dashboard:[],
   dev:[],func:[],proj:[],cdone:[],cfdone:[],cpdone:[],profit:[],setoff:[],
@@ -1756,7 +1987,7 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','setoff','setoff-detail','setoff-archived','dashboard','settings'].includes(t))?'none':'';
+  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','dashboard','settings'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Load settings UI
