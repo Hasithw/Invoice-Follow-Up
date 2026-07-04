@@ -88,7 +88,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .overdue-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--rdim);border:1px solid rgba(242,92,92,.2);border-radius:var(--r);cursor:pointer}
 .overdue-row:hover{background:rgba(242,92,92,.2)}
 /* ── table ── */
-.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;width:100%;flex-shrink:0}
+.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;width:100%}
 .table-header{display:grid;border-bottom:2px solid var(--b2);background:#eef2f7;padding:0}
 .th{font-size:11px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-right:1px solid var(--border);white-space:nowrap}
 .th:last-child{border-right:none}
@@ -97,10 +97,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .table-row:hover{background:#f0f6ff}
 .table-row.selected{background:#e8f0fe}
 .table-row.overdue-flag{background:#fff5f5}
-.month-group-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#f4f7fb;border-bottom:1px solid var(--border);border-top:1px solid var(--b2);font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em}
-.month-group-hdr:first-child{border-top:none}
-.month-group-count{font-size:10px;font-weight:600;color:var(--t3);text-transform:none;letter-spacing:0}
-.status-row:last-child{border-bottom:none!important}
 .td{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:10px 12px;border-right:1px solid var(--border);display:flex;align-items:center}
 .td:last-child{border-right:none}
 .td.muted{color:var(--t2)}
@@ -181,10 +177,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="dev">Dev Support</div>
     <div class="nav-tab" data-tab="func">Func Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
-    <div class="nav-tab done" data-tab="cdone">Completed Dev</div>
-    <div class="nav-tab done" data-tab="cfdone">Completed Func</div>
-    <div class="nav-tab done" data-tab="cpdone">Completed Projects</div>
+    <div class="nav-tab done" data-tab="cdone">Invoiced Dev</div>
+    <div class="nav-tab done" data-tab="cfdone">Invoiced Func</div>
+    <div class="nav-tab done" data-tab="cpdone">Invoiced Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
+    <div class="nav-tab" data-tab="ncf">NCF</div>
     <div class="nav-tab" data-tab="setoff">Set Off</div>
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
@@ -226,19 +223,29 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-dev">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Dev</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Dev</div>
       <div class="stats" id="dev-stats"></div>
       <div class="toolbar">
         <input class="search-box" placeholder="Search dev support…" oninput="searchTable('dev-body',this.value)">
       </div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
-          <div class="th">Description</div><div class="th">Requester</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
           <div class="th">Invoice Number</div>
         </div>
         <div id="dev-body"></div>
+      </div>
+      <div class="done-section">Invoiced Dev Support</div>
+      <div class="table-wrap">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
+          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
+          <div class="th">Invoice Number</div><div class="th">Actions</div>
+        </div>
+        <div id="dev-done-body"></div>
       </div>
     </div>
     <div class="detail-pane" id="dev-detail">
@@ -253,16 +260,25 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Func</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Func</div>
       <div class="stats" id="func-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search func support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px">
-          <div class="th">Description</div><div class="th">Requester</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
           <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div>
         </div>
         <div id="func-body"></div>
+      </div>
+      <div class="done-section">Invoiced Func Support</div>
+      <div class="table-wrap">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
+          <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
+          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div><div class="th">Actions</div>
+        </div>
+        <div id="func-done-body"></div>
       </div>
     </div>
     <div class="detail-pane" id="func-detail">
@@ -277,12 +293,12 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-proj">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Finished</strong> to move to Completed Projects</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Projects</div>
       <div class="stats" id="proj-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search projects…" oninput="searchTable('proj-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
-          <div class="th">Description</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div>
           <div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div>
@@ -290,6 +306,18 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           <div class="th">Invoice Number</div>
         </div>
         <div id="proj-body"></div>
+      </div>
+      <div class="done-section">Invoiced Projects</div>
+      <div class="table-wrap">
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div>
+          <div class="th">Requester</div>
+          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Completed Date</div>
+          <div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
+          <div class="th">Invoice Number</div><div class="th">Actions</div>
+        </div>
+        <div id="proj-done-body"></div>
       </div>
     </div>
     <div class="detail-pane" id="proj-detail">
@@ -306,8 +334,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed dev…" oninput="searchTable('cdone-body',this.value)"></div>
       <div class="table-wrap" style="overflow-x:auto">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
-          <div class="th">Description</div><div class="th">Requester</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
@@ -329,8 +357,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed func…" oninput="searchTable('cfdone-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px 88px">
-          <div class="th">Description</div><div class="th">Requester</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
           <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
@@ -351,8 +379,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed projects…" oninput="searchTable('cpdone-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
-          <div class="th">Description</div>
+        <div class="table-header" style="grid-template-columns:56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+          <div class="th"></div><div class="th">No</div><div class="th">Description</div>
           <div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div>
@@ -414,6 +442,55 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="th">Total Profit</div>
       </div>
       <div id="profit-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ NCF (Net Cash Flow) ════ -->
+<div class="tab-panel" id="tab-ncf">
+  <div class="list-pane" style="overflow-y:auto;gap:16px">
+    <!-- Year filter -->
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">NCF — Net Cash Flow</div>
+      <div style="font-size:11px;color:var(--t3)">Cash basis: revenue counted only when Client Payment = Customer Paid · dev cost counted only when Dev Pay Status = Developer Paid</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <div style="font-size:12px;color:var(--t2)">Filter by year:</div>
+        <select id="ncf-year-filter" onchange="renderNCF()"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:13px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;cursor:pointer">
+        </select>
+        <button class="btn btn-sm" onclick="document.getElementById('ncf-year-filter').value='all';renderNCF()">All Years</button>
+      </div>
+    </div>
+    <!-- KPI row -->
+    <div class="dash-grid" id="ncf-kpis"></div>
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;width:100%">
+      <div class="dash-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="dash-section-title" id="chart-title-ncf-total">Monthly Net Cash Flow</div>
+        </div>
+        <div class="chart-bar-wrap" id="ncf-bar-total" style="height:130px"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-section-title" style="margin-bottom:12px">Func Support Cash Profit</div>
+        <div class="chart-bar-wrap" id="ncf-bar-func" style="height:130px"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-section-title" style="margin-bottom:12px">Dev + Projects Cash Profit</div>
+        <div class="chart-bar-wrap" id="ncf-bar-devproj" style="height:130px"></div>
+      </div>
+    </div>
+    <!-- Monthly breakdown table -->
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
+        <div class="th">Year</div>
+        <div class="th">Month</div>
+        <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
+        <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
+        <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
+        <div class="th">Total Net Cash Flow</div>
+      </div>
+      <div id="ncf-body"></div>
     </div>
   </div>
 </div>
@@ -547,51 +624,79 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
 <!-- ════ SETTINGS ════ -->
 <div class="tab-panel" id="tab-settings">
-  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1100px">
+  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:640px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-      <!-- Current Rates (left) -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
-        <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-          Current Rates
-          <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:20px">
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Invoice Rate Per Hour</div>
-            <div style="display:flex;align-items:center;gap:0">
-              <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-              <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
-                oninput="saveSettings()"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-            </div>
-            <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
+    <!-- Current Rates -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Current Rates
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Functional Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
-            <div style="display:flex;align-items:center;gap:0">
-              <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-              <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
-                oninput="saveSettings()"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-            </div>
-            <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
-          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
         </div>
-        <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <span style="color:#16a34a;font-size:16px">✓</span>
-          Changes apply to new records only — existing data keeps its original calculated values.
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
         </div>
       </div>
+      <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
+        <span style="color:#16a34a;font-size:16px">✓</span>
+        Changes apply to new records only — existing data keeps its original calculated values.
+      </div>
+    </div>
 
-      <!-- Statuses (right) -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
-        <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-          Statuses
-          <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets</span>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:24px" id="statusLists"></div>
+    <!-- Project Status Master Data -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Project Status Master Data
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Reorder using the arrows — order shown here is the order used in every dropdown</span>
+      </div>
+      <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px" id="status-manager-list"></div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;background:#fafbfd">
+        <input id="status-manager-new" class="minput" placeholder="Add a new status…" style="flex:1"/>
+        <button class="btn btn-primary btn-sm" onclick="addStatusItem('status')">+ Add Status</button>
+      </div>
+    </div>
+
+    <!-- Client Payment Status Master Data -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Client Payment Status Master Data
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Reorder using the arrows — order shown here is the order used in every dropdown</span>
+      </div>
+      <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px" id="clipay-manager-list"></div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;background:#fafbfd">
+        <input id="clipay-manager-new" class="minput" placeholder="Add a new client payment status…" style="flex:1"/>
+        <button class="btn btn-primary btn-sm" onclick="addStatusItem('clipay')">+ Add Status</button>
+      </div>
+    </div>
+
+    <!-- Dev Pay Status Master Data -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Dev Pay Status Master Data
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Reorder using the arrows — order shown here is the order used in every dropdown</span>
+      </div>
+      <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px" id="devpay-manager-list"></div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;background:#fafbfd">
+        <input id="devpay-manager-new" class="minput" placeholder="Add a new dev pay status…" style="flex:1"/>
+        <button class="btn btn-primary btn-sm" onclick="addStatusItem('devpay')">+ Add Status</button>
       </div>
     </div>
   </div>
@@ -617,35 +722,13 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════════════
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Finished'];
+let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Invoiced'];
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const DEV_COLS  ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
-const FUNC_COLS ='1fr 120px 140px 140px 140px 150px 155px 150px';
-const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
-
-// Group/sort rows by month (Jan→Dec). Records with no month go last; stable within a month.
-function monthIdx(m){ const i=MONTHS.indexOf(m); return i===-1?99:i; }
-function sortByMonth(arr){ return [...arr].sort((a,b)=>monthIdx(a.month)-monthIdx(b.month)); }
-
-// Renders rows grouped into sub-sections with a month heading above each group.
-function renderGroupedByMonth(arr, rowFn){
-  if (!arr.length) return '';
-  const sorted = sortByMonth(arr);
-  let html = '';
-  let currentMonth = null;
-  sorted.forEach(d=>{
-    const m = d.month || 'No Month';
-    if (m !== currentMonth) {
-      currentMonth = m;
-      const count = sorted.filter(x=>(x.month||'No Month')===m).length;
-      html += `<div class="month-group-hdr">${m}<span class="month-group-count">${count} ${count===1?'item':'items'}</span></div>`;
-    }
-    html += rowFn(d);
-  });
-  return html;
-}
+const DEV_COLS  ='56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
+const FUNC_COLS ='56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px';
+const PROJ_COLS ='56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 
 // ══════════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG
@@ -682,8 +765,7 @@ const STORE_KEY = 'techstar2026_v3';
 function initStore() {
   return { dev:[], devDone:[], func:[], funcDone:[], proj:[], projDone:[],
            setoff:[], setoffActive:[], setoffArchived:[],
-           settings:{ funcRate:'8000.00', devRate:'5000.00',
-                      statuses:[...STATUSES], clientPayStatuses:[...CLIENT_PAY], devPayStatuses:[...DEV_PAY] } };
+           settings:{ funcRate:'8000.00', devRate:'5000.00' } };
 }
 
 // ── Row builders (in-memory → Supabase flat row) ───────────────────
@@ -769,6 +851,7 @@ async function loadFromSupabase() {
     renderAll();
     renderSetoff();
     renderProfit();
+    renderNCF();
   } catch(e) {
     showLoader(false);
     showToast('Failed to load from Supabase: '+e.message, 'red');
@@ -807,20 +890,7 @@ function loadLocalCache() {
 
 let DB = loadLocalCache();
 let _id = Date.now();
-const CURRENT_YEAR = String(new Date().getFullYear());
 function newId() { return 'r'+(++_id); }
-
-// Wire the editable status lists to DB.settings so mutating them (add/remove)
-// automatically stays in sync with saved settings AND with SCHEMAS.options below
-// (SCHEMAS captures these arrays by reference, so in-place mutation is required —
-// never reassign STATUSES/CLIENT_PAY/DEV_PAY, always push/splice).
-if (!DB.settings) DB.settings = {};
-if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length) STATUSES = DB.settings.statuses;
-else DB.settings.statuses = STATUSES;
-if (Array.isArray(DB.settings.clientPayStatuses) && DB.settings.clientPayStatuses.length) CLIENT_PAY = DB.settings.clientPayStatuses;
-else DB.settings.clientPayStatuses = CLIENT_PAY;
-if (Array.isArray(DB.settings.devPayStatuses) && DB.settings.devPayStatuses.length) DEV_PAY = DB.settings.devPayStatuses;
-else DB.settings.devPayStatuses = DEV_PAY;
 
 // ── Loading overlay ────────────────────────────────────────────────
 function showLoader(show) {
@@ -864,140 +934,90 @@ function loadSettingsUI() {
   const drEl = document.getElementById('settings-dev-rate');
   if (frEl) frEl.value = s.funcRate || '8000.00';
   if (drEl) drEl.value = s.devRate  || '5000.00';
-  renderStatusLists();
+  renderStatusManager('status');
+  renderStatusManager('clipay');
+  renderStatusManager('devpay');
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// EDITABLE STATUS LISTS (Project Status / Client Payment / Dev Pay Status)
+// MASTER DATA LISTS — reorder / add / delete
+// Each list array is mutated IN PLACE (splice) so every select dropdown
+// built from it (SCHEMAS[...].options) picks up the new order automatically.
 // ══════════════════════════════════════════════════════════════════════
-const STATUS_LIST_DEFS = [
-  { key:'statuses',          arr:()=>STATUSES,   label:'Project Status',  hint:'Used for the Project Status field on Dev, Func and Project tickets' },
-  { key:'clientPayStatuses', arr:()=>CLIENT_PAY,  label:'Client Payment',  hint:'Used for the Client Payment field on Dev, Func and Project tickets' },
-  { key:'devPayStatuses',    arr:()=>DEV_PAY,     label:'Dev Pay Status',  hint:'Used for the Dev Pay Status field on Dev and Project tickets' },
-];
-// Tracks which row index (if any) is currently being edited / pending delete-confirm, per list.
-const statusEditState = {};
-const statusDeleteConfirmState = {};
+const MASTER_LISTS = {
+  status: { arr: () => STATUSES, settingsKey: 'statuses', listElId: 'status-manager-list', inputElId: 'status-manager-new', tag: s => s==='Invoiced' ? '<span class="badge b-green" style="font-size:10px">moves to Invoiced tab</span>' : '' },
+  clipay: { arr: () => CLIENT_PAY, settingsKey: 'clientPayStatuses', listElId: 'clipay-manager-list', inputElId: 'clipay-manager-new', tag: s => s==='Customer Paid' ? '<span class="badge b-green" style="font-size:10px">counts as paid</span>' : '' },
+  devpay: { arr: () => DEV_PAY, settingsKey: 'devPayStatuses', listElId: 'devpay-manager-list', inputElId: 'devpay-manager-new', tag: s => s==='Developer Paid' ? '<span class="badge b-green" style="font-size:10px">counts as paid</span>' : '' },
+};
 
-function renderStatusLists(){
-  const wrap = document.getElementById('statusLists');
-  if (!wrap) return;
-  wrap.innerHTML = STATUS_LIST_DEFS.map(def=>{
-    const items = def.arr();
-    const editingIdx = statusEditState[def.key];
-    const confirmIdx = statusDeleteConfirmState[def.key];
-    const rows = items.map((val,idx)=>{
-      if (editingIdx===idx) {
-        return `
-        <div class="status-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)">
-          <input id="statusEdit-${def.key}" type="text" value="${val.replace(/"/g,'&quot;')}"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditStatusItem('${def.key}',${idx})} else if(event.key==='Escape'){cancelEditStatusItem('${def.key}')}"
-            style="flex:1;padding:6px 10px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;outline:none"/>
-          <button class="btn btn-sm btn-primary" onclick="saveEditStatusItem('${def.key}',${idx})">Save</button>
-          <button class="btn btn-sm" onclick="cancelEditStatusItem('${def.key}')">Cancel</button>
-        </div>`;
-      }
-      if (confirmIdx===idx) {
-        return `
-        <div class="status-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:#fff5f5">
-          <span style="flex:1;font-size:13px;color:var(--red)">Delete "${val}"? This cannot be undone.</span>
-          <button class="btn btn-sm" style="background:var(--red);border-color:var(--red);color:#fff" onclick="confirmDeleteStatusItem('${def.key}',${idx})">Yes, delete</button>
-          <button class="btn btn-sm" onclick="cancelDeleteStatusItem('${def.key}')">Cancel</button>
-        </div>`;
-      }
-      return `
-        <div class="status-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)">
-          <span style="flex:1;font-size:13px;color:var(--text);text-align:right">${val}</span>
-          <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:11px" onclick="startEditStatusItem('${def.key}',${idx})" title="Edit">✏</button>
-          <button type="button" class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" onclick="deleteStatusItem('${def.key}',${idx})" title="Delete">🗑</button>
-        </div>`;
-    }).join('');
-    return `
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">${def.label}</div>
-        <div style="font-size:11px;color:var(--t3);margin-top:-4px">${def.hint}</div>
-        <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;${items.length?'':'display:none'}">${rows}</div>
-        ${items.length?'':'<div style="font-size:12px;color:var(--t3);font-style:italic">No options yet — add one below</div>'}
-        <div style="display:flex;gap:8px;margin-top:2px">
-          <input id="statusAdd-${def.key}" type="text" placeholder="Add new option…"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();addStatusItem('${def.key}')}"
-            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;outline:none"/>
-          <button class="btn btn-sm" onclick="addStatusItem('${def.key}')">+ Add</button>
-        </div>
-      </div>`;
-  }).join('');
-  // Focus the edit input if one just opened
-  STATUS_LIST_DEFS.forEach(def=>{
-    if (statusEditState[def.key]!=null) {
-      const el = document.getElementById('statusEdit-'+def.key);
-      if (el) { el.focus(); el.select(); }
-    }
-  });
+function persistMasterList(kind) {
+  const cfg = MASTER_LISTS[kind];
+  if (!DB.settings) DB.settings = {};
+  DB.settings[cfg.settingsKey] = [...cfg.arr()];
+  saveStore();
 }
-
-function addStatusItem(listKey){
-  const def = STATUS_LIST_DEFS.find(d=>d.key===listKey); if(!def) return;
-  const input = document.getElementById('statusAdd-'+listKey);
-  const val = (input?.value||'').trim();
+// Restore saved order (if any) on startup, keeping any brand-new default
+// values that aren't in the saved list, and normalizing old 'Finished'.
+function applyMasterListFromSettings(kind) {
+  const cfg = MASTER_LISTS[kind];
+  const arr = cfg.arr();
+  const saved = getSettings()[cfg.settingsKey];
+  if (!saved || !saved.length) { persistMasterList(kind); return; }
+  const normalized = saved.map(s => (kind==='status' && s === 'Finished') ? 'Invoiced' : s);
+  arr.forEach(s => { if (!normalized.includes(s)) normalized.push(s); }); // keep new defaults
+  arr.length = 0;
+  normalized.forEach(s => arr.push(s));
+}
+function applyStatusOrderFromSettings() {
+  applyMasterListFromSettings('status');
+  applyMasterListFromSettings('clipay');
+  applyMasterListFromSettings('devpay');
+}
+function renderStatusManager(kind) {
+  const cfg = MASTER_LISTS[kind];
+  const arr = cfg.arr();
+  const el = document.getElementById(cfg.listElId); if (!el) return;
+  el.innerHTML = arr.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <button class="btn btn-sm" style="padding:1px 8px;line-height:1" ${i===0?'disabled':''} onclick="moveStatusItem('${kind}',${i},-1)">▲</button>
+        <button class="btn btn-sm" style="padding:1px 8px;line-height:1" ${i===arr.length-1?'disabled':''} onclick="moveStatusItem('${kind}',${i},1)">▼</button>
+      </div>
+      <div style="flex:1;font-size:13px;font-weight:500">${s}</div>
+      ${cfg.tag(s)}
+      <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteStatusItem('${kind}',${i})">🗑</button>
+    </div>`).join('');
+}
+function moveStatusItem(kind, i, dir) {
+  const arr = MASTER_LISTS[kind].arr();
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  persistMasterList(kind);
+  renderStatusManager(kind);
+  showToast('Order updated ✓', 'green');
+}
+function deleteStatusItem(kind, i) {
+  const arr = MASTER_LISTS[kind].arr();
+  if (arr.length <= 1) { showToast('At least one value is required', 'red'); return; }
+  if (!confirm(`Remove "${arr[i]}" from the list? Existing records keep this value.`)) return;
+  arr.splice(i,1);
+  persistMasterList(kind);
+  renderStatusManager(kind);
+  showToast('Removed ✓', 'green');
+}
+function addStatusItem(kind) {
+  const cfg = MASTER_LISTS[kind];
+  const inp = document.getElementById(cfg.inputElId);
+  const val = (inp.value||'').trim();
   if (!val) return;
-  const arr = def.arr();
-  if (arr.some(v=>v.toLowerCase()===val.toLowerCase())) { showToast('That option already exists','red'); return; }
+  const arr = cfg.arr();
+  if (arr.includes(val)) { showToast('That value already exists', 'red'); return; }
   arr.push(val);
-  DB.settings[listKey] = arr;
-  saveStore();
-  if (input) input.value='';
-  renderStatusLists();
-  showToast('Option added ✓', 'green');
-}
-
-function startEditStatusItem(listKey, idx){
-  statusDeleteConfirmState[listKey] = null;
-  statusEditState[listKey] = idx;
-  renderStatusLists();
-}
-
-function cancelEditStatusItem(listKey){
-  statusEditState[listKey] = null;
-  renderStatusLists();
-}
-
-function saveEditStatusItem(listKey, idx){
-  const def = STATUS_LIST_DEFS.find(d=>d.key===listKey); if(!def) return;
-  const input = document.getElementById('statusEdit-'+listKey);
-  const val = (input?.value||'').trim();
-  if (!val) { showToast('Value cannot be empty','red'); return; }
-  const arr = def.arr();
-  if (arr.some((v,i)=>i!==idx && v.toLowerCase()===val.toLowerCase())) { showToast('That option already exists','red'); return; }
-  arr[idx] = val;
-  DB.settings[listKey] = arr;
-  saveStore();
-  statusEditState[listKey] = null;
-  renderStatusLists();
-  showToast('Option updated ✓', 'green');
-}
-
-// Delete uses an inline confirm row (rather than window.confirm, which some
-// mobile browsers / embedded webviews silently block) so it always works.
-function deleteStatusItem(listKey, idx){
-  statusEditState[listKey] = null;
-  statusDeleteConfirmState[listKey] = idx;
-  renderStatusLists();
-}
-
-function cancelDeleteStatusItem(listKey){
-  statusDeleteConfirmState[listKey] = null;
-  renderStatusLists();
-}
-
-function confirmDeleteStatusItem(listKey, idx){
-  const def = STATUS_LIST_DEFS.find(d=>d.key===listKey); if(!def) return;
-  const arr = def.arr();
-  arr.splice(idx,1);
-  DB.settings[listKey] = arr;
-  saveStore();
-  statusDeleteConfirmState[listKey] = null;
-  renderStatusLists();
-  showToast('Option deleted ✓', 'green');
+  inp.value = '';
+  persistMasterList(kind);
+  renderStatusManager(kind);
+  showToast('Added ✓', 'green');
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1065,6 +1085,25 @@ function calcProj(d){
 function fmt(n){ return n===0?'0':n.toLocaleString(); }
 function fmtOr(n,has){ return has?fmt(n):'—'; }
 
+// ── Cash-basis calculations for NCF (Net Cash Flow) ────────────────
+// Revenue is only recognized once the client has actually paid.
+// Developer cost is only recognized once the developer has actually been paid.
+function calcDevCash(d){
+  const c=calcDev(d);
+  const cashIn  = d.clipay==='Customer Paid' ? c.invFull : 0;
+  const cashOut = d.devpay==='Developer Paid' ? c.devPmt : 0;
+  return {cashIn,cashOut,profit:cashIn-cashOut};
+}
+function calcFuncCash(d){
+  return d.clipay==='Customer Paid' ? calcFunc(d) : 0;
+}
+function calcProjCash(d){
+  const c=calcProj(d);
+  const cashIn  = d.clipay==='Customer Paid' ? c.invFull : 0;
+  const cashOut = d.devpay==='Developer Paid' ? c.devPmt : 0;
+  return {cashIn,cashOut,profit:cashIn-cashOut};
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // BADGES
 // ══════════════════════════════════════════════════════════════════════
@@ -1074,27 +1113,24 @@ function badge(val,pos,neg){
 }
 function mtag(d){ return d.month?`<span class="month-tag">${d.month.substring(0,3).toUpperCase()}</span>`:''; }
 
-// Precise check for "client hasn't paid" — matches ONLY the exact unpaid status text,
-// never a loose substring match (which previously also matched "Invoice NOT Sent").
-function isClientUnpaid(clipay){ return clipay==='Customer NOT Paid'; }
-
 // ══════════════════════════════════════════════════════════════════════
 // ROW HTML RENDERERS
 // ══════════════════════════════════════════════════════════════════════
 function rowDev(d){
-  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const DCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : DEV_COLS;
+  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const DCOLS = d.done ? '56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : DEV_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cdone" data-id="${d.id}">✏</button>
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cdone" data-id="${d.id}">🗑</button>
   </div>` : '';
   return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DCOLS}">
+    <div class="td">${mtag(d)}</div><div class="td muted">—</div>
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished','Client Testing'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced','Client Testing'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${d.inv||'—'}</div>
@@ -1102,37 +1138,39 @@ function rowDev(d){
   </div>`;
 }
 function rowFunc(d){
-  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const FCOLS = d.done ? '1fr 120px 140px 140px 140px 150px 155px 150px 88px' : FUNC_COLS;
+  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const FCOLS = d.done ? '56px 36px 1fr 120px 140px 140px 140px 150px 155px 150px 88px' : FUNC_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cfdone" data-id="${d.id}">✏</button>
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cfdone" data-id="${d.id}">🗑</button>
   </div>` : '';
   return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
+    <div class="td">${mtag(d)}</div><div class="td muted">—</div>
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
     ${actionBtns}
   </div>`;
 }
 function rowProj(d){
-  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const PCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : PROJ_COLS;
+  const overdue=d.clipay&&d.clipay.includes('NOT')&&!d.done?'overdue-flag':'';
+  const PCOLS = d.done ? '56px 36px 1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : PROJ_COLS;
   const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cpdone" data-id="${d.id}">✏</button>
     <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cpdone" data-id="${d.id}">🗑</button>
   </div>` : '';
   return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${PCOLS}">
+    <div class="td">${mtag(d)}</div><div class="td muted">—</div>
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
@@ -1145,16 +1183,20 @@ function rowProj(d){
 // ══════════════════════════════════════════════════════════════════════
 function renderAll(){
   // Dev
-  document.getElementById('dev-body').innerHTML    = renderGroupedByMonth(DB.dev, rowDev);
-  document.getElementById('cdone-body').innerHTML  = renderGroupedByMonth(DB.devDone, rowDev);
+  document.getElementById('dev-body').innerHTML    = DB.dev.map(rowDev).join('');
+  document.getElementById('dev-done-body').innerHTML = DB.devDone.map(rowDev).join('');
+  document.getElementById('cdone-body').innerHTML  = DB.devDone.map(rowDev).join('');
   // Func
-  document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
-  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonth(DB.funcDone, rowFunc);
+  document.getElementById('func-body').innerHTML   = DB.func.map(rowFunc).join('');
+  document.getElementById('func-done-body').innerHTML = DB.funcDone.map(rowFunc).join('');
+  document.getElementById('cfdone-body').innerHTML = DB.funcDone.map(rowFunc).join('');
   // Proj
-  document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(DB.proj, rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
-  document.getElementById('cpdone-body').innerHTML = renderGroupedByMonth(DB.projDone, rowProj);
+  document.getElementById('proj-body').innerHTML   = DB.proj.map(rowProj).join('')||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
+  document.getElementById('proj-done-body').innerHTML = DB.projDone.map(rowProj).join('');
+  document.getElementById('cpdone-body').innerHTML = DB.projDone.map(rowProj).join('');
   // Profit
   renderProfit();
+  renderNCF();
   // Attach clicks
   attachAllClicks();
   // Dashboard
@@ -1166,10 +1208,13 @@ function renderAll(){
 function attachAllClicks(){
   const pairs=[
     ['dev-body',    'dev',   false],
+    ['dev-done-body','dev',  true],
     ['cdone-body',  'cdone', true],
     ['func-body',   'func',  false],
+    ['func-done-body','func',true],
     ['cfdone-body', 'cfdone',true],
     ['proj-body',   'proj',  false],
+    ['proj-done-body','proj',true],
     ['cpdone-body', 'cpdone',true],
   ];
   pairs.forEach(([bodyId,tab,done])=>{
@@ -1207,7 +1252,7 @@ function renderStats(){
   // Dev stats
   const devAll=[...DB.dev,...DB.devDone];
   const devProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0);
-  const devNotPaid=DB.dev.filter(d=>isClientUnpaid(d.clipay)).length;
+  const devNotPaid=DB.dev.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
   document.getElementById('dev-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.dev.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.devDone.length}</div></div>
@@ -1215,7 +1260,7 @@ function renderStats(){
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(devProfit)}</div></div>`;
   // Func stats
   const funcProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0);
-  const funcNotPaid=DB.func.filter(d=>isClientUnpaid(d.clipay)).length;
+  const funcNotPaid=DB.func.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
   document.getElementById('func-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.func.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.funcDone.length}</div></div>
@@ -1223,7 +1268,7 @@ function renderStats(){
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(funcProfit)}</div></div>`;
   // Proj stats
   const projProfit=DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const projNotPaid=DB.proj.filter(d=>isClientUnpaid(d.clipay)).length;
+  const projNotPaid=DB.proj.filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
   document.getElementById('proj-stats').innerHTML=`
     <div class="stat"><div class="stat-label">Active projects</div><div class="stat-val accent">${DB.proj.length}</div></div>
     <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.projDone.length}</div></div>
@@ -1239,7 +1284,7 @@ function renderDashboard(){
   const totalProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0)+
                     DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                     DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const notPaid=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay)).length;
+  const notPaid=[...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT')).length;
   const invFull=DB.devDone.reduce((s,d)=>s+calcDev(d).invFull,0)+
                 DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                 DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
@@ -1265,7 +1310,7 @@ function renderDashboard(){
       <div class="chart-bar-label">${m}</div>
     </div>`).join('');
   // Overdue list
-  const overdueItems=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay));
+  const overdueItems=[...DB.dev,...DB.func,...DB.proj].filter(d=>d.clipay&&d.clipay.includes('NOT'));
   const ol=document.getElementById('overdue-list');
   if(!overdueItems.length){ ol.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px 0">No unpaid items 🎉</div>'; }
   else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev}</div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
@@ -1427,6 +1472,146 @@ function renderProfit(){
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// NCF (NET CASH FLOW) — same layout as Profit, but cash-basis figures:
+// revenue only counts once Client Payment = Customer Paid, and dev cost
+// only counts once Dev Pay Status = Developer Paid.
+// ══════════════════════════════════════════════════════════════════════
+function renderNCF(){
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+
+  // ── Populate year filter dropdown dynamically ──────────────────────
+  const filterEl = document.getElementById('ncf-year-filter');
+  if (filterEl) {
+    const dataYears = new Set([
+      ...[...DB.devDone,...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+    ]);
+    YEARS.forEach(y=>dataYears.add(y));
+    const sortedYears = [...dataYears].sort();
+    const currentVal = filterEl.value || CURRENT_YEAR;
+    filterEl.innerHTML = `<option value="all">All Years</option>` +
+      sortedYears.map(y=>`<option value="${y}"${y===currentVal?' selected':''}>${y}</option>`).join('');
+    if(!filterEl.value || filterEl.value==='') filterEl.value = CURRENT_YEAR;
+  }
+
+  const selectedYear = filterEl?.value || CURRENT_YEAR;
+
+  // ── Build year+month cash data (all years for table) ────────────────
+  const ymData = {};
+  const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
+  const ensure = d => {
+    const k=ymKey(d);
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
+  };
+
+  DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
+  DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDevCash(d).profit; });
+  DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
+
+  // ── KPIs — based on selected year (or all) ─────────────────────────
+  const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
+  const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFuncCash(d), 0);
+  const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDevCash(d).profit, 0);
+  const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
+  const grandTotal = totalFunc + totalDev + totalProj;
+  const gtColor = grandTotal<0 ? 'red' : 'green';
+
+  const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
+  document.getElementById('ncf-kpis').innerHTML=`
+    <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
+    <div class="dash-card"><div class="dash-label">Func Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
+    <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
+    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
+
+  // ── Charts — show monthly breakdown for selected year only ─────────
+  const monthlyForCharts = {};
+  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,dev:0,proj:0});
+
+  Object.values(ymData).forEach(r=>{
+    if((selectedYear==='all' || r.year===selectedYear) && monthlyForCharts[r.month]) {
+      monthlyForCharts[r.month].func += r.func;
+      monthlyForCharts[r.month].dev  += r.dev;
+      monthlyForCharts[r.month].proj += r.proj;
+    }
+  });
+
+  const activeMonths = MONTHS.filter(m=>{
+    const r=monthlyForCharts[m]; return r.func||r.dev||r.proj;
+  });
+  const chartMonths = activeMonths.length
+    ? activeMonths.map(m=>m.substring(0,3).toUpperCase())
+    : MONTH_LABELS.slice(0,6);
+
+  const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
+  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const funcVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).func||0; });
+  const devprojVals  = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+
+  const ct = document.getElementById('chart-title-ncf-total');
+  if(ct) ct.textContent = `Monthly Net Cash Flow — ${yearLabel}`;
+
+  // Cash flow bars can go negative — colour each bar green (positive) or red (negative)
+  function renderCashBarChart(elId, vals, posColor) {
+    const el=document.getElementById(elId); if(!el) return;
+    const maxAbs=Math.max(...vals.map(v=>Math.abs(v)),1);
+    const BAR_MAX=80; // px
+    el.innerHTML = chartMonths.map((m,i)=>{
+      const v = vals[i];
+      const color = v<0 ? '#dc2626' : posColor;
+      const px = v!==0 ? Math.max(4, Math.round(Math.abs(v)/maxAbs*BAR_MAX)) : 0;
+      const label = v!==0 ? (Math.abs(v)>=1000?(v<0?'-':'')+Math.round(Math.abs(v)/1000)+'k':v.toLocaleString()) : '';
+      return `<div class="chart-bar-col">
+        <div style="font-size:9px;font-weight:700;color:${color};min-height:13px;text-align:center">${label}</div>
+        <div style="width:100%;height:${px}px;min-height:${px>0?'4px':'0'};background:${color};border-radius:4px 4px 0 0;transition:height .4s"></div>
+        <div class="chart-bar-label" style="margin-top:3px;font-size:9px">${m}</div>
+      </div>`;
+    }).join('');
+  }
+
+  renderCashBarChart('ncf-bar-total',   totalVals,   '#16a34a');
+  renderCashBarChart('ncf-bar-func',    funcVals,    '#2563eb');
+  renderCashBarChart('ncf-bar-devproj', devprojVals, '#d97706');
+
+  // ── Table — show all years or filtered year ────────────────────────
+  const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
+  const sortedKeys = Object.keys(ymData)
+    .filter(k => selectedYear==='all' || k.startsWith(selectedYear+'__'))
+    .sort((a,b)=>{
+      const [ay,am]=a.split('__'), [by,bm]=b.split('__');
+      return ay!==by ? ay.localeCompare(by) : (monthOrder[am]||0)-(monthOrder[bm]||0);
+    });
+
+  let prevYear='';
+  const rows = sortedKeys.map(k=>{
+    const r=ymData[k];
+    const total=r.func+r.dev+r.proj;
+    if(!total) return '';
+    const showYear = r.year!==prevYear;
+    prevYear=r.year;
+    const cls = v => v>0?'green':v<0?'red':'muted';
+    return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear&&selectedYear==='all'?';border-top:2px solid var(--b2)':''}">
+      <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
+      <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
+      <div class="td ${cls(r.func)} mono">${r.func?fmt(r.func):'—'}</div>
+      <div class="td ${cls(r.dev)} mono">${r.dev?fmt(r.dev):'—'}</div>
+      <div class="td ${cls(r.proj)} mono">${r.proj?fmt(r.proj):'—'}</div>
+      <div class="td ${cls(total)} fw mono">${total?fmt(total):'—'}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  const totalsRow=`<div class="table-row" style="grid-template-columns:${COLS};background:#eef2f7;cursor:default;border-top:2px solid var(--b2)">
+    <div class="td fw" style="color:var(--t2)">TOTAL</div>
+    <div class="td"></div>
+    <div class="td ${totalFunc<0?'red':'green'} fw mono">${fmt(totalFunc)}</div>
+    <div class="td ${totalDev<0?'red':'green'} fw mono">${fmt(totalDev)}</div>
+    <div class="td ${totalProj<0?'red':'green'} fw mono">${fmt(totalProj)}</div>
+    <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
+  </div>`;
+
+  document.getElementById('ncf-body').innerHTML =
+    (rows||'<div style="padding:20px;color:var(--t3);text-align:center">No data for selected year</div>') + totalsRow;
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // DETAIL PANEL (master-detail edit)
 // ══════════════════════════════════════════════════════════════════════
 let currentDetail={tab:null,id:null,done:false};
@@ -1573,11 +1758,9 @@ function buildDpField(field,rec){
   let inp;
   if(field.type==='select'){
     inp=document.createElement('select'); inp.className='dp-input';
-    const opts=[...(field.options||[])];
-    const recVal = rec[field.key];
-    if (recVal && !opts.includes(recVal)) opts.push(recVal);
-    opts.forEach(o=>{
+    (field.options||[]).forEach(o=>{
       const opt=document.createElement('option'); opt.value=o; opt.textContent=o;
+      const recVal = rec[field.key];
       if(recVal ? recVal===o : (field.key==='year' && o===CURRENT_YEAR)) opt.selected=true;
       inp.appendChild(opt);
     });
@@ -1611,11 +1794,11 @@ function saveDetail(tab){
   if(!rec.funcRate) rec.funcRate=String(getFuncRate());
   if(!rec.devRate&&(sk==='dev'||sk==='proj')) rec.devRate=String(getDevRate());
 
-  const isFinished=rec.status==='Finished';
+  const isFinished=rec.status==='Invoiced';
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
   const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
   const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
-  const doneTabLabels={dev:'Completed Dev',func:'Completed Func',proj:'Completed Projects'};
+  const doneTabLabels={dev:'Invoiced Dev',func:'Invoiced Func',proj:'Invoiced Projects'};
   const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
@@ -1711,7 +1894,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',setoff:'','setoff-detail':'','setoff-archived':'',settings:''};
+const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',settings:''};
 const SIDEBAR_DEFS={
   dashboard:[],
   dev:[],func:[],proj:[],cdone:[],cfdone:[],cpdone:[],profit:[],setoff:[],
@@ -1756,7 +1939,7 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','setoff','setoff-detail','setoff-archived','dashboard','settings'].includes(t))?'none':'';
+  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','dashboard','settings'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Load settings UI
@@ -2241,6 +2424,7 @@ function renderSetoff(){
 }
 
 // ── Startup: show cached data instantly, then load fresh from Supabase ────────
+applyStatusOrderFromSettings();
 renderAll();
 renderSidebar('dashboard');
 renderSetoff();
