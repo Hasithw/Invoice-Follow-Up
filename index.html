@@ -309,10 +309,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed dev…" oninput="searchTable('cdone-body',this.value)"></div>
       <div class="table-wrap" style="overflow-x:auto">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
           <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
+          <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
+          <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="cdone-body"></div>
@@ -332,10 +333,12 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed func…" oninput="searchTable('cfdone-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px 88px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px">
           <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div><div class="th">Actions</div>
+          <div class="th">Act Func Hours</div>
+          <div class="th">Project Status</div><div class="th">Client Payment</div>
+          <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
+          <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="cfdone-body"></div>
       </div>
@@ -354,12 +357,12 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed projects…" oninput="searchTable('cpdone-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
           <div class="th">Description</div>
           <div class="th">Requester</div>
-          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
+          <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
+          <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
         <div id="cpdone-body"></div>
@@ -1173,12 +1176,28 @@ function isClientUnpaid(clipay){ return clipay==='Customer NOT Paid'; }
 // ══════════════════════════════════════════════════════════════════════
 function rowDev(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const DCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : DEV_COLS;
-  const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cdone" data-id="${d.id}">✏</button>
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cdone" data-id="${d.id}">🗑</button>
-  </div>` : '';
-  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DCOLS}">
+  if (d.done) {
+    // "Invoiced" view (Invoiced Dev): swap estimate/completed-date columns for financial figures
+    const DCOLS = '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px';
+    const c = calcDev(d);
+    return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DCOLS}">
+      <div class="td" title="${d.dev}">${d.dev||'—'}</div>
+      <div class="td muted">${d.req||'—'}</div>
+      <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
+      <div class="td">${badge(d.status,['Invoiced','Client Testing'],'b-yellow')}</div>
+      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
+      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+      <div class="td mono">${fmt(c.devPmt)}</div>
+      <div class="td mono">${fmt(c.invFull)}</div>
+      <div class="td mono green">${fmt(c.profit)}</div>
+      <div class="td mono">${d.inv||'—'}</div>
+      <div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cdone" data-id="${d.id}">✏</button>
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cdone" data-id="${d.id}">🗑</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DEV_COLS}">
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
@@ -1188,17 +1207,31 @@ function rowDev(d){
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${d.inv||'—'}</div>
-    ${actionBtns}
   </div>`;
 }
 function rowFunc(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const FCOLS = d.done ? '1fr 120px 140px 140px 140px 150px 155px 150px 88px' : FUNC_COLS;
-  const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cfdone" data-id="${d.id}">✏</button>
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cfdone" data-id="${d.id}">🗑</button>
-  </div>` : '';
-  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
+  if (d.done) {
+    // "Invoiced" view (Invoiced Func): swap estimate/completed-date columns for financial figures
+    const FCOLS = '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px';
+    const amt = calcFunc(d); // func-only tickets have no developer cost — profit equals the invoiced amount
+    return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
+      <div class="td" title="${d.dev}">${d.dev||'—'}</div>
+      <div class="td muted">${d.req||'—'}</div>
+      <div class="td muted">${d.actf||'—'}</div>
+      <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+      <div class="td mono">${fmt(0)}</div>
+      <div class="td mono">${fmt(amt)}</div>
+      <div class="td mono green">${fmt(amt)}</div>
+      <div class="td mono">${d.inv||'—'}</div>
+      <div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cfdone" data-id="${d.id}">✏</button>
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cfdone" data-id="${d.id}">🗑</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FUNC_COLS}">
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
@@ -1206,17 +1239,32 @@ function rowFunc(d){
     <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
-    ${actionBtns}
   </div>`;
 }
 function rowProj(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  const PCOLS = d.done ? '1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px 88px' : PROJ_COLS;
-  const actionBtns = d.done ? `<div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cpdone" data-id="${d.id}">✏</button>
-    <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cpdone" data-id="${d.id}">🗑</button>
-  </div>` : '';
-  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${PCOLS}">
+  if (d.done) {
+    // "Invoiced" view (Invoiced Projects): swap estimate/completed-date columns for financial figures
+    const PCOLS = '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px';
+    const c = calcProj(d);
+    return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${PCOLS}">
+      <div class="td" title="${d.dev}">${d.dev||'—'}</div>
+      <div class="td muted">${d.req||'—'}</div>
+      <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
+      <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
+      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+      <div class="td mono">${fmt(c.devPmt)}</div>
+      <div class="td mono">${fmt(c.invFull)}</div>
+      <div class="td mono green">${fmt(c.profit)}</div>
+      <div class="td mono">${d.inv||'—'}</div>
+      <div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cpdone" data-id="${d.id}">✏</button>
+        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cpdone" data-id="${d.id}">🗑</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${PROJ_COLS}">
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
@@ -1226,7 +1274,6 @@ function rowProj(d){
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
-    ${actionBtns}
   </div>`;
 }
 
@@ -1850,23 +1897,21 @@ function saveDetail(tab){
   const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
-    // Active → Done
+    // Active → Done (record moves to the Invoiced list, but we stay on the current page)
     rec.done=true;
     DB[doneKeys[sk]].unshift(rec);
     DB[activeKeys[sk]].splice(idx,1);
     saveStore(); saveRecord(doneKeys[sk],rec); renderAll();
     closeDetail(tab);
     showToast('Moved to '+doneTabLabels[sk]+' ✓','green');
-    switchTab(doneTabs[sk]);
   } else if(!isFinished && isDoneList){
-    // Done → Active (un-finish)
+    // Done → Active (un-finish) — record moves back, but we stay on the current page
     rec.done=false;
     DB[activeKeys[sk]].unshift(rec);
     DB[doneKeys[sk]].splice(idx,1);
     saveStore(); saveRecord(activeKeys[sk],rec); renderAll();
     closeDetail(tab);
     showToast('Moved back to '+sk.charAt(0).toUpperCase()+sk.slice(1)+' Support ✓','green');
-    switchTab(sk==='dev'?'dev':sk==='func'?'func':'proj');
   } else {
     // In-place save
     saveStore(); saveRecord(listKey,rec); renderAll();
@@ -1983,6 +2028,7 @@ function switchTab(t){
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+t)?.classList.add('active');
   currentTab=t;
+  try{ localStorage.setItem('techstar_last_tab', t); }catch(e){}
   renderSidebar(t);
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
@@ -2477,6 +2523,13 @@ renderSidebar('dashboard');
 renderSetoff();
 loadSettingsUI();
 stampMissingRates();
+// Restore whichever tab the user was last on, so a hard refresh doesn't bounce them to Dashboard
+(function restoreLastTab(){
+  try{
+    const saved = localStorage.getItem('techstar_last_tab');
+    if (saved && saved!=='dashboard' && document.getElementById('tab-'+saved)) switchTab(saved);
+  }catch(e){}
+})();
 // Load fresh data from Supabase (updates UI when done)
 loadFromSupabase();
 // Sidebar removed
