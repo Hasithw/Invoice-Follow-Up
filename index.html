@@ -92,7 +92,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 /* ── table ── */
 .table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;width:100%;flex-shrink:0}
 .table-header{display:grid;border-bottom:2px solid var(--b2);background:#eef2f7;padding:0}
-.th{font-size:11px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-right:1px solid var(--border);white-space:nowrap}
+.th{font-size:11px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-right:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .th:last-child{border-right:none}
 .table-row{display:grid;border-bottom:1px solid var(--border);align-items:stretch;cursor:pointer;transition:background .1s}
 .table-row:last-child{border-bottom:none}
@@ -103,6 +103,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .month-group-hdr:first-child{border-top:none}
 .month-group-count{font-size:10px;font-weight:600;color:var(--t3);text-transform:none;letter-spacing:0}
 .status-row:last-child{border-bottom:none!important}
+.month-group-hdr-grid{display:grid;align-items:center;background:#f4f7fb;border-bottom:1px solid var(--border);border-top:1px solid var(--b2)}
+.month-group-hdr-grid:first-child{border-top:none}
+.mg-label{padding:8px 14px;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.mg-total{padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#334155}
+.mg-total.green{color:var(--green)}
 .td{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:10px 12px;border-right:1px solid var(--border);display:flex;align-items:center}
 .td:last-child{border-right:none}
 .td.muted{color:var(--t2)}
@@ -700,6 +705,37 @@ function renderGroupedByMonth(arr, rowFn){
   return html;
 }
 
+// Same as above, but for the "Invoiced" tables: the month heading row also shows
+// each month's totals for Developer Payment / Invoiced Full Amount / Profit,
+// aligned under those columns using the same grid-template-columns as the data rows.
+function renderGroupedByMonthWithTotals(arr, rowFn, colsStr, labelSpan, calcFn){
+  if (!arr.length) return '';
+  const sorted = sortByMonth(arr);
+  const groups = [];
+  sorted.forEach(d=>{
+    const m = d.month || 'No Month';
+    let g = groups.find(g=>g.month===m);
+    if (!g) { g = {month:m, items:[]}; groups.push(g); }
+    g.items.push(d);
+  });
+  let html = '';
+  groups.forEach(g=>{
+    const totals = g.items.reduce((acc,d)=>{
+      const c = calcFn(d);
+      acc.devPmt+=c.devPmt; acc.invFull+=c.invFull; acc.profit+=c.profit;
+      return acc;
+    }, {devPmt:0,invFull:0,profit:0});
+    html += `<div class="month-group-hdr-grid" style="grid-template-columns:${colsStr}">
+      <div class="mg-label" style="grid-column:span ${labelSpan}">${g.month}<span class="month-group-count">${g.items.length} ${g.items.length===1?'item':'items'}</span></div>
+      <div class="mg-total mono">${fmt(totals.devPmt)}</div>
+      <div class="mg-total mono">${fmt(totals.invFull)}</div>
+      <div class="mg-total mono green">${fmt(totals.profit)}</div>
+    </div>`;
+    g.items.forEach(d=>{ html += rowFn(d); });
+  });
+  return html;
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ══════════════════════════════════════════════════════════════════════
@@ -1128,6 +1164,8 @@ function calcFunc(d){
   if (!fRate) return 0;
   return (parseFloat(d.actf)||0)*fRate;
 }
+// Wrapper so Func totals can be summed the same way as Dev/Proj (no developer cost on func-only tickets)
+function calcFuncForTotals(d){ const amt=calcFunc(d); return {devPmt:0, invFull:amt, profit:amt}; }
 function calcProj(d){
   const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
   const fRate=parseFloat(d.funcRate)||0;
@@ -1283,13 +1321,13 @@ function rowProj(d){
 function renderAll(){
   // Dev
   document.getElementById('dev-body').innerHTML    = renderGroupedByMonth(DB.dev, rowDev);
-  document.getElementById('cdone-body').innerHTML  = renderGroupedByMonth(DB.devDone, rowDev);
+  document.getElementById('cdone-body').innerHTML  = renderGroupedByMonthWithTotals(DB.devDone, rowDev, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcDev);
   // Func
   document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
-  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonth(DB.funcDone, rowFunc);
+  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.funcDone, rowFunc, '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px', 5, calcFuncForTotals);
   // Proj
   document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(DB.proj, rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
-  document.getElementById('cpdone-body').innerHTML = renderGroupedByMonth(DB.projDone, rowProj);
+  document.getElementById('cpdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.projDone, rowProj, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcProj);
   // Profit
   renderProfit();
   renderNCF();
