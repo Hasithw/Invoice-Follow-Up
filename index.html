@@ -618,7 +618,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:16px;font-weight:600;color:var(--text)">Project Notes</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:2px">Special notifications or notes tied to a specific project</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:2px">Special notifications or notes tied to a project or topic</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openAddNote()">+ Add Note</button>
     </div>
@@ -626,26 +626,36 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <input id="notes-search" type="text" placeholder="Search notes or project…" oninput="renderNotesList(this.value)"
       style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;outline:none;width:100%;background:var(--surface)"/>
 
-    <!-- Add / Edit note form (hidden until opened) -->
-    <div id="note-form-card" style="display:none;background:var(--surface);border:1px solid var(--accent);border-radius:var(--rlg);padding:18px 20px;flex-direction:column;gap:14px">
-      <div style="font-size:13px;font-weight:700;color:var(--text)" id="note-form-title">New Note</div>
+    <div id="notes-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<!-- ════ NOTE — Add/Edit detail page ════ -->
+<div class="tab-panel" id="tab-notes-detail">
+  <div class="list-pane" style="overflow-y:auto;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="btn btn-sm" onclick="switchTab('notes')">← Back to List</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;display:flex;flex-direction:column;gap:16px;max-width:640px">
+      <div style="font-size:15px;font-weight:700;color:var(--text)" id="note-form-title">New Note</div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Project</div>
-        <div id="note-form-project-container"
-          style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:14px;color:var(--text);width:100%"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Project / Topic</div>
+        <input id="note-form-project" type="text" list="note-project-suggestions" placeholder="Type a project name or any topic…"
+          style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;outline:none;width:100%;box-sizing:border-box;font-family:Inter,sans-serif"/>
+        <datalist id="note-project-suggestions"></datalist>
+        <div style="font-size:11px;color:var(--t3)">Pick an existing project from suggestions, or type any custom topic</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Note</div>
-        <textarea id="note-form-text" rows="3" placeholder="Enter the note or special notification…"
+        <textarea id="note-form-text" rows="5" placeholder="Enter the note or special notification…"
           style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;outline:none;width:100%;resize:vertical;font-family:Inter,sans-serif;box-sizing:border-box"></textarea>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-sm" onclick="closeNoteForm()">Cancel</button>
+        <button class="btn btn-sm" onclick="switchTab('notes')">Cancel</button>
         <button class="btn btn-primary btn-sm" onclick="saveNoteForm()">Save Note</button>
       </div>
     </div>
-
-    <div id="notes-list" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 </div>
 
@@ -2077,7 +2087,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'',settings:''};
+const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'','notes-detail':'',settings:''};
 const SIDEBAR_DEFS={
   dashboard:[],
   dev:[],func:[],proj:[],cdone:[],cfdone:[],cpdone:[],profit:[],setoff:[],
@@ -2123,11 +2133,11 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','dashboard','settings'].includes(t))?'none':'';
+  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
-  if(t==='notes'){ closeNoteForm(); renderNotesList(); }
+  if(t==='notes'){ renderNotesList(); }
   // Load settings UI
   if(t==='settings'){ loadSettingsUI(); }
   // Sidebar removed - always hidden
@@ -2370,19 +2380,13 @@ function filterProjPicker(idPrefix, query){
   list.innerHTML = names.map(n=>`<div class="proj-picker-opt" onclick="chooseProjPicker('${idPrefix}','${escAttr(n).replace(/'/g,"\\'")}')">${n}</div>`).join('');
 }
 // idPrefix encodes where the selection should be written back to:
-//   'sohdr'          → header "From Set Off Project" field
 //   'sofrom-<rowId>' → a row in the From Setoff table
 //   'soto-<rowId>'   → a row in the To Setoff table
-//   'noteform'       → the Project Notes add/edit form
 function chooseProjPicker(idPrefix, name){
   if (idPrefix.startsWith('sofrom-')){
     selectSoFromProject(idPrefix.slice(7), name); // sets project + auto-fills hours, then renderSetoffFrom() closes the picker
   } else if (idPrefix.startsWith('soto-')){
     selectSoToProject(idPrefix.slice(5), name); // sets project + auto-fills hours, then renderSetoffTo() closes the picker
-  } else if (idPrefix==='noteform'){
-    const wrap = document.getElementById(idPrefix+'-wrap');
-    if (wrap) wrap.querySelector('.proj-picker-display span').textContent = name || '— select project —';
-    closeAllProjPickers();
   }
 }
 // Selecting a project auto-fills that row's Func/Dev Hours with the project's actual
@@ -2764,34 +2768,34 @@ function renderSetoff(){
 let noteEditId = null; // id of the note currently being edited, or null when adding new
 const noteDeleteConfirm = { id:null };
 
+// Populates the <datalist> of suggested project names for the Project/Topic field.
+// The field still accepts any freely-typed text as a custom topic.
+function populateNoteProjectSuggestions(){
+  const dl = document.getElementById('note-project-suggestions'); if(!dl) return;
+  dl.innerHTML = getAllProjectNames().map(n=>`<option value="${n.replace(/"/g,'&quot;')}"></option>`).join('');
+}
 function openAddNote(){
   noteEditId = null;
   document.getElementById('note-form-title').textContent = 'New Note';
+  document.getElementById('note-form-project').value = '';
   document.getElementById('note-form-text').value = '';
-  document.getElementById('note-form-project-container').innerHTML = renderProjPicker('noteform', '');
-  const card = document.getElementById('note-form-card');
-  card.style.display = 'flex';
-  card.scrollIntoView({behavior:'smooth', block:'nearest'});
+  populateNoteProjectSuggestions();
+  switchTab('notes-detail');
+  setTimeout(()=>document.getElementById('note-form-project')?.focus(),0);
 }
 function openEditNote(id){
   const n = (DB.notes||[]).find(x=>x.id===id); if(!n) return;
   noteEditId = id;
   document.getElementById('note-form-title').textContent = 'Edit Note';
+  document.getElementById('note-form-project').value = n.project||'';
   document.getElementById('note-form-text').value = n.note||'';
-  document.getElementById('note-form-project-container').innerHTML = renderProjPicker('noteform', n.project||'');
-  const card = document.getElementById('note-form-card');
-  card.style.display = 'flex';
-  card.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-function closeNoteForm(){
-  noteEditId = null;
-  document.getElementById('note-form-card').style.display = 'none';
+  populateNoteProjectSuggestions();
+  switchTab('notes-detail');
 }
 function saveNoteForm(){
-  const projectEl = document.querySelector('#note-form-project-container .proj-picker-display span');
-  const project = projectEl ? projectEl.textContent.trim() : '';
+  const project = document.getElementById('note-form-project').value.trim();
   const text = document.getElementById('note-form-text').value.trim();
-  if (!project || project==='— select project —'){ showToast('Please select a project','red'); return; }
+  if (!project){ showToast('Please enter a project or topic','red'); return; }
   if (!text){ showToast('Please enter a note','red'); return; }
   if (!DB.notes) DB.notes=[];
   let savedNote;
@@ -2805,7 +2809,8 @@ function saveNoteForm(){
   saveStore();
   if (savedNote) saveRecord('notes', savedNote);
   const wasEditing = !!noteEditId;
-  closeNoteForm();
+  noteEditId = null;
+  switchTab('notes');
   renderNotesList(document.getElementById('notes-search')?.value||'');
   showToast(wasEditing?'Note updated ✓':'Note added ✓','green');
 }
