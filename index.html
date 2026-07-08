@@ -53,7 +53,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .tab-panel.active{display:flex}
 /* ── master-detail ── */
 .md-wrap{display:flex;flex:1;overflow:hidden;gap:0;width:100%}
-.list-pane{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 32px;display:flex;flex-direction:column;gap:18px;width:100%}
+.list-pane{flex:1;overflow-y:auto;overflow-x:auto;padding:24px 32px;display:flex;flex-direction:column;gap:18px;width:100%}
 .detail-pane{position:fixed;top:52px;right:0;bottom:0;width:430px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:40;box-shadow:-4px 0 24px rgba(0,0,0,.1)}
 .detail-pane.open{transform:translateX(0)}
 .dp-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
@@ -90,8 +90,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .overdue-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--rdim);border:1px solid rgba(242,92,92,.2);border-radius:var(--r);cursor:pointer}
 .overdue-row:hover{background:rgba(242,92,92,.2)}
 /* ── table ── */
-.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;width:100%;flex-shrink:0}
-.table-header{display:grid;border-bottom:2px solid var(--b2);background:#eef2f7;padding:0}
+.table-wrap{background:var(--surface);border:2px solid var(--b2);border-radius:var(--rlg);overflow-x:visible;overflow-y:visible;-webkit-overflow-scrolling:touch;width:100%;flex-shrink:0}
+.table-header{display:grid;border-bottom:2px solid var(--b2);background:#eef2f7;padding:0;position:sticky;top:0;z-index:20}
 .th{font-size:11px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-right:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .th:last-child{border-right:none}
 .table-row{display:grid;border-bottom:1px solid var(--border);align-items:stretch;cursor:pointer;transition:background .1s}
@@ -326,7 +326,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="md-wrap">
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed dev…" oninput="searchTable('cdone-body',this.value)"></div>
-      <div class="table-wrap" style="overflow-x:auto">
+      <div class="table-wrap">
         <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
           <div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
@@ -1477,7 +1477,7 @@ function renderDashboard(){
   const totalProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0)+
                     DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                     DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const notPaid=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay)).length;
+  const notPaid=[...allDev,...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay)).length;
   const invFull=DB.devDone.reduce((s,d)=>s+calcDev(d).invFull,0)+
                 DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                 DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
@@ -1503,10 +1503,10 @@ function renderDashboard(){
       <div class="chart-bar-label">${m}</div>
     </div>`).join('');
   // Overdue list
-  const overdueItems=[...DB.dev,...DB.func,...DB.proj].filter(d=>isClientUnpaid(d.clipay));
+  const overdueItems=[...allDev,...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay));
   const ol=document.getElementById('overdue-list');
   if(!overdueItems.length){ ol.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px 0">No unpaid items 🎉</div>'; }
-  else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev}</div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
+  else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev} <span style="font-size:10px;font-weight:600;color:${d.done?'#16a34a':'#d97706'};background:${d.done?'#dcfce7':'#fef3c7'};padding:1px 6px;border-radius:999px;margin-left:4px">${d.done?'Invoiced':'Active'}</span></div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
   // Mini summaries
   document.getElementById('dash-dev-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.dev.length}</span> · Done: <span style="color:var(--green)">${DB.devDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0))}</span></div>`;
   document.getElementById('dash-func-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.func.length}</span> · Done: <span style="color:var(--green)">${DB.funcDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.funcDone.reduce((s,d)=>s+calcFunc(d),0))}</span></div>`;
