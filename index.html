@@ -429,13 +429,14 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
     <!-- Monthly breakdown table -->
     <div class="table-wrap">
-      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
         <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
         <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Total Profit</div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
       </div>
       <div id="profit-body"></div>
     </div>
@@ -478,13 +479,14 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
     <!-- Monthly breakdown table -->
     <div class="table-wrap">
-      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
         <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
         <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Total Net Cash Flow</div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
       </div>
       <div id="ncf-body"></div>
     </div>
@@ -1517,7 +1519,7 @@ function renderDashboard(){
 // PROFIT TABLE + CHARTS
 // ══════════════════════════════════════════════════════════════════════
 function renderProfit(){
-  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr 1fr';
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('profit-year-filter');
@@ -1543,12 +1545,19 @@ function renderProfit(){
   const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
   const ensure = d => {
     const k=ymKey(d);
-    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0,loss:0};
   };
 
   DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFunc(d); });
   DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
+
+  // ── Set Off Loss — Dev/Func/Project tickets whose status is "Set Off" ──
+  // Shown as a reference "loss" figure; not subtracted from Total Profit.
+  const isSetOff = d => d.status==='Set Off';
+  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).profit; });
+  [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
+  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).profit; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
@@ -1556,13 +1565,19 @@ function renderProfit(){
   const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0);
   const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
   const grandTotal = totalFunc + totalDev + totalProj;
+  const totalLoss  =
+    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0) +
+    [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
+    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
+  { const kEl=document.getElementById('profit-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
   document.getElementById('profit-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit (${yearLabel})</div><div class="dash-val green">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Func Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
-    <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
+    <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
+    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   // Build month totals for the selected year
@@ -1623,7 +1638,8 @@ function renderProfit(){
       <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
       <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
-      <div class="th">Total Profit</div>`;
+      <div class="th">Total Profit</div>
+      <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>`;
   }
 
   const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
@@ -1638,7 +1654,7 @@ function renderProfit(){
   const rows = sortedKeys.map(k=>{
     const r=ymData[k];
     const total=r.func+r.dev+r.proj;
-    if(!total) return '';
+    if(!total && !r.loss) return '';
     const showYear = r.year!==prevYear;
     prevYear=r.year;
     return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear&&selectedYear==='all'?';border-top:2px solid var(--b2)':''}">
@@ -1648,6 +1664,7 @@ function renderProfit(){
       <div class="td ${r.dev?'green':'muted'} mono">${r.dev?fmt(r.dev):'—'}</div>
       <div class="td ${r.proj?'green':'muted'} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${total?'green fw':'muted'} mono">${total?fmt(total):'—'}</div>
+      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
     </div>`;
   }).filter(Boolean).join('');
 
@@ -1658,6 +1675,7 @@ function renderProfit(){
     <div class="td green fw mono">${fmt(totalDev)}</div>
     <div class="td green fw mono">${fmt(totalProj)}</div>
     <div class="td green fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
+    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
   </div>`;
 
   document.getElementById('profit-body').innerHTML =
@@ -1670,7 +1688,7 @@ function renderProfit(){
 // only counts once Dev Pay Status = Developer Paid.
 // ══════════════════════════════════════════════════════════════════════
 function renderNCF(){
-  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr 1fr';
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('ncf-year-filter');
@@ -1693,12 +1711,21 @@ function renderNCF(){
   const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
   const ensure = d => {
     const k=ymKey(d);
-    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0};
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0,loss:0};
   };
 
   DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
   DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDevCash(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
+
+  // ── Set Off Loss — Dev/Func/Project tickets whose status is "Set Off" ──
+  // Shown as a reference "loss" figure (full Inv-Full − Dev-Pay value, since a
+  // set-off ticket is never actually invoiced/paid in cash); not subtracted
+  // from Total Net Cash Flow.
+  const isSetOff = d => d.status==='Set Off';
+  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).profit; });
+  [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
+  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).profit; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
@@ -1707,13 +1734,19 @@ function renderNCF(){
   const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
   const grandTotal = totalFunc + totalDev + totalProj;
   const gtColor = grandTotal<0 ? 'red' : 'green';
+  const totalLoss  =
+    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0) +
+    [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
+    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
+  { const kEl=document.getElementById('ncf-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
   document.getElementById('ncf-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Func Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
-    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
+    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
+    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   const monthlyForCharts = {};
@@ -1777,7 +1810,7 @@ function renderNCF(){
   const rows = sortedKeys.map(k=>{
     const r=ymData[k];
     const total=r.func+r.dev+r.proj;
-    if(!total) return '';
+    if(!total && !r.loss) return '';
     const showYear = r.year!==prevYear;
     prevYear=r.year;
     const cls = v => v>0?'green':v<0?'red':'muted';
@@ -1788,6 +1821,7 @@ function renderNCF(){
       <div class="td ${cls(r.dev)} mono">${r.dev?fmt(r.dev):'—'}</div>
       <div class="td ${cls(r.proj)} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${cls(total)} fw mono">${total?fmt(total):'—'}</div>
+      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
     </div>`;
   }).filter(Boolean).join('');
 
@@ -1798,6 +1832,7 @@ function renderNCF(){
     <div class="td ${totalDev<0?'red':'green'} fw mono">${fmt(totalDev)}</div>
     <div class="td ${totalProj<0?'red':'green'} fw mono">${fmt(totalProj)}</div>
     <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
+    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
   </div>`;
 
   document.getElementById('ncf-body').innerHTML =
