@@ -434,7 +434,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="th">Month</div>
         <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
         <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
-        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Developer Payment</span></div>
         <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Total Profit</div>
       </div>
@@ -484,7 +484,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="th">Month</div>
         <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
         <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
-        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Developer Payment</span></div>
         <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Total Net Cash Flow</div>
       </div>
@@ -1552,12 +1552,13 @@ function renderProfit(){
   DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
 
-  // ── Set Off Loss — Dev/Func/Project tickets whose status is "Set Off" ──
-  // Shown as a reference "loss" figure; not subtracted from Total Profit.
+  // ── Set Off Loss — Developer Payment total for Dev/Func/Project tickets
+  // whose status is "Set Off". Func Support tickets carry no dev cost, so
+  // they always contribute 0 here. Shown as a reference figure; not
+  // subtracted from Total Profit.
   const isSetOff = d => d.status==='Set Off';
-  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).profit; });
-  [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
-  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).profit; });
+  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).devPmt; });
+  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).devPmt; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
@@ -1566,9 +1567,9 @@ function renderProfit(){
   const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
   const grandTotal = totalFunc + totalDev + totalProj;
   const totalLoss  =
-    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0) +
-    [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
-    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
+    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).devPmt, 0) +
+    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).devPmt, 0);
+
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
   { const kEl=document.getElementById('profit-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
@@ -1637,7 +1638,7 @@ function renderProfit(){
       <div class="th">Month</div>
       <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
       <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
-      <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
+      <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Developer Payment</span></div>
       <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th">Total Profit</div>`;
   }
@@ -1718,14 +1719,13 @@ function renderNCF(){
   DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDevCash(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
 
-  // ── Set Off Loss — Dev/Func/Project tickets whose status is "Set Off" ──
-  // Shown as a reference "loss" figure (full Inv-Full − Dev-Pay value, since a
-  // set-off ticket is never actually invoiced/paid in cash); not subtracted
-  // from Total Net Cash Flow.
+  // ── Set Off Loss — Developer Payment total for Dev/Func/Project tickets
+  // whose status is "Set Off". Func Support tickets carry no dev cost, so
+  // they always contribute 0 here. Shown as a reference figure; not
+  // subtracted from Total Net Cash Flow.
   const isSetOff = d => d.status==='Set Off';
-  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).profit; });
-  [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
-  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).profit; });
+  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).devPmt; });
+  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).devPmt; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
@@ -1735,9 +1735,8 @@ function renderNCF(){
   const grandTotal = totalFunc + totalDev + totalProj;
   const gtColor = grandTotal<0 ? 'red' : 'green';
   const totalLoss  =
-    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0) +
-    [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
-    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
+    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).devPmt, 0) +
+    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).devPmt, 0);
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
   { const kEl=document.getElementById('ncf-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
