@@ -434,9 +434,9 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="th">Month</div>
         <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
         <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
         <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Total Profit</div>
-        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
       </div>
       <div id="profit-body"></div>
     </div>
@@ -484,9 +484,9 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="th">Month</div>
         <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
         <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
+        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
         <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Total Net Cash Flow</div>
-        <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
       </div>
       <div id="ncf-body"></div>
     </div>
@@ -1576,8 +1576,8 @@ function renderProfit(){
     <div class="dash-card"><div class="dash-label">Total Profit (${yearLabel})</div><div class="dash-val green">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Func Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
-    <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
-    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
+    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>
+    <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   // Build month totals for the selected year
@@ -1637,9 +1637,9 @@ function renderProfit(){
       <div class="th">Month</div>
       <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
       <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
+      <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>
       <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
-      <div class="th">Total Profit</div>
-      <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Status = Set Off</span></div>`;
+      <div class="th">Total Profit</div>`;
   }
 
   const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
@@ -1662,9 +1662,9 @@ function renderProfit(){
       <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${r.func?'green':'muted'} mono">${r.func?fmt(r.func):'—'}</div>
       <div class="td ${r.dev?'green':'muted'} mono">${r.dev?fmt(r.dev):'—'}</div>
+      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
       <div class="td ${r.proj?'green':'muted'} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${total?'green fw':'muted'} mono">${total?fmt(total):'—'}</div>
-      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
     </div>`;
   }).filter(Boolean).join('');
 
@@ -1673,9 +1673,9 @@ function renderProfit(){
     <div class="td"></div>
     <div class="td green fw mono">${fmt(totalFunc)}</div>
     <div class="td green fw mono">${fmt(totalDev)}</div>
+    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
     <div class="td green fw mono">${fmt(totalProj)}</div>
     <div class="td green fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
-    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
   </div>`;
 
   document.getElementById('profit-body').innerHTML =
@@ -1745,8 +1745,8 @@ function renderNCF(){
     <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Func Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
-    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
-    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
+    <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>
+    <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   const monthlyForCharts = {};
@@ -1819,9 +1819,9 @@ function renderNCF(){
       <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${cls(r.func)} mono">${r.func?fmt(r.func):'—'}</div>
       <div class="td ${cls(r.dev)} mono">${r.dev?fmt(r.dev):'—'}</div>
+      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
       <div class="td ${cls(r.proj)} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${cls(total)} fw mono">${total?fmt(total):'—'}</div>
-      <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
     </div>`;
   }).filter(Boolean).join('');
 
@@ -1830,9 +1830,9 @@ function renderNCF(){
     <div class="td"></div>
     <div class="td ${totalFunc<0?'red':'green'} fw mono">${fmt(totalFunc)}</div>
     <div class="td ${totalDev<0?'red':'green'} fw mono">${fmt(totalDev)}</div>
+    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
     <div class="td ${totalProj<0?'red':'green'} fw mono">${fmt(totalProj)}</div>
     <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
-    <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
   </div>`;
 
   document.getElementById('ncf-body').innerHTML =
