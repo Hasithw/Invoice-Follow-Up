@@ -207,6 +207,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="ncf">NCF</div>
     <div class="nav-tab" data-tab="setoff">Set Off</div>
     <div class="nav-tab" data-tab="notes">Notes</div>
+    <div class="nav-tab" data-tab="portal">Client Portal</div>
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
@@ -663,6 +664,159 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
 
 <!-- ════ SETTINGS ════ -->
+<!-- ════ CLIENT PORTAL ════ -->
+<div class="tab-panel" id="tab-portal">
+  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1100px">
+    <div style="font-size:16px;font-weight:600;color:var(--text)">Client Portal Access</div>
+    <div class="info-bar" style="align-items:flex-start">
+      ⚡ This gives clients a separate, read-only page (<code>portal.html</code>) where they can log in and see only <strong>their own</strong> requests, status, hours and payment info. It never lets them edit anything. Host <code>portal.html</code> anywhere (a separate URL from this file) and share the login you create below with your client.
+    </div>
+
+    <!-- Service role key (kept local only, used to manage auth users + client_accounts) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Connection
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Required once, stored only in this browser — never sent anywhere except your own Supabase project</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:10px;max-width:760px">
+        <div class="dp-field">
+          <div class="dp-label">Supabase Service Role Key</div>
+          <input id="portal-service-key" class="dp-input" type="password" placeholder="Paste your service_role key (Supabase → Project Settings → API)" oninput="savePortalServiceKey()"/>
+          <div style="font-size:11px;color:var(--t3)">Needed to create client logins and manage portal access. <strong>Keep this file private</strong> — never send <code>index.html</code> itself to a client, since it can fully manage your database.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending signups -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Pending Signups
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Clients who created their own login from the "New client? Request access" link on the portal</span>
+        <button class="btn btn-sm" style="float:right" onclick="loadPendingSignups()">↻ Refresh</button>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+        <div class="info-bar" style="align-items:flex-start">
+          ⚡ Signing up creates a login only — it grants <strong>zero</strong> portal access on its own. A request only becomes real access once you approve it below and confirm the company (what they typed is just a hint, not verified).
+        </div>
+        <div id="portal-pending-list" style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load pending requests.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add client access -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Add Client Login
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Or create one directly yourself, without waiting for a signup</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px;max-width:760px">
+        <div class="dp-row">
+          <div class="dp-field">
+            <div class="dp-label">Client / Company Name</div>
+            <input id="portal-new-company" class="dp-input" list="portal-company-list" placeholder="Must match Requester name exactly, e.g. Techstar Packaging (Private) Limited"/>
+            <datalist id="portal-company-list"></datalist>
+          </div>
+          <div class="dp-field">
+            <div class="dp-label">Client Email</div>
+            <input id="portal-new-email" class="dp-input" type="email" placeholder="client@company.com"/>
+          </div>
+        </div>
+        <div class="dp-row">
+          <div class="dp-field">
+            <div class="dp-label">Password</div>
+            <div style="display:flex;gap:6px">
+              <input id="portal-new-password" class="dp-input" type="text" placeholder="Set an initial password"/>
+              <button class="btn btn-sm" onclick="generatePortalPassword()">🎲 Generate</button>
+            </div>
+          </div>
+          <div class="dp-field" style="justify-content:flex-end">
+            <button class="btn btn-primary" onclick="createClientAccess()">+ Create Client Login</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--t3)">This creates the client's login and company record. To control <em>which</em> Requester names (e.g. individual staff) belong to this company, use the Requester Assignment panel below — that's what actually scopes their portal view.</div>
+      </div>
+    </div>
+
+    <!-- Requester assignment -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Requester Assignment
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Controls which tickets a client sees — your `req`/Requester field holds individual staff names, not company names</span>
+        <button class="btn btn-sm" style="float:right" onclick="loadRequesterMap()">↻ Refresh</button>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div class="info-bar" style="align-items:flex-start">
+          ⚡ A client only sees tickets whose Requester name is assigned to their company here. Unassigned requester names won't show up for anyone in the portal until you assign them.
+        </div>
+        <div id="portal-requester-map-list" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load assignments.</div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="dp-field" style="flex:1;min-width:200px">
+            <div class="dp-label">Requester Name</div>
+            <input id="portal-req-new-name" class="dp-input" list="portal-requester-name-list" placeholder="e.g. Theekshana"/>
+            <datalist id="portal-requester-name-list"></datalist>
+          </div>
+          <div class="dp-field" style="flex:1;min-width:220px">
+            <div class="dp-label">Belongs To Company</div>
+            <input id="portal-req-new-company" class="dp-input" list="portal-company-list" placeholder="Must match a Client Login's company name"/>
+          </div>
+          <button class="btn btn-primary" onclick="addRequesterAssignment()">+ Assign</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing client accounts -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Existing Client Logins
+        <button class="btn btn-sm" style="float:right" onclick="loadClientAccounts()">↻ Refresh</button>
+      </div>
+      <div id="portal-accounts-list" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load client accounts.</div>
+      </div>
+    </div>
+
+    <!-- Help Desk status mapping -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Help Desk Status Mapping
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Controls which Kanban column each internal Project Status appears in on the client portal board</span>
+        <button class="btn btn-sm" style="float:right" onclick="loadStatusMap()">↻ Refresh</button>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div class="info-bar" style="align-items:flex-start">
+          ⚡ Clients never see your internal status text (e.g. <em>"With Developer"</em>) — only the Kanban column name you choose here. Unmapped statuses default to <strong>New Request</strong>.
+        </div>
+        <div id="portal-status-map-list" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load the mapping.</div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="dp-field" style="flex:1;min-width:200px">
+            <div class="dp-label">Internal Status</div>
+            <select id="portal-map-new-internal" class="dp-input"></select>
+          </div>
+          <div class="dp-field" style="flex:1;min-width:220px">
+            <div class="dp-label">Kanban Column</div>
+            <select id="portal-map-new-helpdesk" class="dp-input">
+              <option>New Request</option>
+              <option>Scope & SRS In-Progress</option>
+              <option>Pending Client Approval</option>
+              <option>Functional Testing</option>
+              <option>Client Testing</option>
+              <option>Deployed Production</option>
+              <option>Pending Payment - Projects</option>
+              <option>Finished</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="addStatusMapping()">+ Add / Update Mapping</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="tab-panel" id="tab-settings">
   <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
@@ -818,6 +972,362 @@ async function sbDelete(table, id) {
     method:'DELETE', headers:SB_HDRS
   });
   if (!r.ok) throw new Error(`DELETE ${table} ${r.status}`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CLIENT PORTAL ADMIN (creates logins for the separate portal.html)
+// Uses the service_role key (pasted locally, stored only in this browser's
+// localStorage) so it can call Supabase Auth admin endpoints and manage the
+// client_accounts table directly, bypassing RLS. The anon key used for the
+// rest of this app is never sufficient for this — by design (see SQL setup).
+// ══════════════════════════════════════════════════════════════════════
+const PORTAL_KEY_STORAGE = 'techstar_portal_service_key';
+
+function getPortalServiceKey() {
+  return localStorage.getItem(PORTAL_KEY_STORAGE) || '';
+}
+function savePortalServiceKey() {
+  const v = document.getElementById('portal-service-key').value.trim();
+  if (v) localStorage.setItem(PORTAL_KEY_STORAGE, v);
+}
+function portalSbHeaders() {
+  const key = getPortalServiceKey();
+  return { 'Content-Type':'application/json', 'apikey':key, 'Authorization':'Bearer '+key };
+}
+function generatePortalPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let pw = '';
+  for (let i=0;i<12;i++) pw += chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('portal-new-password').value = pw;
+}
+
+function initPortalTab() {
+  const stored = getPortalServiceKey();
+  if (stored) document.getElementById('portal-service-key').value = stored;
+  // "Requester Name" datalist: distinct req values across dev/func/proj —
+  // these are individual staff names on your tickets, e.g. "Theekshana".
+  const reqNames = new Set();
+  [...DB.dev, ...DB.devDone, ...DB.func, ...DB.funcDone, ...DB.proj, ...DB.projDone].forEach(r=>{
+    if (r.req) reqNames.add(r.req.trim());
+  });
+  document.getElementById('portal-requester-name-list').innerHTML =
+    [...reqNames].sort().map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  // Populate the "Internal Status" dropdown from the app's actual status list
+  const sel = document.getElementById('portal-map-new-internal');
+  sel.innerHTML = STATUSES.map(s=>`<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
+  if (stored) { loadClientAccounts(); loadStatusMap(); loadRequesterMap(); loadPendingSignups(); }
+}
+
+// "Company" datalist (used by both the Add Client Login form and the
+// Requester Assignment form) is refreshed from actual client_accounts
+// rows once loaded, so it always reflects real companies you've created
+// — never individual requester names.
+function refreshCompanyDatalist(rows) {
+  const dl = document.getElementById('portal-company-list');
+  const names = [...new Set(rows.map(r=>r.company_name))].sort();
+  dl.innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+}
+
+const KANBAN_COLUMNS_ADMIN = [
+  'New Request','Scope & SRS In-Progress','Pending Client Approval',
+  'Functional Testing','Client Testing','Deployed Production',
+  'Pending Payment - Projects','Finished'
+];
+
+async function loadStatusMap() {
+  const key = getPortalServiceKey();
+  const box = document.getElementById('portal-status-map-list');
+  if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?select=*&order=internal_status.asc`, { headers: portalSbHeaders() });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No mappings yet — run client-portal-setup.sql, or add one below.</div>'; return; }
+    box.innerHTML = rows.map(row => `
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
+        <div style="font-size:13px;font-family:'JetBrains Mono',monospace">${row.internal_status}</div>
+        <select class="dp-input" id="map-sel-${cssId(row.internal_status)}" style="padding:6px 10px">
+          ${KANBAN_COLUMNS_ADMIN.map(c=>`<option ${c===row.helpdesk_status?'selected':''}>${c}</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="saveStatusMapping('${row.internal_status.replace(/'/g,"\\'")}')">Save</button>
+          <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteStatusMapping('${row.internal_status.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
+  }
+}
+function cssId(s){ return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+async function saveStatusMapping(internalStatus) {
+  const sel = document.getElementById('map-sel-'+cssId(internalStatus));
+  const helpdeskStatus = sel.value;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?internal_status=eq.${encodeURIComponent(internalStatus)}`, {
+      method:'PATCH', headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
+      body: JSON.stringify({ helpdesk_status: helpdeskStatus, updated_at: new Date().toISOString() })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Mapping updated','green');
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function addStatusMapping() {
+  const internalStatus = document.getElementById('portal-map-new-internal').value;
+  const helpdeskStatus = document.getElementById('portal-map-new-helpdesk').value;
+  if (!internalStatus) { showToast('Pick an internal status','red'); return; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map`, {
+      method:'POST',
+      headers:{ ...portalSbHeaders(), 'Prefer':'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ internal_status: internalStatus, helpdesk_status: helpdeskStatus }])
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Mapping saved','green');
+    loadStatusMap();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function deleteStatusMapping(internalStatus) {
+  if (!confirm(`Remove the mapping for "${internalStatus}"? It will fall back to "New Request" on the client board.`)) return;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?internal_status=eq.${encodeURIComponent(internalStatus)}`, {
+      method:'DELETE', headers: portalSbHeaders()
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Mapping removed','green');
+    loadStatusMap();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+// ── Requester → Company assignment ──────────────────────────────────
+// `req` on tickets holds individual staff names, not a company name, so
+// this maps "these requester names belong to this client company" —
+// what the portal views actually use to scope a client's visible rows.
+async function loadRequesterMap() {
+  const key = getPortalServiceKey();
+  const box = document.getElementById('portal-requester-map-list');
+  if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_requesters?select=*&order=company_name.asc,requester_name.asc`, { headers: portalSbHeaders() });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No assignments yet — add one below.</div>'; return; }
+    // Group by company for readability
+    const byCompany = {};
+    rows.forEach(r=>{ (byCompany[r.company_name]=byCompany[r.company_name]||[]).push(r.requester_name); });
+    box.innerHTML = Object.entries(byCompany).map(([company, names]) => `
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px">${esc(company)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${names.map(n=>`<span class="badge b-accent" style="display:inline-flex;align-items:center;gap:6px">${esc(n)}
+            <span style="cursor:pointer;font-weight:700" onclick="removeRequesterAssignment('${company.replace(/'/g,"\\'")}','${n.replace(/'/g,"\\'")}')" title="Remove">✕</span>
+          </span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
+  }
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function addRequesterAssignment() {
+  const requesterName = document.getElementById('portal-req-new-name').value.trim();
+  const companyName = document.getElementById('portal-req-new-company').value.trim();
+  if (!requesterName || !companyName) { showToast('Both fields are required','red'); return; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_requesters`, {
+      method:'POST',
+      headers:{ ...portalSbHeaders(), 'Prefer':'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ company_name: companyName, requester_name: requesterName }])
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Requester assigned','green');
+    document.getElementById('portal-req-new-name').value='';
+    loadRequesterMap();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function removeRequesterAssignment(companyName, requesterName) {
+  if (!confirm(`Remove "${requesterName}" from ${companyName}? They will stop appearing in that client's portal.`)) return;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_requesters?company_name=eq.${encodeURIComponent(companyName)}&requester_name=eq.${encodeURIComponent(requesterName)}`, {
+      method:'DELETE', headers: portalSbHeaders()
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Assignment removed','green');
+    loadRequesterMap();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+// ── Pending signups (self-registered clients awaiting approval) ────────
+// A public signup only creates a login (see portal.html) — it never
+// creates a client_accounts row, so it grants zero portal access by
+// itself. "Pending" = an auth user that exists but has no client_accounts
+// row yet. Approving here is the only thing that turns it into real
+// access, and the company name is always whatever the admin types in
+// (prefilled from their request as a hint, never trusted as-is).
+async function loadPendingSignups() {
+  const key = getPortalServiceKey();
+  const box = document.getElementById('portal-pending-list');
+  if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try {
+    const [usersRes, accountsRes] = await Promise.all([
+      fetch(`${SB_URL}/auth/v1/admin/users?per_page=200`, { headers: portalSbHeaders() }),
+      fetch(`${SB_URL}/rest/v1/client_accounts?select=id`, { headers: portalSbHeaders() })
+    ]);
+    if (!usersRes.ok) throw new Error(await usersRes.text());
+    if (!accountsRes.ok) throw new Error(await accountsRes.text());
+    const usersData = await usersRes.json();
+    const accounts = await accountsRes.json();
+    const users = usersData.users || usersData; // admin API shape can vary by version
+    const existingIds = new Set(accounts.map(a=>a.id));
+    const pending = users.filter(u => !existingIds.has(u.id));
+    if (!pending.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No pending signups.</div>'; return; }
+    box.innerHTML = pending.map(u => {
+      const meta = u.user_metadata || {};
+      const requestedCompany = (meta.requested_company||'').replace(/"/g,'&quot;');
+      const fullName = meta.full_name || '—';
+      return `
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(u.email)}</div>
+            <div style="font-size:12px;color:var(--t2)">${esc(fullName)} · requested "${esc(meta.requested_company||'—')}" · signed up ${u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="dp-input" id="pending-company-${cssId(u.id)}" value="${requestedCompany}" list="portal-company-list" placeholder="Confirm company name" style="flex:1;min-width:220px"/>
+          <button class="btn btn-sm btn-primary" onclick="approveSignup('${u.id}','${u.email.replace(/'/g,"\\'")}')">✓ Approve</button>
+          <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="rejectSignup('${u.id}')">✕ Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function approveSignup(userId, email) {
+  const companyInput = document.getElementById('pending-company-'+cssId(userId));
+  const companyName = companyInput.value.trim();
+  if (!companyName) { showToast('Enter/confirm a company name first','red'); return; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
+      method:'POST',
+      headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
+      body: JSON.stringify([{ id: userId, email, company_name: companyName, active: true }])
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Approved — remember to assign their requester name(s) below','green');
+    loadPendingSignups(); loadClientAccounts();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function rejectSignup(userId) {
+  if (!confirm('Reject and delete this signup? They will need to sign up again if they still want access.')) return;
+  try {
+    const r = await fetch(`${SB_URL}/auth/v1/admin/users/${userId}`, { method:'DELETE', headers: portalSbHeaders() });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Signup rejected','green');
+    loadPendingSignups();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function createClientAccess() {
+  const key = getPortalServiceKey();
+  if (!key) { showToast('Paste your Supabase service role key first','red'); return; }
+  const company = document.getElementById('portal-new-company').value.trim();
+  const email = document.getElementById('portal-new-email').value.trim();
+  const password = document.getElementById('portal-new-password').value.trim();
+  if (!company || !email || !password) { showToast('Company, email and password are all required','red'); return; }
+  if (password.length < 8) { showToast('Password must be at least 8 characters','red'); return; }
+  try {
+    // 1) Create a pre-confirmed auth user via the Supabase admin API
+    const r1 = await fetch(`${SB_URL}/auth/v1/admin/users`, {
+      method:'POST', headers: portalSbHeaders(),
+      body: JSON.stringify({ email, password, email_confirm:true })
+    });
+    const u = await r1.json();
+    if (!r1.ok) throw new Error(u.msg || u.message || 'Failed to create login');
+    // 2) Link that user to the company name in client_accounts (service role bypasses RLS)
+    const r2 = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
+      method:'POST',
+      headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
+      body: JSON.stringify([{ id:u.id, email, company_name:company, active:true }])
+    });
+    if (!r2.ok) { const t=await r2.text(); throw new Error(t); }
+    showToast('Client login created', 'green');
+    document.getElementById('portal-new-company').value='';
+    document.getElementById('portal-new-email').value='';
+    document.getElementById('portal-new-password').value='';
+    loadClientAccounts();
+  } catch(e) {
+    console.error(e);
+    showToast('Failed: '+e.message, 'red');
+  }
+}
+
+async function loadClientAccounts() {
+  const key = getPortalServiceKey();
+  const box = document.getElementById('portal-accounts-list');
+  if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?select=*&order=company_name.asc`, { headers: portalSbHeaders() });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    refreshCompanyDatalist(rows);
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No client logins yet.</div>'; return; }
+    box.innerHTML = rows.map(row => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.active?'var(--surface)':'#fafafa'}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.company_name}</div>
+          <div style="font-size:12px;color:var(--t2)">${row.email}</div>
+        </div>
+        <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
+        <button class="btn btn-sm" onclick="togglePortalAccount('${row.id}',${!row.active})">${row.active?'Disable':'Enable'}</button>
+        <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deletePortalAccount('${row.id}')">🗑 Remove</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function togglePortalAccount(id, makeActive) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
+      body: JSON.stringify({ active: makeActive })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    loadClientAccounts();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+async function deletePortalAccount(id) {
+  if (!confirm('Remove this client login? They will no longer be able to sign in to the portal.')) return;
+  try {
+    // Best-effort: remove the auth user too, then the mapping row
+    await fetch(`${SB_URL}/auth/v1/admin/users/${id}`, { method:'DELETE', headers: portalSbHeaders() });
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${encodeURIComponent(id)}`, {
+      method:'DELETE', headers: portalSbHeaders()
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Client login removed','green');
+    loadClientAccounts();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2168,13 +2678,15 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings'].includes(t))?'none':'';
+  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
   if(t==='notes'){ renderNotesList(); }
   // Load settings UI
   if(t==='settings'){ loadSettingsUI(); }
+  // Load client portal UI
+  if(t==='portal'){ initPortalTab(); }
   // Sidebar removed - always hidden
   const sb=document.getElementById('sidebar');
   sb.style.width='0';
