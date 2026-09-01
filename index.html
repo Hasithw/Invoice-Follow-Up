@@ -666,14 +666,31 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <!-- ════ SETTINGS ════ -->
 <!-- ════ CLIENT PORTAL ════ -->
 <div class="tab-panel" id="tab-portal">
-  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1100px">
-    <div style="font-size:16px;font-weight:600;color:var(--text)">Client Portal Access</div>
+  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="font-size:16px;font-weight:600;color:var(--text)">Client Portal</div>
+      <div style="display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:999px;padding:3px">
+        <button id="portal-subtab-btn-client" class="btn btn-sm" style="border-radius:999px;border-color:transparent" onclick="showPortalSubTab('client')">👁 Client View</button>
+        <button id="portal-subtab-btn-admin" class="btn btn-sm" style="border-radius:999px;border-color:transparent" onclick="showPortalSubTab('admin')">⚙ Admin Settings</button>
+      </div>
+    </div>
+
+    <!-- ══ CLIENT VIEW: live embedded preview of portal.html ══ -->
+    <div id="portal-client-pane" style="display:flex;flex-direction:column;gap:10px">
+      <div class="info-bar" style="align-items:flex-start">
+        <span>⚡ This is a live preview of exactly what your client sees — login screen first, then the Kanban helpdesk board after signing in. It's loading the real <code>portal.html</code> file, so <strong>portal.html must be uploaded in the same folder as this file</strong> for the preview to work. <a href="portal.html" target="_blank" style="color:inherit;text-decoration:underline;font-weight:600">Open in a new tab instead ↗</a></span>
+      </div>
+      <iframe id="portal-preview-iframe" src="portal.html" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:var(--rlg);background:#f0f4f8" title="Client Portal Preview"></iframe>
+    </div>
+
+    <!-- ══ ADMIN SETTINGS: manage logins, requesters, status mapping ══ -->
+    <div id="portal-admin-pane" style="display:none;flex-direction:column;gap:20px">
     <div class="info-bar" style="align-items:flex-start">
       <span>⚡ This gives clients a separate, read-only page (<code>portal.html</code>) where they can log in and see only <strong>their own</strong> requests, status, hours and payment info. It never lets them edit anything. Host <code>portal.html</code> anywhere (a separate URL from this file) and share the login you create below with your client.</span>
     </div>
 
     <!-- Service role key (kept local only, used to manage auth users + client_accounts) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Connection
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Required once, stored only in this browser — never sent anywhere except your own Supabase project</span>
@@ -688,7 +705,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Pending signups -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Pending Signups
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Clients who created their own login from the "New client? Request access" link on the portal</span>
@@ -705,7 +722,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Add client access -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Add Client Login
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Or create one directly yourself, without waiting for a signup</span>
@@ -739,7 +756,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Requester assignment -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Requester Assignment
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Controls which tickets a client sees — your `req`/Requester field holds individual staff names, not company names</span>
@@ -768,7 +785,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Existing client accounts -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Existing Client Logins
         <button class="btn btn-sm" style="float:right" onclick="loadClientAccounts()">↻ Refresh</button>
@@ -779,7 +796,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Help Desk status mapping -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Help Desk Status Mapping
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Controls which Kanban column each internal Project Status appears in on the client portal board</span>
@@ -814,6 +831,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         </div>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
@@ -822,7 +840,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
 
     <!-- Current Rates (full width) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Current Rates
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
@@ -856,7 +874,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
 
     <!-- Statuses (full width, one column per list) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Statuses
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets — use ▲ ▼ to reorder</span>
@@ -1001,7 +1019,26 @@ function generatePortalPassword() {
   document.getElementById('portal-new-password').value = pw;
 }
 
+function showPortalSubTab(which) {
+  const clientPane = document.getElementById('portal-client-pane');
+  const adminPane = document.getElementById('portal-admin-pane');
+  const clientBtn = document.getElementById('portal-subtab-btn-client');
+  const adminBtn = document.getElementById('portal-subtab-btn-admin');
+  if (which === 'client') {
+    clientPane.style.display = 'flex'; adminPane.style.display = 'none';
+    clientBtn.style.background = 'var(--surface)'; clientBtn.style.borderColor = 'var(--b2)';
+    adminBtn.style.background = 'transparent'; adminBtn.style.borderColor = 'transparent';
+    // Reload the iframe so it always starts fresh at the login screen
+    document.getElementById('portal-preview-iframe').src = 'portal.html?_=' + Date.now();
+  } else {
+    clientPane.style.display = 'none'; adminPane.style.display = 'flex';
+    adminBtn.style.background = 'var(--surface)'; adminBtn.style.borderColor = 'var(--b2)';
+    clientBtn.style.background = 'transparent'; clientBtn.style.borderColor = 'transparent';
+  }
+}
+
 function initPortalTab() {
+  showPortalSubTab('client');
   const stored = getPortalServiceKey();
   if (stored) document.getElementById('portal-service-key').value = stored;
   // "Requester Name" datalist: distinct req values across dev/func/proj —
