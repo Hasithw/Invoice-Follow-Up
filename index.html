@@ -669,7 +669,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1100px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Client Portal Access</div>
     <div class="info-bar" style="align-items:flex-start">
-      ⚡ This gives clients a separate, read-only page (<code>portal.html</code>) where they can log in and see only <strong>their own</strong> requests, status, hours and payment info. It never lets them edit anything. Host <code>portal.html</code> anywhere (a separate URL from this file) and share the login you create below with your client.
+      <span>⚡ This gives clients a separate, read-only page (<code>portal.html</code>) where they can log in and see only <strong>their own</strong> requests, status, hours and payment info. It never lets them edit anything. Host <code>portal.html</code> anywhere (a separate URL from this file) and share the login you create below with your client.</span>
     </div>
 
     <!-- Service role key (kept local only, used to manage auth users + client_accounts) -->
@@ -696,7 +696,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
         <div class="info-bar" style="align-items:flex-start">
-          ⚡ Signing up creates a login only — it grants <strong>zero</strong> portal access on its own. A request only becomes real access once you approve it below and confirm the company (what they typed is just a hint, not verified).
+          <span>⚡ Signing up creates a login only — it grants <strong>zero</strong> portal access on its own. A request only becomes real access once you approve it below and confirm the company (what they typed is just a hint, not verified).</span>
         </div>
         <div id="portal-pending-list" style="display:flex;flex-direction:column;gap:8px">
           <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load pending requests.</div>
@@ -714,7 +714,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="dp-row">
           <div class="dp-field">
             <div class="dp-label">Client / Company Name</div>
-            <input id="portal-new-company" class="dp-input" list="portal-company-list" placeholder="Must match Requester name exactly, e.g. Techstar Packaging (Private) Limited"/>
+            <input id="portal-new-company" class="dp-input" list="portal-company-list" placeholder="e.g. Techstar Packaging (Private) Limited"/>
             <datalist id="portal-company-list"></datalist>
           </div>
           <div class="dp-field">
@@ -747,7 +747,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
         <div class="info-bar" style="align-items:flex-start">
-          ⚡ A client only sees tickets whose Requester name is assigned to their company here. Unassigned requester names won't show up for anyone in the portal until you assign them.
+          <span>⚡ A client only sees tickets whose Requester name is assigned to their company here. Unassigned requester names won't show up for anyone in the portal until you assign them.</span>
         </div>
         <div id="portal-requester-map-list" style="display:flex;flex-direction:column;gap:6px">
           <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load assignments.</div>
@@ -787,7 +787,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
         <div class="info-bar" style="align-items:flex-start">
-          ⚡ Clients never see your internal status text (e.g. <em>"With Developer"</em>) — only the Kanban column name you choose here. Unmapped statuses default to <strong>New Request</strong>.
+          <span>⚡ Clients never see your internal status text (e.g. <em>"With Developer"</em>) — only the Kanban column name you choose here. Unmapped statuses default to <strong>New Request</strong>.</span>
         </div>
         <div id="portal-status-map-list" style="display:flex;flex-direction:column;gap:6px">
           <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load the mapping.</div>
