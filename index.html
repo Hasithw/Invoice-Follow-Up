@@ -904,7 +904,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════════════
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Invoiced'];
+let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Pending Payments','Finished'];
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -1082,11 +1082,15 @@ async function loadStatusMap() {
     const rows = await r.json();
     if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No mappings yet — run client-portal-setup.sql, or add one below.</div>'; return; }
     box.innerHTML = rows.map(row => `
-      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
         <div style="font-size:13px;font-family:'JetBrains Mono',monospace">${row.internal_status}</div>
-        <select class="dp-input" id="map-sel-${cssId(row.internal_status)}" style="padding:6px 10px">
+        <select class="dp-input" id="map-sel-${cssId(row.internal_status)}" style="padding:6px 10px" ${row.hidden?'disabled':''}>
           ${KANBAN_COLUMNS_ADMIN.map(c=>`<option ${c===row.helpdesk_status?'selected':''}>${c}</option>`).join('')}
         </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2);white-space:nowrap;cursor:pointer">
+          <input type="checkbox" id="map-hidden-${cssId(row.internal_status)}" ${row.hidden?'checked':''} onchange="document.getElementById('map-sel-${cssId(row.internal_status)}').disabled=this.checked"/>
+          Hide from clients
+        </label>
         <div style="display:flex;gap:6px">
           <button class="btn btn-sm" onclick="saveStatusMapping('${row.internal_status.replace(/'/g,"\\'")}')">Save</button>
           <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteStatusMapping('${row.internal_status.replace(/'/g,"\\'")}')">🗑</button>
@@ -1102,11 +1106,13 @@ function cssId(s){ return s.replace(/[^a-zA-Z0-9]/g,'_'); }
 
 async function saveStatusMapping(internalStatus) {
   const sel = document.getElementById('map-sel-'+cssId(internalStatus));
+  const hiddenCb = document.getElementById('map-hidden-'+cssId(internalStatus));
   const helpdeskStatus = sel.value;
+  const hidden = hiddenCb.checked;
   try {
     const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?internal_status=eq.${encodeURIComponent(internalStatus)}`, {
       method:'PATCH', headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
-      body: JSON.stringify({ helpdesk_status: helpdeskStatus, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ helpdesk_status: helpdeskStatus, hidden, updated_at: new Date().toISOString() })
     });
     if (!r.ok) throw new Error(await r.text());
     showToast('Mapping updated','green');
@@ -1516,10 +1522,15 @@ function newId() { return 'r'+(++_id); }
 // (SCHEMAS captures these arrays by reference, so in-place mutation is required —
 // never reassign STATUSES/CLIENT_PAY/DEV_PAY, always push/splice).
 if (!DB.settings) DB.settings = {};
-if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length) {
-  STATUSES = DB.settings.statuses.map(s => s === 'Finished' ? 'Invoiced' : s);
+if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length && DB.settings.statuses.includes('Finished')) {
+  // Only trust a cached/customized status list if it's already been migrated
+  // to include "Finished" as its own status — otherwise it's a stale list
+  // from before this change (e.g. still ending in "Invoiced" or the old
+  // "Pending Payments"-only list), so fall through to the current default.
+  STATUSES = DB.settings.statuses;
+} else {
   DB.settings.statuses = STATUSES;
-} else DB.settings.statuses = STATUSES;
+}
 if (Array.isArray(DB.settings.clientPayStatuses) && DB.settings.clientPayStatuses.length) CLIENT_PAY = DB.settings.clientPayStatuses;
 else DB.settings.clientPayStatuses = CLIENT_PAY;
 if (Array.isArray(DB.settings.devPayStatuses) && DB.settings.devPayStatuses.length) DEV_PAY = DB.settings.devPayStatuses;
@@ -1833,7 +1844,7 @@ function rowDev(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${badge(d.status,['Invoiced','Client Testing'],'b-yellow')}</div>
+      <div class="td">${badge(d.status,['Finished','Client Testing'],'b-yellow')}</div>
       <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
       <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
@@ -1852,7 +1863,7 @@ function rowDev(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Invoiced','Client Testing'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payments','Client Testing'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${d.inv||'—'}</div>
@@ -1868,7 +1879,7 @@ function rowFunc(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div>
-      <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+      <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
       <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
       <div class="td mono">${fmt(0)}</div>
       <div class="td mono">${fmt(amt)}</div>
@@ -1885,7 +1896,7 @@ function rowFunc(d){
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payments'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
@@ -1900,7 +1911,7 @@ function rowProj(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+      <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
       <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
       <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
@@ -1919,7 +1930,7 @@ function rowProj(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Invoiced'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payments'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
@@ -2571,7 +2582,7 @@ function saveDetail(tab){
   if(!rec.funcRate) rec.funcRate=String(getFuncRate());
   if(!rec.devRate&&(sk==='dev'||sk==='proj')) rec.devRate=String(getDevRate());
 
-  const isFinished=rec.status==='Invoiced';
+  const isFinished=rec.status==='Finished';
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
   const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
   const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
