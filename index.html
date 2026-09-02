@@ -904,7 +904,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════════════
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Pending Payments','Finished'];
+let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Pending Payment','Finished'];
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -1526,7 +1526,7 @@ if (Array.isArray(DB.settings.statuses) && DB.settings.statuses.length && DB.set
   // Only trust a cached/customized status list if it's already been migrated
   // to include "Finished" as its own status — otherwise it's a stale list
   // from before this change (e.g. still ending in "Invoiced" or the old
-  // "Pending Payments"-only list), so fall through to the current default.
+  // "Pending Payment"-only list), so fall through to the current default.
   STATUSES = DB.settings.statuses;
 } else {
   DB.settings.statuses = STATUSES;
@@ -1863,7 +1863,7 @@ function rowDev(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payments','Client Testing'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payment','Client Testing'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${d.inv||'—'}</div>
@@ -1896,7 +1896,7 @@ function rowFunc(d){
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payments'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
@@ -1930,7 +1930,7 @@ function rowProj(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payments'],'b-yellow')}</div>
+    <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>

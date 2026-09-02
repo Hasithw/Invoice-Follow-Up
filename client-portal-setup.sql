@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════════
 -- Techstar Client Portal — one-time Supabase setup (v5 — Finished vs
--- Pending Payments split, Deployed mapping, hidden statuses)
+-- Pending Payment split, Deployed mapping, hidden statuses)
 -- Run this once in Supabase Studio → SQL Editor → New query → Run.
 -- Safe to re-run (uses IF NOT EXISTS / DROP ... IF EXISTS throughout,
 -- and never overwrites a mapping you've since customized).
@@ -160,7 +160,7 @@ create table if not exists public.helpdesk_status_map (
 -- so re-running this script never overwrites a mapping you've since
 -- customized in the admin UI). "Finished" is the status that also
 -- triggers moving a ticket into Invoiced Dev/Func/Projects internally.
--- "Pending Payments" does NOT move it internally — it just flags it for
+-- "Pending Payment" does NOT move it internally — it just flags it for
 -- this Kanban column. "SetOff Action" is hidden entirely — it's an
 -- internal accounting status with no client-facing meaning.
 insert into public.helpdesk_status_map (internal_status, helpdesk_status, hidden) values
@@ -169,7 +169,7 @@ insert into public.helpdesk_status_map (internal_status, helpdesk_status, hidden
   ('Approve Quote/Scope',  'Pending Client Approval',  false),
   ('Client Testing',       'Client Testing',           false),
   ('Deployed',             'Deployed Production',      false),
-  ('Pending Payments',     'Pending Payment', false),
+  ('Pending Payment',     'Pending Payment', false),
   ('Finished',             'Finished',                  false),
   ('SetOff Action',        'New Request',               true)
 on conflict (internal_status) do nothing;
