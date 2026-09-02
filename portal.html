@@ -238,7 +238,7 @@ const VIEW_MAP = { dev:'portal_dev_support', func:'portal_func_support', proj:'p
 const KANBAN_COLUMNS = [
   'New Request', 'Scope & SRS In-Progress', 'Pending Client Approval',
   'Functional Testing', 'Client Testing', 'Deployed Production',
-  'Pending Payment - Projects', 'Finished'
+  'Pending Payment', 'Finished'
 ];
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }

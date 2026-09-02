@@ -169,7 +169,7 @@ insert into public.helpdesk_status_map (internal_status, helpdesk_status, hidden
   ('Approve Quote/Scope',  'Pending Client Approval',  false),
   ('Client Testing',       'Client Testing',           false),
   ('Deployed',             'Deployed Production',      false),
-  ('Pending Payments',     'Pending Payment - Projects', false),
+  ('Pending Payments',     'Pending Payment', false),
   ('Finished',             'Finished',                  false),
   ('SetOff Action',        'New Request',               true)
 on conflict (internal_status) do nothing;
@@ -182,7 +182,7 @@ alter table public.helpdesk_status_map add constraint helpdesk_status_valid
   check (helpdesk_status in (
     'New Request','Scope & SRS In-Progress','Pending Client Approval',
     'Functional Testing','Client Testing','Deployed Production',
-    'Pending Payment - Projects','Finished'
+    'Pending Payment','Finished'
   ));
 
 -- Not exposed to anon or authenticated directly — it's only ever read
