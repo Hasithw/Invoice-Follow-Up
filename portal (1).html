@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Techstar Client Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f0f4f8;--surface:#ffffff;--s2:#f1f5f9;--s3:#e8edf4;
+  --border:#dde3ec;--b2:#c8d1de;
+  --text:#0f172a;--t2:#475569;--t3:#94a3b8;
+  --accent:#2563eb;--adim:rgba(37,99,235,.1);
+  --green:#16a34a;--gdim:rgba(22,163,74,.1);
+  --red:#dc2626;--rdim:rgba(220,38,38,.1);
+  --r:8px;--rlg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;overflow-x:hidden}
+.hidden{display:none!important}
+/* ── auth screen ── */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:36px 32px;width:100%;max-width:400px;box-shadow:0 10px 40px rgba(15,23,42,.08)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.auth-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:700}
+.auth-title{font-size:16px;font-weight:700}
+.auth-sub{font-size:12px;color:var(--t3)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:12px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.04em}
+.field input{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;font-size:14px;color:var(--text);font-family:Inter,sans-serif;outline:none;width:100%}
+.field input:focus{border-color:var(--accent)}
+.btn{padding:11px 16px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s2);color:var(--text);font-size:14px;cursor:pointer;font-family:Inter,sans-serif;transition:all .15s;width:100%;font-weight:600}
+.btn:hover{background:var(--s3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:#3d7de8}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link-btn{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;width:auto;font-weight:500}
+.auth-error{background:var(--rdim);color:var(--red);border:1px solid rgba(220,38,38,.25);border-radius:var(--r);padding:10px 12px;font-size:13px;margin-bottom:14px}
+.auth-success{background:var(--gdim);color:var(--green);border:1px solid rgba(22,163,74,.25);border-radius:var(--r);padding:10px 12px;font-size:13px;margin-bottom:14px}
+/* ── app shell ── */
+.app{display:none;min-height:100vh;flex-direction:column}
+.app.show{display:flex}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;height:56px;flex-shrink:0;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;white-space:nowrap}
+.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+.company-name{font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto}
+.nav-tabs{display:flex;gap:2px;padding:10px 20px 0;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
+.nav-tab{padding:9px 14px;border-radius:8px 8px 0 0;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;white-space:nowrap;border:1px solid transparent;border-bottom:none}
+.nav-tab.active{color:var(--accent);background:var(--bg);border-color:var(--border)}
+.main{flex:1;padding:24px 20px 60px;width:100%}
+.tab-panel#tab-board{max-width:1600px;margin:0 auto;width:100%}
+.tab-panel{display:none;flex-direction:column;gap:18px}
+.tab-panel.active{display:flex}
+.tab-panel:not(#tab-board){max-width:1000px;margin:0 auto;width:100%}
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px 18px}
+.kpi-label{font-size:11px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.kpi-val{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent)}
+/* kanban board */
+.board-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+.board-col{background:var(--s2);border:1px solid var(--border);border-radius:var(--rlg);flex:1 1 0;min-width:160px;display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+.board-col-hdr{padding:12px 14px;border-bottom:2px solid var(--b2);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.board-col-title{font-size:12px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em}
+.board-col-count{font-size:11px;font-weight:700;color:var(--accent);background:var(--adim);border-radius:99px;padding:2px 9px;flex-shrink:0}
+.board-col-body{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;flex:1}
+.board-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.board-card-desc{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--text)}
+.board-card-meta{font-size:10.5px;color:var(--t3);display:flex;flex-wrap:wrap;gap:4px 8px}
+.board-col-empty{font-size:11px;color:var(--t3);text-align:center;padding:16px 8px;font-style:italic}
+/* table-style list */
+.section-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+.req-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden}
+.req-row{display:grid;grid-template-columns:1fr 110px 80px 130px 140px;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center}
+.req-row:last-child{border-bottom:none}
+.req-row.head{background:#eef2f7;font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.05em}
+.req-cell{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.req-cell.muted{color:var(--t2)}
+.req-cell.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.empty-state{text-align:center;padding:50px 20px;color:var(--t3);font-size:14px}
+/* ── tablet ── */
+@media(max-width:900px){
+  .main{padding:18px 14px 50px}
+  .board-col{min-width:220px;max-width:220px}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+}
+/* ── phone ── */
+@media(max-width:640px){
+  body{font-size:14px}
+  .topbar{padding:0 12px;height:auto;min-height:52px;gap:8px}
+  .logo-icon{width:26px;height:26px;font-size:13px}
+  .company-name{max-width:120px;font-size:11px}
+  .topbar-right{gap:6px}
+  .btn-sm{padding:8px 12px;font-size:12px;min-height:36px}
+  .nav-tabs{padding:8px 12px 0;gap:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{padding:10px 12px;font-size:12.5px;min-height:40px;display:flex;align-items:center}
+  .main{padding:14px 12px 50px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:12px 14px}
+  .kpi-val{font-size:20px}
+  .board-wrap{gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px 8px}
+  .board-col{min-width:82vw;max-width:82vw;max-height:none;scroll-snap-align:start}
+  .board-col-hdr{padding:11px 12px}
+  .board-card{padding:11px 12px}
+  .req-row{grid-template-columns:1fr;gap:2px;padding:12px 14px}
+  .req-row.head{display:none}
+  .req-cell{white-space:normal}
+  .req-cell::before{content:attr(data-label);display:block;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+  .req-cell:first-child::before{display:none;margin-top:0}
+  .auth-wrap{padding:14px}
+  .auth-card{padding:24px 18px}
+  .field input{padding:12px 13px;font-size:16px}
+  .btn{min-height:44px}
+}
+/* ── small phone ── */
+@media(max-width:380px){
+  .company-name{display:none}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .board-col{min-width:86vw;max-width:86vw}
+}
+/* ── landscape phones / short viewports ── */
+@media(max-height:480px) and (max-width:900px){
+  .board-col{max-height:calc(100vh - 130px)}
+}
+#toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:24px;left:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:12px 18px;font-size:13px;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:999;max-width:calc(100vw - 48px)}
+#toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:640px){
+  #toast{left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:none;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ LOGIN ══════════════════ -->
+<div class="auth-wrap" id="loginScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Techstar Client Portal</div><div class="auth-sub">Track the status of your requests</div></div></div>
+    <div id="loginError" class="auth-error hidden"></div>
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" required autocomplete="username"/></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPassword" required autocomplete="current-password"/></div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+    </form>
+    <div style="text-align:center;margin-top:14px;display:flex;flex-direction:column;gap:8px">
+      <button class="link-btn" onclick="showForgot()">Forgot your password?</button>
+      <button class="link-btn" onclick="showSignup()">New client? Request access</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SIGN UP / REQUEST ACCESS ══════════════════ -->
+<div class="auth-wrap hidden" id="signupScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Request Portal Access</div><div class="auth-sub">Create your login — Techstar will confirm your access</div></div></div>
+    <div id="signupError" class="auth-error hidden"></div>
+    <form id="signupForm">
+      <div class="field"><label>Your Name</label><input type="text" id="signupName" required/></div>
+      <div class="field"><label>Company Name</label><input type="text" id="signupCompany" required placeholder="e.g. Techstar Packaging (Private) Limited"/></div>
+      <div class="field"><label>Email</label><input type="email" id="signupEmail" required autocomplete="username"/></div>
+      <div class="field"><label>Password</label><input type="password" id="signupPassword" minlength="8" required autocomplete="new-password"/></div>
+      <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
+    </form>
+    <div style="text-align:center;margin-top:14px"><button class="link-btn" onclick="showLogin()">Back to Sign In</button></div>
+  </div>
+</div>
+
+<!-- ══════════════════ SIGN UP RECEIVED ══════════════════ -->
+<div class="auth-wrap hidden" id="signupReceivedScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Request Received</div></div></div>
+    <div class="auth-success">Your account has been created. Techstar will review your request and confirm access shortly — you'll be able to sign in with your email and password once that's done.</div>
+    <button class="btn btn-primary" onclick="showLogin()">Back to Sign In</button>
+  </div>
+</div>
+
+<!-- ══════════════════ FORGOT PASSWORD ══════════════════ -->
+<div class="auth-wrap hidden" id="forgotScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Reset Password</div><div class="auth-sub">We'll email you a reset link</div></div></div>
+    <div id="forgotError" class="auth-error hidden"></div>
+    <div id="forgotSuccess" class="auth-success hidden"></div>
+    <form id="forgotForm">
+      <div class="field"><label>Email</label><input type="email" id="forgotEmail" required/></div>
+      <button type="submit" class="btn btn-primary" id="forgotBtn">Send Reset Link</button>
+    </form>
+    <div style="text-align:center;margin-top:14px"><button class="link-btn" onclick="showLogin()">Back to Sign In</button></div>
+  </div>
+</div>
+
+<!-- ══════════════════ SET NEW PASSWORD (from recovery email) ══════════════════ -->
+<div class="auth-wrap hidden" id="resetScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Set New Password</div><div class="auth-sub">Choose a new password for your account</div></div></div>
+    <div id="resetError" class="auth-error hidden"></div>
+    <form id="resetForm">
+      <div class="field"><label>New Password</label><input type="password" id="resetPassword" minlength="8" required/></div>
+      <button type="submit" class="btn btn-primary" id="resetBtn">Save New Password</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════ NO ACCESS ══════════════════ -->
+<div class="auth-wrap hidden" id="noAccessScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Access Pending</div></div></div>
+    <div class="auth-error">Your account exists but hasn't been approved for portal access yet — this is normal right after signing up. If you just requested access, check back soon; otherwise contact Techstar.</div>
+    <button class="btn" onclick="logout()">Back to Sign In</button>
+  </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="logo"><div class="logo-icon">T</div><div>Techstar Portal</div></div>
+    <div class="company-name" id="companyNameLabel"></div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="loadAllData()">↻ Refresh</button>
+      <button class="btn btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+  <div class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" data-tab="board">Board</div>
+    <div class="nav-tab" data-tab="overview">Overview</div>
+    <div class="nav-tab" data-tab="dev">Dev Support</div>
+    <div class="nav-tab" data-tab="func">Functional Support</div>
+    <div class="nav-tab" data-tab="proj">Projects</div>
+  </div>
+  <div class="main">
+    <div class="tab-panel active" id="tab-board">
+      <div class="board-wrap" id="board-wrap"></div>
+    </div>
+    <div class="tab-panel" id="tab-overview">
+      <div class="kpi-grid" id="overview-kpis"></div>
+      <div class="section-title">Recent Requests</div>
+      <div id="overview-recent"></div>
+    </div>
+    <div class="tab-panel" id="tab-dev">
+      <div id="dev-list"></div>
+    </div>
+    <div class="tab-panel" id="tab-func">
+      <div id="func-list"></div>
+    </div>
+    <div class="tab-panel" id="tab-proj">
+      <div id="proj-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// SUPABASE CONFIG — anon key only. This key is not secret; access is
+// enforced entirely by the database (RLS + column-limited views + the
+// login itself), never by keeping this key hidden. See client-portal-
+// setup.sql for exactly what a logged-in user is and isn't allowed to
+// read — the views used below expose ONLY: description, month, year,
+// completed_date, invoice_number. Nothing else is ever requested or
+// returned, for this client's own company only.
+// ══════════════════════════════════════════════════════════════════════
+const SB_URL = 'https://aqykctwstjmedgmwgtlr.supabase.co';
+const SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxeWtjdHdzdGptZWRnbXdndGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMzQ2MjgsImV4cCI6MjA5ODYxMDYyOH0.FAhkPoA0aVAhIa-wxtE_9Wam92tvgjjAKu67GUuvwQ8';
+const SESSION_KEY = 'techstar_portal_session';
+
+// The ONLY fields this app ever asks for or shows. helpdesk_status is a
+// translated Kanban stage name computed server-side (see
+// client-portal-setup.sql) — the raw internal status is never sent here.
+const PORTAL_COLUMNS = 'id,description,month,year,completed_date,invoice_number,helpdesk_status';
+const VIEW_MAP = { dev:'portal_dev_support', func:'portal_func_support', proj:'portal_projects' };
+
+// Fixed board order. Any request whose helpdesk_status doesn't match one
+// of these (shouldn't happen — the DB constrains it) falls back into the
+// first column so nothing silently disappears from the board.
+const KANBAN_COLUMNS = [
+  'Prepare Quote/Scope', 'Pending Approval', 'With Developer',
+  'Functional Testing', 'Client Testing', 'Deployed to Production',
+  'Pending Payment', 'Finished'
+];
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── session storage ──────────────────────────────────────────────────
+function saveSession(s){ localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+function getSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)||'null'); }catch(e){ return null; } }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+async function authHeaders(){
+  let s = getSession();
+  if (!s) return null;
+  if (Date.now() > (s.expires_at - 30000)) {
+    s = await refreshSession(s);
+    if (!s) return null;
+  }
+  return { 'Content-Type':'application/json', 'apikey':SB_ANON_KEY, 'Authorization':'Bearer '+s.access_token };
+}
+
+async function refreshSession(s){
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON_KEY },
+      body: JSON.stringify({ refresh_token: s.refresh_token })
+    });
+    if (!r.ok) { clearSession(); return null; }
+    const d = await r.json();
+    const ns = { access_token:d.access_token, refresh_token:d.refresh_token, user_id:d.user.id, expires_at: Date.now()+(d.expires_in*1000) };
+    saveSession(ns);
+    return ns;
+  }catch(e){ clearSession(); return null; }
+}
+
+// ── login / logout ──────────────────────────────────────────────────
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  err.classList.add('hidden');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON_KEY },
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || 'Invalid email or password');
+    saveSession({ access_token:d.access_token, refresh_token:d.refresh_token, user_id:d.user.id, expires_at: Date.now()+(d.expires_in*1000) });
+    await boot();
+  }catch(ex){
+    err.textContent = ex.message; err.classList.remove('hidden');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+});
+
+document.getElementById('forgotForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('forgotEmail').value.trim();
+  const btn = document.getElementById('forgotBtn');
+  const err = document.getElementById('forgotError'); const ok = document.getElementById('forgotSuccess');
+  err.classList.add('hidden'); ok.classList.add('hidden');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/recover`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON_KEY },
+      body: JSON.stringify({ email, redirect_to: window.location.origin + window.location.pathname })
+    });
+    if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.msg||'Could not send reset email'); }
+    ok.textContent = 'If that email has portal access, a reset link is on its way.'; ok.classList.remove('hidden');
+  }catch(ex){
+    err.textContent = ex.message; err.classList.remove('hidden');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Send Reset Link';
+  }
+});
+
+document.getElementById('resetForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const password = document.getElementById('resetPassword').value;
+  const btn = document.getElementById('resetBtn'); const err = document.getElementById('resetError');
+  err.classList.add('hidden'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const hashToken = window._recoveryAccessToken;
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {
+      method:'PUT', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON_KEY, 'Authorization':'Bearer '+hashToken },
+      body: JSON.stringify({ password })
+    });
+    if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.msg||'Could not set password'); }
+    showToast('Password updated — please sign in');
+    history.replaceState(null,'',window.location.pathname);
+    showLogin();
+  }catch(ex){
+    err.textContent = ex.message; err.classList.remove('hidden');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save New Password';
+  }
+});
+
+document.getElementById('signupForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('signupName').value.trim();
+  const company = document.getElementById('signupCompany').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const btn = document.getElementById('signupBtn'); const err = document.getElementById('signupError');
+  err.classList.add('hidden'); btn.disabled = true; btn.textContent = 'Creating…';
+  try{
+    // Public signup — creates a login only. It grants NO portal access by
+    // itself: access is only ever turned on when Techstar approves the
+    // request and assigns this account to a company (see index.html).
+    // requested_company/full_name are stored as metadata purely so
+    // Techstar can see what to approve them as — they are never trusted
+    // as the actual access grant.
+    const r = await fetch(`${SB_URL}/auth/v1/signup`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SB_ANON_KEY },
+      body: JSON.stringify({ email, password, data: { full_name: name, requested_company: company } })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || 'Could not create account');
+    hideAllAuth();
+    document.getElementById('signupReceivedScreen').classList.remove('hidden');
+    document.getElementById('signupForm').reset();
+  }catch(ex){
+    err.textContent = ex.message; err.classList.remove('hidden');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+});
+
+function showLogin(){ hideAllAuth(); document.getElementById('loginScreen').classList.remove('hidden'); }
+function showForgot(){ hideAllAuth(); document.getElementById('forgotScreen').classList.remove('hidden'); }
+function showSignup(){ hideAllAuth(); document.getElementById('signupScreen').classList.remove('hidden'); }
+function hideAllAuth(){ ['loginScreen','forgotScreen','resetScreen','noAccessScreen','signupScreen','signupReceivedScreen'].forEach(id=>document.getElementById(id).classList.add('hidden')); }
+
+function logout(){
+  clearSession();
+  document.getElementById('app').classList.remove('show');
+  showLogin();
+}
+
+// ── data state ──────────────────────────────────────────────────────
+let COMPANY = '';
+let DATA = { dev:[], func:[], proj:[] };
+
+async function boot(){
+  const hdrs = await authHeaders();
+  if (!hdrs) { showLogin(); return; }
+  // Look up this user's OWN client_accounts row only (RLS: id = auth.uid()).
+  try{
+    const s = getSession();
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=company_name,active`, { headers: hdrs });
+    if (!r.ok) throw new Error('lookup failed');
+    const rows = await r.json();
+    if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return; }
+    COMPANY = rows[0].company_name;
+  }catch(e){
+    hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return;
+  }
+  hideAllAuth();
+  document.getElementById('app').classList.add('show');
+  document.getElementById('companyNameLabel').textContent = COMPANY;
+  await loadAllData();
+}
+
+// Fetches ONLY from the locked-down portal_* views (see client-portal-
+// setup.sql). These views already contain just this client's own rows
+// and just the 5 approved columns — there is no other data to fetch,
+// and no raw table is ever queried from this page.
+async function loadAllData(){
+  const hdrs = await authHeaders();
+  if (!hdrs) { logout(); return; }
+  try{
+    const [dev, func, proj] = await Promise.all(
+      ['dev','func','proj'].map(cat =>
+        fetch(`${SB_URL}/rest/v1/${VIEW_MAP[cat]}?select=${PORTAL_COLUMNS}`, { headers: hdrs })
+          .then(r=>r.ok ? r.json() : [])
+      )
+    );
+    DATA.dev = Array.isArray(dev)?dev:[]; DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
+    renderBoard(); renderOverview(); renderCategory('dev'); renderCategory('func'); renderCategory('proj');
+  }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
+}
+
+// ── Kanban board ──────────────────────────────────────────────────────
+function renderBoard(){
+  const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
+  const byCol = {};
+  KANBAN_COLUMNS.forEach(c => byCol[c] = []);
+  all.forEach(r => {
+    const col = KANBAN_COLUMNS.includes(r.helpdesk_status) ? r.helpdesk_status : KANBAN_COLUMNS[0];
+    byCol[col].push(r);
+  });
+  document.getElementById('board-wrap').innerHTML = KANBAN_COLUMNS.map(col => {
+    const items = byCol[col];
+    return `
+    <div class="board-col">
+      <div class="board-col-hdr">
+        <div class="board-col-title">${esc(col)}</div>
+        <div class="board-col-count">${items.length}</div>
+      </div>
+      <div class="board-col-body">
+        ${items.length ? items.map(boardCardHtml).join('') : '<div class="board-col-empty">No requests</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function boardCardHtml(r){
+  const meta = [];
+  if (r.month || r.year) meta.push(esc([r.month, r.year].filter(Boolean).join(' ')));
+  if (r.completed_date) meta.push('Completed ' + esc(r.completed_date));
+  if (r.invoice_number) meta.push('Inv# ' + esc(r.invoice_number));
+  return `<div class="board-card">
+    <div class="board-card-desc">${esc(r.description||'Untitled request')}</div>
+    ${meta.length ? `<div class="board-card-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+// ── rendering (only ever touches: description, month, year, completed_date, invoice_number) ──
+function renderOverview(){
+  const total = DATA.dev.length + DATA.func.length + DATA.proj.length;
+  document.getElementById('overview-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total Requests</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi"><div class="kpi-label">Dev Support</div><div class="kpi-val">${DATA.dev.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Functional Support</div><div class="kpi-val">${DATA.func.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Projects</div><div class="kpi-val">${DATA.proj.length}</div></div>
+  `;
+  const all = [...DATA.dev.map(r=>({...r,_cat:'dev'})), ...DATA.func.map(r=>({...r,_cat:'func'})), ...DATA.proj.map(r=>({...r,_cat:'proj'}))];
+  document.getElementById('overview-recent').innerHTML = all.length ? tableHtml(all.slice(0,10)) : `<div class="empty-state">No requests yet.</div>`;
+}
+
+function renderCategory(cat){
+  const el = document.getElementById(cat+'-list');
+  const list = DATA[cat];
+  el.innerHTML = list.length ? tableHtml(list) :
+    `<div class="empty-state">No ${cat==='dev'?'dev support':cat==='func'?'functional support':'project'} requests yet.</div>`;
+}
+
+function tableHtml(rows){
+  return `<div class="req-table">
+    <div class="req-row head">
+      <div>Description</div><div>Month</div><div>Year</div><div>Completed Date</div><div>Invoice Number</div>
+    </div>
+    ${rows.map(r=>`
+      <div class="req-row">
+        <div class="req-cell" data-label="Description" title="${esc(r.description)}">${esc(r.description||'—')}</div>
+        <div class="req-cell muted" data-label="Month">${esc(r.month||'—')}</div>
+        <div class="req-cell muted" data-label="Year">${esc(r.year||'—')}</div>
+        <div class="req-cell muted" data-label="Completed Date">${esc(r.completed_date||'—')}</div>
+        <div class="req-cell mono" data-label="Invoice Number">${esc(r.invoice_number||'—')}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ── tab switching ──────────────────────────────────────────────────
+document.getElementById('navTabs').addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-tab]'); if (!t) return;
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  t.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+});
+
+// ── startup: handle password-recovery links, else try existing session ──
+(function init(){
+  const hash = window.location.hash;
+  if (hash && hash.includes('type=recovery')) {
+    const params = new URLSearchParams(hash.slice(1));
+    const at = params.get('access_token');
+    if (at) {
+      window._recoveryAccessToken = at;
+      hideAllAuth();
+      document.getElementById('resetScreen').classList.remove('hidden');
+      return;
+    }
+  }
+  const s = getSession();
+  if (s) { boot(); } else { showLogin(); }
+})();
+</script>
+</body>
+</html>
