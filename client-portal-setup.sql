@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════════
--- Techstar Client Portal — one-time Supabase setup (v5 — Finished vs
--- Pending Payment split, Deployed mapping, hidden statuses)
+-- Techstar Client Portal — one-time Supabase setup (v6 — Kanban columns:
+-- removed "New Request", added "With Developer" as its own column)
 -- Run this once in Supabase Studio → SQL Editor → New query → Run.
 -- Safe to re-run (uses IF NOT EXISTS / DROP ... IF EXISTS throughout,
 -- and never overwrites a mapping you've since customized).
@@ -164,14 +164,14 @@ create table if not exists public.helpdesk_status_map (
 -- this Kanban column. "SetOff Action" is hidden entirely — it's an
 -- internal accounting status with no client-facing meaning.
 insert into public.helpdesk_status_map (internal_status, helpdesk_status, hidden) values
-  ('With Developer',      'New Request',               false),
+  ('With Developer',      'With Developer',            false),
   ('Prepare Quote/Scope',  'Scope & SRS In-Progress',  false),
   ('Approve Quote/Scope',  'Pending Client Approval',  false),
   ('Client Testing',       'Client Testing',           false),
   ('Deployed',             'Deployed Production',      false),
   ('Pending Payment',     'Pending Payment', false),
   ('Finished',             'Finished',                  false),
-  ('SetOff Action',        'New Request',               true)
+  ('SetOff Action',        'With Developer',            true)
 on conflict (internal_status) do nothing;
 
 -- The 8 valid Kanban columns, in board order. Enforced with a check
@@ -180,7 +180,7 @@ on conflict (internal_status) do nothing;
 alter table public.helpdesk_status_map drop constraint if exists helpdesk_status_valid;
 alter table public.helpdesk_status_map add constraint helpdesk_status_valid
   check (helpdesk_status in (
-    'New Request','Scope & SRS In-Progress','Pending Client Approval',
+    'Scope & SRS In-Progress','Pending Client Approval','With Developer',
     'Functional Testing','Client Testing','Deployed Production',
     'Pending Payment','Finished'
   ));
@@ -210,7 +210,7 @@ create view public.portal_dev_support as
     t.year,
     t.comp as completed_date,
     t.inv  as invoice_number,
-    coalesce(m.helpdesk_status, 'New Request') as helpdesk_status
+    coalesce(m.helpdesk_status, 'Scope & SRS In-Progress') as helpdesk_status
   from public.dev_support t
   left join public.helpdesk_status_map m on m.internal_status = t.status
   where coalesce(m.hidden, false) = false
@@ -230,7 +230,7 @@ create view public.portal_func_support as
     t.year,
     t.comp as completed_date,
     t.inv  as invoice_number,
-    coalesce(m.helpdesk_status, 'New Request') as helpdesk_status
+    coalesce(m.helpdesk_status, 'Scope & SRS In-Progress') as helpdesk_status
   from public.func_support t
   left join public.helpdesk_status_map m on m.internal_status = t.status
   where coalesce(m.hidden, false) = false
@@ -250,7 +250,7 @@ create view public.portal_projects as
     t.year,
     t.comp as completed_date,
     t.inv  as invoice_number,
-    coalesce(m.helpdesk_status, 'New Request') as helpdesk_status
+    coalesce(m.helpdesk_status, 'Scope & SRS In-Progress') as helpdesk_status
   from public.projects t
   left join public.helpdesk_status_map m on m.internal_status = t.status
   where coalesce(m.hidden, false) = false

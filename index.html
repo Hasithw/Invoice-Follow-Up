@@ -804,7 +804,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
         <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ Clients never see your internal status text (e.g. <em>"With Developer"</em>) — only the Kanban column name you choose here. Unmapped statuses default to <strong>New Request</strong>.</span>
+          <span>⚡ Clients never see your internal status text (e.g. <em>"Prepare Quote/Scope"</em>) — only the Kanban column name you choose here. Unmapped statuses default to <strong>Scope & SRS In-Progress</strong>.</span>
         </div>
         <div id="portal-status-map-list" style="display:flex;flex-direction:column;gap:6px">
           <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load the mapping.</div>
@@ -817,9 +817,9 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           <div class="dp-field" style="flex:1;min-width:220px">
             <div class="dp-label">Kanban Column</div>
             <select id="portal-map-new-helpdesk" class="dp-input">
-              <option>New Request</option>
               <option>Scope & SRS In-Progress</option>
               <option>Pending Client Approval</option>
+              <option>With Developer</option>
               <option>Functional Testing</option>
               <option>Client Testing</option>
               <option>Deployed Production</option>
@@ -1066,7 +1066,7 @@ function refreshCompanyDatalist(rows) {
 }
 
 const KANBAN_COLUMNS_ADMIN = [
-  'New Request','Scope & SRS In-Progress','Pending Client Approval',
+  'Scope & SRS In-Progress','Pending Client Approval','With Developer',
   'Functional Testing','Client Testing','Deployed Production',
   'Pending Payment','Finished'
 ];
