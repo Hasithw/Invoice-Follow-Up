@@ -825,6 +825,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
               <option>Deployed to Production</option>
               <option>Pending Payment</option>
               <option>Finished</option>
+              <option>Payment Dispute</option>
             </select>
           </div>
           <button class="btn btn-primary" onclick="addStatusMapping()">+ Add / Update Mapping</button>
@@ -1068,7 +1069,7 @@ function refreshCompanyDatalist(rows) {
 const KANBAN_COLUMNS_ADMIN = [
   'Prepare Quote/Scope','Pending Approval','With Developer',
   'Functional Testing','Client Testing','Deployed to Production',
-  'Pending Payment','Finished'
+  'Pending Payment','Finished','Payment Dispute'
 ];
 
 async function loadStatusMap() {
