@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Techstar Client Portal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -16,7 +16,7 @@
   --r:8px;--rlg:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;overflow-x:hidden}
 .hidden{display:none!important}
 /* ── auth screen ── */
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -79,18 +79,56 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 .req-cell.muted{color:var(--t2)}
 .req-cell.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 .empty-state{text-align:center;padding:50px 20px;color:var(--t3);font-size:14px}
+/* ── tablet ── */
+@media(max-width:900px){
+  .main{padding:18px 14px 50px}
+  .board-col{min-width:220px;max-width:220px}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+}
+/* ── phone ── */
 @media(max-width:640px){
+  body{font-size:14px}
+  .topbar{padding:0 12px;height:auto;min-height:52px;gap:8px}
+  .logo-icon{width:26px;height:26px;font-size:13px}
+  .company-name{max-width:120px;font-size:11px}
+  .topbar-right{gap:6px}
+  .btn-sm{padding:8px 12px;font-size:12px;min-height:36px}
+  .nav-tabs{padding:8px 12px 0;gap:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{padding:10px 12px;font-size:12.5px;min-height:40px;display:flex;align-items:center}
+  .main{padding:14px 12px 50px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:12px 14px}
+  .kpi-val{font-size:20px}
+  .board-wrap{gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px 8px}
+  .board-col{min-width:82vw;max-width:82vw;max-height:none;scroll-snap-align:start}
+  .board-col-hdr{padding:11px 12px}
+  .board-card{padding:11px 12px}
   .req-row{grid-template-columns:1fr;gap:2px;padding:12px 14px}
   .req-row.head{display:none}
   .req-cell{white-space:normal}
   .req-cell::before{content:attr(data-label);display:block;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
   .req-cell:first-child::before{display:none;margin-top:0}
-  .auth-card{padding:26px 20px}
-  .company-name{max-width:140px}
-  .board-col{min-width:78vw;max-width:78vw;max-height:none}
+  .auth-wrap{padding:14px}
+  .auth-card{padding:24px 18px}
+  .field input{padding:12px 13px;font-size:16px}
+  .btn{min-height:44px}
 }
-#toast{position:fixed;bottom:24px;right:24px;left:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:12px 18px;font-size:13px;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:999;max-width:calc(100vw - 48px)}
+/* ── small phone ── */
+@media(max-width:380px){
+  .company-name{display:none}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .board-col{min-width:86vw;max-width:86vw}
+}
+/* ── landscape phones / short viewports ── */
+@media(max-height:480px) and (max-width:900px){
+  .board-col{max-height:calc(100vh - 130px)}
+}
+#toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:24px;left:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:12px 18px;font-size:13px;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:999;max-width:calc(100vw - 48px)}
 #toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:640px){
+  #toast{left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:none;text-align:center}
+}
 </style>
 </head>
 <body>
