@@ -66,7 +66,26 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 .board-col-title{font-size:12px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em}
 .board-col-count{font-size:11px;font-weight:700;color:var(--accent);background:var(--adim);border-radius:99px;padding:2px 9px;flex-shrink:0}
 .board-col-body{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;flex:1}
-.board-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.board-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(15,23,42,.04);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.board-card:hover{box-shadow:0 2px 8px rgba(15,23,42,.09);border-color:var(--accent)}
+/* task detail drawer */
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:1000}
+.drawer-backdrop.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;background:var(--surface);box-shadow:-8px 0 24px rgba(15,23,42,.12);transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:1001;display:flex;flex-direction:column}
+.drawer.show{transform:translateX(0)}
+.drawer-hdr{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-shrink:0}
+.drawer-title{font-size:15px;font-weight:700;line-height:1.4;color:var(--text)}
+.drawer-close{background:none;border:none;font-size:20px;line-height:1;color:var(--t3);cursor:pointer;padding:2px 6px;border-radius:6px;flex-shrink:0}
+.drawer-close:hover{background:var(--s2);color:var(--text)}
+.drawer-body{padding:20px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px}
+.drawer-status{display:inline-flex;align-self:flex-start;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:var(--adim);border-radius:99px;padding:5px 12px}
+.drawer-field{display:flex;flex-direction:column;gap:3px}
+.drawer-field-label{font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.drawer-field-val{font-size:14px;color:var(--text);font-weight:600}
+.drawer-amounts{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px}
+.drawer-amounts .drawer-field-val{font-family:'JetBrains Mono',monospace;font-size:15px}
+.drawer-amount-full{grid-column:1/-1;border-top:1px dashed var(--border);padding-top:10px;margin-top:2px}
+.drawer-amount-full .drawer-field-val{font-size:18px;color:var(--accent)}
 .board-card-desc{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--text)}
 .board-card-meta{font-size:10.5px;color:var(--t3);display:flex;flex-wrap:wrap;gap:4px 8px}
 .board-col-empty{font-size:11px;color:var(--t3);text-align:center;padding:16px 8px;font-style:italic}
@@ -114,6 +133,8 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
   .auth-card{padding:24px 18px}
   .field input{padding:12px 13px;font-size:16px}
   .btn{min-height:44px}
+  .drawer{width:100%;max-width:100%}
+  .drawer-hdr,.drawer-body{padding:16px 18px}
 }
 /* ── small phone ── */
 @media(max-width:380px){
@@ -251,6 +272,15 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 
 <div id="toast"></div>
 
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="taskDrawer">
+  <div class="drawer-hdr">
+    <div class="drawer-title" id="drawerTitle"></div>
+    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — anon key only. This key is not secret; access is
@@ -268,7 +298,7 @@ const SESSION_KEY = 'techstar_portal_session';
 // The ONLY fields this app ever asks for or shows. helpdesk_status is a
 // translated Kanban stage name computed server-side (see
 // client-portal-setup.sql) — the raw internal status is never sent here.
-const PORTAL_COLUMNS = 'id,description,month,year,completed_date,invoice_number,helpdesk_status';
+const PORTAL_COLUMNS = 'id,description,month,year,completed_date,invoice_number,requester,invoiced_functional,invoiced_development,invoiced_full,helpdesk_status';
 const VIEW_MAP = { dev:'portal_dev_support', func:'portal_func_support', proj:'portal_projects' };
 
 // Fixed board order. Any request whose helpdesk_status doesn't match one
@@ -494,11 +524,61 @@ function boardCardHtml(r){
   if (r.month || r.year) meta.push(esc([r.month, r.year].filter(Boolean).join(' ')));
   if (r.completed_date) meta.push('Completed ' + esc(r.completed_date));
   if (r.invoice_number) meta.push('Inv# ' + esc(r.invoice_number));
-  return `<div class="board-card">
+  return `<div class="board-card" onclick="openDrawer('${esc(r.id)}')">
     <div class="board-card-desc">${esc(r.description||'Untitled request')}</div>
     ${meta.length ? `<div class="board-card-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` : ''}
   </div>`;
 }
+
+// ── task detail drawer ──────────────────────────────────────────────
+function fmtMoney(n){
+  const v = Number(n) || 0;
+  return v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function findRowById(id){
+  return [...DATA.dev, ...DATA.func, ...DATA.proj].find(r => String(r.id) === String(id));
+}
+function openDrawer(id){
+  const r = findRowById(id);
+  if (!r) return;
+  document.getElementById('drawerTitle').textContent = r.description || 'Untitled request';
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="drawer-status">${esc(r.helpdesk_status || '')}</div>
+    <div class="drawer-field">
+      <div class="drawer-field-label">Requester</div>
+      <div class="drawer-field-val">${esc(r.requester || '—')}</div>
+    </div>
+    <div class="drawer-field">
+      <div class="drawer-field-label">Completed Date</div>
+      <div class="drawer-field-val">${esc(r.completed_date || '—')}</div>
+    </div>
+    <div class="drawer-field">
+      <div class="drawer-field-label">Invoice Number</div>
+      <div class="drawer-field-val">${esc(r.invoice_number || '—')}</div>
+    </div>
+    <div class="drawer-amounts">
+      <div class="drawer-field">
+        <div class="drawer-field-label">Invoiced Functional</div>
+        <div class="drawer-field-val">${fmtMoney(r.invoiced_functional)}</div>
+      </div>
+      <div class="drawer-field">
+        <div class="drawer-field-label">Invoiced Development</div>
+        <div class="drawer-field-val">${fmtMoney(r.invoiced_development)}</div>
+      </div>
+      <div class="drawer-field drawer-amount-full">
+        <div class="drawer-field-label">Invoiced Full Amount</div>
+        <div class="drawer-field-val">${fmtMoney(r.invoiced_full)}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('drawerBackdrop').classList.add('show');
+  document.getElementById('taskDrawer').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('drawerBackdrop').classList.remove('show');
+  document.getElementById('taskDrawer').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
 // ── rendering (only ever touches: description, month, year, completed_date, invoice_number) ──
 function renderOverview(){
