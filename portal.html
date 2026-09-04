@@ -522,8 +522,6 @@ function renderBoard(){
 function boardCardHtml(r){
   const meta = [];
   if (r.month || r.year) meta.push(esc([r.month, r.year].filter(Boolean).join(' ')));
-  if (r.completed_date) meta.push('Completed ' + esc(r.completed_date));
-  if (r.invoice_number) meta.push('Inv# ' + esc(r.invoice_number));
   return `<div class="board-card" onclick="openDrawer('${esc(r.id)}')">
     <div class="board-card-desc">${esc(r.description||'Untitled request')}</div>
     ${meta.length ? `<div class="board-card-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` : ''}
