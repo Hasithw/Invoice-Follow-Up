@@ -19,7 +19,17 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:15px}
 /* ── layout ── */
-.app{display:flex;flex-direction:column;height:100vh}
+.app{display:none;flex-direction:column;height:100vh}
+.app.show{display:flex}
+/* ── admin auth overlay ── */
+.auth-overlay{position:fixed;inset:0;background:var(--bg,#f4f6f9);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px}
+.auth-card{background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:var(--rlg,14px);padding:36px 32px;width:100%;max-width:400px;box-shadow:0 10px 40px rgba(15,23,42,.08);display:flex;flex-direction:column;gap:14px}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.auth-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:2px}
+.auth-error{font-size:12.5px;color:var(--red,#dc2626);background:rgba(220,38,38,.08);border-radius:8px;padding:9px 12px}
+.auth-switch{font-size:12.5px;color:var(--t3);text-align:center;margin-top:4px}
+.auth-switch a{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline}
+#authRegisterForm,#authPendingScreen,#authDeactivatedScreen{display:flex;flex-direction:column;gap:14px}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;height:52px;flex-shrink:0}
 .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;white-space:nowrap}
 .logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -190,7 +200,47 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- ════ ADMIN AUTH (Login / Registration) ════ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="logo-icon">T</div><div style="font-weight:700;font-size:16px">Techstar Admin</div></div>
+
+    <div id="authLoginForm" style="display:flex;flex-direction:column;gap:14px">
+      <div class="auth-title">Sign in</div>
+      <div class="dp-field"><div class="dp-label">Email</div><input id="authLoginEmail" class="dp-input" type="email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+      <div class="dp-field"><div class="dp-label">Password</div><input id="authLoginPassword" class="dp-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+      <div id="authLoginError" class="auth-error" style="display:none"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doAdminLogin()">Sign In</button>
+      <div class="auth-switch">New here? <a onclick="showAuthForm('register')">Create an account</a></div>
+    </div>
+
+    <div id="authRegisterForm" style="display:none">
+      <div class="auth-title">Create account</div>
+      <div class="dp-field"><div class="dp-label">Full Name</div><input id="authRegName" class="dp-input" type="text" placeholder="Your name"/></div>
+      <div class="dp-field"><div class="dp-label">Email</div><input id="authRegEmail" class="dp-input" type="email" placeholder="you@company.com"/></div>
+      <div class="dp-field"><div class="dp-label">Password</div><input id="authRegPassword" class="dp-input" type="password" placeholder="At least 8 characters"/></div>
+      <div id="authRegError" class="auth-error" style="display:none"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doAdminRegister()">Request Access</button>
+      <div style="font-size:11px;color:var(--t3)">New accounts start as <strong>Client Admin (view-only)</strong> and need approval from a Super Admin before you can sign in.</div>
+      <div class="auth-switch">Already have an account? <a onclick="showAuthForm('login')">Sign in</a></div>
+    </div>
+
+    <div id="authPendingScreen" style="display:none">
+      <div class="auth-title">Request submitted</div>
+      <p style="font-size:13px;color:var(--t2);line-height:1.6;margin:0">Your account has been created but needs approval from a Super Admin before you can sign in. You'll be able to log in as soon as it's approved.</p>
+      <button class="btn" style="width:100%" onclick="showAuthForm('login')">Back to Sign In</button>
+    </div>
+
+    <div id="authDeactivatedScreen" style="display:none">
+      <div class="auth-title">Access disabled</div>
+      <p style="font-size:13px;color:var(--t2);line-height:1.6;margin:0">Your account access has been turned off. Contact a Super Admin if you believe this is a mistake.</p>
+      <button class="btn" style="width:100%" onclick="showAuthForm('login')">Back to Sign In</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appRoot">
 <!-- ── TOP BAR ── -->
 <div class="topbar">
   <div class="logo"><div class="logo-icon">T</div><div><div>Techstar</div></div></div>
@@ -211,8 +261,10 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
+    <span id="adminUserLabel" style="font-size:11.5px;color:var(--t3);margin-right:6px;white-space:nowrap"></span>
     <button class="btn btn-sm" id="exportBtn" title="Export to Excel">⬇ Export</button>
     <button class="btn btn-primary btn-sm" id="addBtn" style="display:none">+ New</button>
+    <button class="btn btn-sm" onclick="doAdminLogout()">Sign Out</button>
   </div>
 </div>
 
@@ -840,6 +892,21 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
 
+    <!-- Admin Users (Super Admin / Client Admin roles) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Admin Users
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Approve new sign-ups and manage who can access this dashboard, and at what level</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div class="info-bar" style="align-items:flex-start">
+          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Dev Support, Func Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
+        </div>
+        <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
+        <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
     <!-- Current Rates (full width) -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
@@ -974,23 +1041,179 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const SB_HDRS = { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY };
 
 async function sbGet(table) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*&order=created_at.asc`, { headers: SB_HDRS });
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*&order=created_at.asc`, { headers: authedHdrs() });
   if (!r.ok) throw new Error(`GET ${table} ${r.status}`);
   return r.json();
 }
 async function sbUpsert(table, row) {
   const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
     method:'POST',
-    headers:{ ...SB_HDRS, 'Prefer':'resolution=merge-duplicates,return=minimal' },
+    headers:{ ...authedHdrs(), 'Prefer':'resolution=merge-duplicates,return=minimal' },
     body:JSON.stringify(row)
   });
   if (!r.ok) { const t=await r.text(); throw new Error(`UPSERT ${table}: ${t}`); }
 }
 async function sbDelete(table, id) {
   const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
-    method:'DELETE', headers:SB_HDRS
+    method:'DELETE', headers:authedHdrs()
   });
   if (!r.ok) throw new Error(`DELETE ${table} ${r.status}`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN AUTH & ROLES (Super Admin / Client Admin)
+// This app itself now requires sign-in. Every dev_support/func_support/
+// projects/etc. read+write goes through the signed-in user's own Supabase
+// Auth token, and the database enforces (via RLS) that only an approved
+// Super Admin can write — a Client Admin's write attempts are rejected by
+// Postgres itself even if someone bypasses this UI entirely.
+// ══════════════════════════════════════════════════════════════════════
+const ADMIN_SESSION_KEY = 'techstar_admin_session';
+let ADMIN_SESSION = null;
+
+function getAdminSession(){
+  if (ADMIN_SESSION) return ADMIN_SESSION;
+  try { const raw = localStorage.getItem(ADMIN_SESSION_KEY); if (raw) ADMIN_SESSION = JSON.parse(raw); } catch(e){}
+  return ADMIN_SESSION;
+}
+function setAdminSession(s){ ADMIN_SESSION = s; try{ localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(s)); }catch(e){} }
+function clearAdminSession(){ ADMIN_SESSION=null; try{ localStorage.removeItem(ADMIN_SESSION_KEY); }catch(e){} }
+function isClientAdmin(){ const s=getAdminSession(); return !!s && s.role==='client_admin'; }
+function isSuperAdmin(){ const s=getAdminSession(); return !!s && s.role==='super_admin'; }
+function authedHdrs(){
+  const s = getAdminSession();
+  return { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+(s&&s.access_token?s.access_token:SB_KEY) };
+}
+
+function showAuthForm(which){
+  document.getElementById('authLoginForm').style.display     = which==='login'       ? 'flex':'none';
+  document.getElementById('authRegisterForm').style.display  = which==='register'    ? 'flex':'none';
+  document.getElementById('authPendingScreen').style.display = which==='pending'     ? 'flex':'none';
+  document.getElementById('authDeactivatedScreen').style.display = which==='deactivated' ? 'flex':'none';
+  ['authLoginError','authRegError'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
+  document.getElementById('authOverlay').style.display='flex';
+  document.getElementById('appRoot').classList.remove('show');
+}
+
+// Looks up this user's admin_profiles row; if this is the very first time
+// they've ever completed sign-in (e.g. registered while email confirmation
+// was required, so no row could be created at signup time), creates their
+// pending Client Admin row now.
+async function fetchOrCreateProfile(userId, email, accessToken){
+  const hdrs = { 'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+accessToken };
+  let r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${userId}&select=*`, { headers: hdrs });
+  let rows = r.ok ? await r.json() : [];
+  if (!rows.length) {
+    await fetch(`${SB_URL}/rest/v1/admin_profiles`, {
+      method:'POST', headers:{...hdrs,'Prefer':'return=representation'},
+      body: JSON.stringify({ id:userId, email, role:'client_admin', approved:false, active:true })
+    });
+    r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${userId}&select=*`, { headers: hdrs });
+    rows = r.ok ? await r.json() : [];
+  }
+  return rows[0] || null;
+}
+
+async function doAdminLogin(){
+  const email = document.getElementById('authLoginEmail').value.trim();
+  const password = document.getElementById('authLoginPassword').value;
+  const errEl = document.getElementById('authLoginError');
+  errEl.style.display='none';
+  if (!email || !password) { errEl.textContent='Email and password are required'; errEl.style.display='block'; return; }
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error_description || data.msg || 'Invalid email or password');
+    const profile = await fetchOrCreateProfile(data.user.id, email, data.access_token);
+    if (!profile || !profile.active) { showAuthForm('deactivated'); return; }
+    if (!profile.approved) { showAuthForm('pending'); return; }
+    setAdminSession({
+      access_token: data.access_token, refresh_token: data.refresh_token,
+      user_id: data.user.id, email, role: profile.role, full_name: profile.full_name||''
+    });
+    enterApp();
+  }catch(e){
+    errEl.textContent = e.message || 'Sign in failed';
+    errEl.style.display='block';
+  }
+}
+
+async function doAdminRegister(){
+  const full_name = document.getElementById('authRegName').value.trim();
+  const email = document.getElementById('authRegEmail').value.trim();
+  const password = document.getElementById('authRegPassword').value;
+  const errEl = document.getElementById('authRegError');
+  errEl.style.display='none';
+  if (!email || !password) { errEl.textContent='Email and password are required'; errEl.style.display='block'; return; }
+  if (password.length < 8) { errEl.textContent='Password must be at least 8 characters'; errEl.style.display='block'; return; }
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/signup`, {
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body: JSON.stringify({ email, password, data:{ full_name } })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error_description || data.msg || data.error || 'Registration failed');
+    if (data.access_token && data.user) {
+      // Email confirmation is off on this project, so we already have a usable session — create the pending profile now.
+      await fetchOrCreateProfile(data.user.id, email, data.access_token);
+    }
+    document.getElementById('authRegName').value='';
+    document.getElementById('authRegEmail').value='';
+    document.getElementById('authRegPassword').value='';
+    showAuthForm('pending');
+  }catch(e){
+    errEl.textContent = e.message || 'Registration failed';
+    errEl.style.display='block';
+  }
+}
+
+function doAdminLogout(){
+  clearAdminSession();
+  showAuthForm('login');
+}
+
+function applyRoleUI(){
+  const clientAdmin = isClientAdmin();
+  document.body.classList.toggle('role-client-admin', clientAdmin);
+  ['profit','ncf','setoff','notes','settings'].forEach(t=>{
+    const el = document.querySelector(`.nav-tab[data-tab="${t}"]`);
+    if (el) el.style.display = clientAdmin ? 'none' : '';
+  });
+  const adminSubBtn = document.getElementById('portal-subtab-btn-admin');
+  if (adminSubBtn) adminSubBtn.style.display = clientAdmin ? 'none' : '';
+  if (clientAdmin && typeof showPortalSubTab === 'function') showPortalSubTab('client');
+  const lbl = document.getElementById('adminUserLabel');
+  const s = getAdminSession();
+  if (lbl && s) lbl.textContent = `${s.email} · ${s.role==='super_admin'?'Super Admin':'Client Admin'}`;
+}
+
+function enterApp(){
+  document.getElementById('authOverlay').style.display='none';
+  document.getElementById('appRoot').classList.add('show');
+  applyRoleUI();
+  startApp();
+}
+
+async function tryRestoreSession(){
+  const s = getAdminSession();
+  if (!s || !s.access_token) { showAuthForm('login'); return; }
+  try{
+    const hdrs = { 'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+s.access_token };
+    const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${s.user_id}&select=*`, { headers: hdrs });
+    if (!r.ok) throw new Error('session invalid');
+    const rows = await r.json();
+    const profile = rows[0];
+    if (!profile || !profile.active) { clearAdminSession(); showAuthForm('deactivated'); return; }
+    if (!profile.approved) { clearAdminSession(); showAuthForm('pending'); return; }
+    setAdminSession({ ...s, role: profile.role, full_name: profile.full_name||'' });
+    enterApp();
+  }catch(e){
+    clearAdminSession();
+    showAuthForm('login');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1580,6 +1803,79 @@ function loadSettingsUI() {
   if (frEl) frEl.value = s.funcRate || '8000.00';
   if (drEl) drEl.value = s.devRate  || '5000.00';
   renderStatusLists();
+  loadAdminUsersList();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN USERS (Super Admin only) — approve pending sign-ups, change role,
+// deactivate access. Uses the logged-in Super Admin's own auth token;
+// RLS on admin_profiles rejects these writes from anyone who isn't one.
+// ══════════════════════════════════════════════════════════════════════
+async function loadAdminUsersList(){
+  const box = document.getElementById('admin-users-list');
+  if (!box) return;
+  if (!isSuperAdmin()) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Only a Super Admin can view this.</div>'; return; }
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?select=*&order=created_at.asc`, { headers: authedHdrs() });
+    if (!r.ok) throw new Error('Failed to load');
+    const rows = await r.json();
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No admin accounts yet.</div>'; return; }
+    const me = getAdminSession()?.user_id;
+    box.innerHTML = rows.map(u => {
+      const pending = !u.approved;
+      const pillColor = pending ? '#d97706' : (u.active ? '#16a34a' : '#dc2626');
+      const pillBg    = pending ? 'rgba(217,119,6,.1)' : (u.active ? 'rgba(22,163,74,.1)' : 'rgba(220,38,38,.1)');
+      const pillText  = pending ? 'Pending Approval' : (u.active ? 'Active' : 'Deactivated');
+      return `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(u.full_name || u.email)}${u.id===me?' <span style="font-weight:400;color:var(--t3)">(you)</span>':''}</div>
+          <div style="font-size:11.5px;color:var(--t3)">${esc(u.email)}</div>
+        </div>
+        <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${pillColor};background:${pillBg};border-radius:99px;padding:4px 10px">${pillText}</span>
+        <select class="dp-input" style="width:auto;padding:6px 10px;font-size:12px" onchange="changeAdminRole('${u.id}', this.value)" ${u.id===me?'disabled title="You can\'t change your own role"':''}>
+          <option value="client_admin" ${u.role==='client_admin'?'selected':''}>Client Admin</option>
+          <option value="super_admin" ${u.role==='super_admin'?'selected':''}>Super Admin</option>
+        </select>
+        ${pending ? `<button class="btn btn-sm btn-primary" onclick="approveAdminUser('${u.id}')">✓ Approve</button>` : ''}
+        ${!pending ? `<button class="btn btn-sm" onclick="toggleAdminActive('${u.id}', ${!u.active})" ${u.id===me?'disabled':''}>${u.active?'Deactivate':'Reactivate'}</button>` : ''}
+        <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeAdminUser('${u.id}','${esc(u.email)}')" ${u.id===me?'disabled':''}>🗑</button>
+      </div>`;
+    }).join('');
+  }catch(e){
+    box.innerHTML = '<div style="font-size:13px;color:var(--red)">Failed to load admin users.</div>';
+  }
+}
+
+async function patchAdminProfile(id, patch){
+  const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${id}`, {
+    method:'PATCH', headers:{...authedHdrs(),'Prefer':'return=minimal'},
+    body: JSON.stringify(patch)
+  });
+  if (!r.ok) { showToast('Update failed — check you\'re still a Super Admin','red'); return false; }
+  return true;
+}
+async function approveAdminUser(id){
+  const me = getAdminSession()?.user_id;
+  const ok = await patchAdminProfile(id, { approved:true, approved_at:new Date().toISOString(), approved_by: me });
+  if (ok) { showToast('Approved ✓','green'); loadAdminUsersList(); }
+}
+async function changeAdminRole(id, role){
+  const ok = await patchAdminProfile(id, { role });
+  if (ok) { showToast('Role updated ✓','green'); loadAdminUsersList(); }
+  else loadAdminUsersList();
+}
+async function toggleAdminActive(id, active){
+  const ok = await patchAdminProfile(id, { active });
+  if (ok) { showToast(active?'Reactivated ✓':'Deactivated ✓','green'); loadAdminUsersList(); }
+}
+async function removeAdminUser(id, email){
+  if (!confirm(`Remove admin account ${email}? This only removes their dashboard access role — it does not delete their login, which you'd manage from Supabase Auth directly if needed.`)) return;
+  const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${id}`, { method:'DELETE', headers: authedHdrs() });
+  if (!r.ok) { showToast('Remove failed','red'); return; }
+  showToast('Removed','green');
+  loadAdminUsersList();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2511,6 +2807,20 @@ function openDetail(tab,id,done){
 
   document.getElementById(panelId).classList.add('open');
 
+  // View-only for Client Admin — the database rejects their writes anyway
+  // (see RLS policies), but disable the controls here too for a clean UX.
+  const footer = document.querySelector('#'+panelId+' .dp-footer');
+  if (isClientAdmin()) {
+    body.querySelectorAll('input,select,textarea').forEach(el=>{ el.disabled = true; });
+    if (footer) footer.querySelectorAll('button').forEach(b=>{
+      const t = b.textContent.trim();
+      b.style.display = (t.startsWith('Save') || t.includes('Delete')) ? 'none' : '';
+    });
+  } else {
+    body.querySelectorAll('input,select,textarea').forEach(el=>{ el.disabled = false; });
+    if (footer) footer.querySelectorAll('button').forEach(b=>{ b.style.display = ''; });
+  }
+
   // highlight selected row
   document.querySelectorAll('.table-row.selected').forEach(r=>r.classList.remove('selected'));
   document.querySelectorAll(`[data-id="${id}"]`).forEach(r=>r.classList.add('selected'));
@@ -2569,6 +2879,7 @@ function closeDetail(tab){
 }
 
 function saveDetail(tab){
+  if (isClientAdmin()) { showToast('View-only access — ask a Super Admin to make changes','red'); return; }
   const {listKey,id,sk}=currentDetail;
   if(!listKey||!id) return;
   const body=document.getElementById(tab+'-dp-body');
@@ -2727,7 +3038,7 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
+  btn.style.display=(isClientAdmin()||lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
@@ -2788,6 +3099,7 @@ function showToast(msg,color){
 // ══════════════════════════════════════════════════════════════════════
 // Quick delete directly from row button (no detail panel needed)
 function quickDelete(tab, id) {
+  if (isClientAdmin()) { showToast('View-only access — ask a Super Admin to make changes','red'); return; }
   const listKey = resolveListKey(tab, id);
   if (!listKey) { showToast('Record not found','red'); return; }
   const list = DB[listKey];
@@ -2835,6 +3147,7 @@ function resolveListKey(tab, id) {
 }
 
 function deleteRecord(tab) {
+  if (isClientAdmin()) { showToast('View-only access — ask a Super Admin to make changes','red'); return; }
   const id      = window._detailId;
   const listKey = window._detailListKey || resolveListKey(tab, id);
   if (!id || !listKey) { showToast('Open a record first', 'red'); return; }
@@ -3459,22 +3772,24 @@ function renderNotesList(query){
   }).join('');
 }
 
-// ── Startup: show cached data instantly, then load fresh from Supabase ────────
-renderAll();
-renderSidebar('dashboard');
-renderSetoff();
-loadSettingsUI();
-stampMissingRates();
-// Restore whichever tab the user was last on, so a hard refresh doesn't bounce them to Dashboard
-(function restoreLastTab(){
-  try{
-    const saved = localStorage.getItem('techstar_last_tab');
-    if (saved && saved!=='dashboard' && document.getElementById('tab-'+saved)) switchTab(saved);
-  }catch(e){}
-})();
-// Load fresh data from Supabase (updates UI when done)
-loadFromSupabase();
-// Sidebar removed
+// ── Startup: only runs after a valid, approved admin session is confirmed ──
+function startApp(){
+  renderAll();
+  renderSidebar('dashboard');
+  renderSetoff();
+  loadSettingsUI();
+  stampMissingRates();
+  // Restore whichever tab the user was last on, so a hard refresh doesn't bounce them to Dashboard
+  (function restoreLastTab(){
+    try{
+      const saved = localStorage.getItem('techstar_last_tab');
+      if (saved && saved!=='dashboard' && document.getElementById('tab-'+saved)) switchTab(saved);
+    }catch(e){}
+  })();
+  // Load fresh data from Supabase (updates UI when done)
+  loadFromSupabase();
+}
+tryRestoreSession();
 </script>
 </body>
 </html>
