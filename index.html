@@ -1152,7 +1152,7 @@ async function doAdminRegister(){
   try{
     const r = await fetch(`${SB_URL}/auth/v1/signup`, {
       method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
-      body: JSON.stringify({ email, password, data:{ full_name } })
+      body: JSON.stringify({ email, password, options: { data: { full_name } } })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error_description || data.msg || data.error || 'Registration failed');
@@ -1178,13 +1178,21 @@ function doAdminLogout(){
 function applyRoleUI(){
   const clientAdmin = isClientAdmin();
   document.body.classList.toggle('role-client-admin', clientAdmin);
-  ['profit','ncf','setoff','notes','settings'].forEach(t=>{
+  // Client Admin only ever sees the Client Portal tab — everything else in
+  // this internal dashboard (raw tickets, rates, profit, settings, etc.)
+  // stays hidden. This matches how an external client sees portal.html:
+  // access to nothing but the client-facing board.
+  const allTabs = ['dashboard','dev','func','proj','cdone','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
+  allTabs.forEach(t=>{
     const el = document.querySelector(`.nav-tab[data-tab="${t}"]`);
     if (el) el.style.display = clientAdmin ? 'none' : '';
   });
   const adminSubBtn = document.getElementById('portal-subtab-btn-admin');
   if (adminSubBtn) adminSubBtn.style.display = clientAdmin ? 'none' : '';
-  if (clientAdmin && typeof showPortalSubTab === 'function') showPortalSubTab('client');
+  if (clientAdmin) {
+    switchTab('portal');
+    if (typeof showPortalSubTab === 'function') showPortalSubTab('client');
+  }
   const lbl = document.getElementById('adminUserLabel');
   const s = getAdminSession();
   if (lbl && s) lbl.textContent = `${s.email} · ${s.role==='super_admin'?'Super Admin':'Client Admin'}`;
@@ -3780,7 +3788,9 @@ function startApp(){
   loadSettingsUI();
   stampMissingRates();
   // Restore whichever tab the user was last on, so a hard refresh doesn't bounce them to Dashboard
+  // (Client Admin is always locked to the Client Portal tab — never restore anything else for them)
   (function restoreLastTab(){
+    if (isClientAdmin()) { switchTab('portal'); return; }
     try{
       const saved = localStorage.getItem('techstar_last_tab');
       if (saved && saved!=='dashboard' && document.getElementById('tab-'+saved)) switchTab(saved);
