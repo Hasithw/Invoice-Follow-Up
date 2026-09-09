@@ -62,12 +62,14 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 /* kanban board */
 .board-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
 .board-col{background:var(--s2);border:1px solid var(--border);border-radius:var(--rlg);flex:1 1 0;min-width:160px;display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
-.board-col-hdr{padding:12px 14px;border-bottom:2px solid var(--b2);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
-.board-col-title{font-size:12px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em}
-.board-col-count{font-size:11px;font-weight:700;color:var(--accent);background:var(--adim);border-radius:99px;padding:2px 9px;flex-shrink:0}
+.board-col-hdr{padding:12px 14px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.board-col-title{font-size:13px;font-weight:700;color:#1f2937}
+.board-col-count{font-size:12px;font-weight:600;color:var(--t3);background:var(--s2);border-radius:99px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0}
+.board-col-progress{height:3px;background:var(--border);margin:10px 0 0;border-radius:2px;overflow:hidden;flex-shrink:0}
+.board-col-progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
 .board-col-body{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;flex:1}
-.board-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(15,23,42,.04);cursor:pointer;transition:box-shadow .15s,border-color .15s}
-.board-card:hover{box-shadow:0 2px 8px rgba(15,23,42,.09);border-color:var(--accent)}
+.board-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(15,23,42,.04);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.board-card:hover{box-shadow:0 2px 10px rgba(15,23,42,.1);border-color:var(--accent)}
 /* task detail drawer */
 .drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:1000}
 .drawer-backdrop.show{opacity:1;pointer-events:auto}
@@ -86,8 +88,10 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 .drawer-amounts .drawer-field-val{font-family:'JetBrains Mono',monospace;font-size:15px}
 .drawer-amount-full{grid-column:1/-1;border-top:1px dashed var(--border);padding-top:10px;margin-top:2px}
 .drawer-amount-full .drawer-field-val{font-size:18px;color:var(--accent)}
-.board-card-desc{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--text)}
-.board-card-meta{font-size:10.5px;color:var(--t3);display:flex;flex-wrap:wrap;gap:4px 8px}
+.board-card-desc{font-size:13px;font-weight:600;line-height:1.35;color:#1f2937}
+.board-card-company{font-size:11.5px;font-weight:500;color:var(--accent)}
+.board-card-meta{font-size:11px;color:var(--t3);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:2px;padding-top:6px;border-top:1px solid var(--border)}
+.board-card-meta span{display:inline-flex;align-items:center;gap:4px}
 .board-col-empty{font-size:11px;color:var(--t3);text-align:center;padding:16px 8px;font-style:italic}
 /* table-style list */
 .section-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
@@ -242,8 +246,9 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <button class="btn btn-sm" onclick="logout()">Sign Out</button>
     </div>
   </div>
-  <div class="nav-tabs" id="navTabs">
+  <div class="nav-tabs" id="navTabs" style="justify-content:space-between;align-items:center">
     <div class="nav-tab active" data-tab="board">Board</div>
+    <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="margin:8px 16px 8px auto;padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:220px;max-width:40vw;background:var(--surface);color:var(--text)"/>
   </div>
   <div class="main">
     <div class="tab-panel active" id="tab-board">
@@ -492,6 +497,7 @@ async function loadAllData(){
 }
 
 // ── Kanban board ──────────────────────────────────────────────────────
+let BOARD_SEARCH = '';
 function renderBoard(){
   const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
   const byCol = {};
@@ -500,27 +506,33 @@ function renderBoard(){
     const col = KANBAN_COLUMNS.includes(r.helpdesk_status) ? r.helpdesk_status : KANBAN_COLUMNS[0];
     byCol[col].push(r);
   });
+  const q = BOARD_SEARCH.trim().toLowerCase();
+  const maxCount = Math.max(1, ...KANBAN_COLUMNS.map(c => byCol[c].length));
   document.getElementById('board-wrap').innerHTML = KANBAN_COLUMNS.map(col => {
-    const items = byCol[col];
+    const items = q ? byCol[col].filter(r => (r.description||'').toLowerCase().includes(q)) : byCol[col];
+    const pct = Math.round((byCol[col].length / maxCount) * 100);
     return `
     <div class="board-col">
       <div class="board-col-hdr">
         <div class="board-col-title">${esc(col)}</div>
-        <div class="board-col-count">${items.length}</div>
+        <div class="board-col-count">${byCol[col].length}</div>
       </div>
+      <div class="board-col-progress"><div class="board-col-progress-bar" style="width:${pct}%"></div></div>
       <div class="board-col-body">
-        ${items.length ? items.map(boardCardHtml).join('') : '<div class="board-col-empty">No requests</div>'}
+        ${items.length ? items.map(boardCardHtml).join('') : `<div class="board-col-empty">${q ? 'No matches' : 'No requests'}</div>`}
       </div>
     </div>`;
   }).join('');
 }
+function filterBoard(val){ BOARD_SEARCH = val; renderBoard(); }
 
 function boardCardHtml(r){
   const meta = [];
-  if (r.month || r.year) meta.push(esc([r.month, r.year].filter(Boolean).join(' ')));
+  if (r.month || r.year) meta.push(`<span>🕐 ${esc([r.month, r.year].filter(Boolean).join(' '))}</span>`);
   return `<div class="board-card" onclick="openDrawer('${esc(r.id)}')">
     <div class="board-card-desc">${esc(r.description||'Untitled request')}</div>
-    ${meta.length ? `<div class="board-card-meta">${meta.map(m=>`<span>${m}</span>`).join('')}</div>` : ''}
+    <div class="board-card-company">${esc(COMPANY || 'Techstar Packaging (Private) Limited')}</div>
+    ${meta.length ? `<div class="board-card-meta">${meta.join('')}</div>` : ''}
   </div>`;
 }
 
