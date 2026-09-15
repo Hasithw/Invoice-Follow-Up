@@ -2041,7 +2041,7 @@ function buildRow(listKey, r) {
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
-             estf:r.estf||'', actf:r.actf||'', comp:r.comp||'',
+             estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'', comp:r.comp||'',
              status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null };
   if (listKey==='proj'||listKey==='projDone')
@@ -3141,6 +3141,7 @@ const SCHEMAS={
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
     {key:'estf',label:'Est Func Hrs',type:'number'},{key:'actf',label:'Act Func Hrs',type:'number'},
+    {key:'estd',label:'Est Dev Hrs',type:'number'},{key:'actd',label:'Act Dev Hrs',type:'number'},
     {key:'comp',label:'Completed Date',type:'date'},
     {key:'status',label:'Project Status',type:'select',options:STATUSES},
     {key:'clipay',label:'Client Payment',type:'select',options:CLIENT_PAY},
