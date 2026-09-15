@@ -247,10 +247,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="divider"></div>
   <div class="nav-tabs" id="navTabs">
     <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
-    <div class="nav-tab" data-tab="dev">Dev Support</div>
     <div class="nav-tab" data-tab="func">Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
-    <div class="nav-tab done" data-tab="cdone">Invoiced Dev</div>
     <div class="nav-tab done" data-tab="cfdone">Invoiced Support</div>
     <div class="nav-tab done" data-tab="cpdone">Invoiced Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
@@ -289,36 +287,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%">
-      <div class="dash-card"><div class="dash-section-title">Dev Support</div><div id="dash-dev-summary"></div></div>
       <div class="dash-card"><div class="dash-section-title">Support</div><div id="dash-func-summary"></div></div>
       <div class="dash-card"><div class="dash-section-title">Projects</div><div id="dash-proj-summary"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ DEV SUPPORT ════ -->
-<div class="tab-panel" id="tab-dev">
-  <div class="md-wrap">
-    <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Dev</div>
-      <div class="stats" id="dev-stats"></div>
-      <div class="toolbar">
-        <input class="search-box" placeholder="Search dev support…" oninput="searchTable('dev-body',this.value)">
-      </div>
-      <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
-          <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
-          <div class="th">Invoice Number</div>
-        </div>
-        <div id="dev-body"></div>
-      </div>
-    </div>
-    <div class="detail-pane" id="dev-detail">
-      <div class="dp-header"><div class="dp-title" id="dev-dp-title">Edit row</div><div class="dp-close" onclick="closeDetail('dev')">✕</div></div>
-      <div class="dp-body" id="dev-dp-body"></div>
-      <div class="dp-footer"><button class="btn" style="color:var(--red);border-color:var(--red)" onclick="deleteRecord('dev')">🗑 Delete</button><button class="btn" onclick="closeDetail('dev')">Cancel</button><button class="btn btn-primary" onclick="saveDetail('dev')">Save</button></div>
     </div>
   </div>
 </div>
@@ -371,30 +341,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="dp-header"><div class="dp-title" id="proj-dp-title">Edit row</div><div class="dp-close" onclick="closeDetail('proj')">✕</div></div>
       <div class="dp-body" id="proj-dp-body"></div>
       <div class="dp-footer"><button class="btn" style="color:var(--red);border-color:var(--red)" onclick="deleteRecord('proj')">🗑 Delete</button><button class="btn" onclick="closeDetail('proj')">Cancel</button><button class="btn btn-primary" onclick="saveDetail('proj')">Save</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ COMPLETED DEV ════ -->
-<div class="tab-panel" id="tab-cdone">
-  <div class="md-wrap">
-    <div class="list-pane">
-      <div class="toolbar"><input class="search-box" placeholder="Search completed dev…" oninput="searchTable('cdone-body',this.value)"></div>
-      <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
-          <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
-          <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
-          <div class="th">Invoice Number</div><div class="th">Actions</div>
-        </div>
-        <div id="cdone-body"></div>
-      </div>
-    </div>
-    <div class="detail-pane" id="cdone-detail">
-      <div class="dp-header"><div class="dp-title" id="cdone-dp-title">Edit row</div><div class="dp-close" onclick="closeDetail('cdone')">✕</div></div>
-      <div class="dp-body" id="cdone-dp-body"></div>
-      <div class="dp-footer"><button class="btn" style="color:var(--red);border-color:var(--red)" onclick="deleteRecord('cdone')">🗑 Delete</button><button class="btn" onclick="closeDetail('cdone')">Cancel</button><button class="btn btn-primary" onclick="saveDetail('cdone')">Save</button></div>
     </div>
   </div>
 </div>
@@ -477,17 +423,16 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="chart-bar-wrap" id="profit-bar-func" style="height:130px"></div>
       </div>
       <div class="dash-card">
-        <div class="dash-section-title" style="margin-bottom:12px">Dev + Projects Profit</div>
+        <div class="dash-section-title" style="margin-bottom:12px">Projects Profit</div>
         <div class="chart-bar-wrap" id="profit-bar-devproj" style="height:130px"></div>
       </div>
     </div>
     <!-- Monthly breakdown table -->
     <div class="table-wrap">
-      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
         <div class="th">Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
-        <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Dev Pay + Inv Func</span></div>
         <div class="th">Total Profit</div>
@@ -527,17 +472,16 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="chart-bar-wrap" id="ncf-bar-func" style="height:130px"></div>
       </div>
       <div class="dash-card">
-        <div class="dash-section-title" style="margin-bottom:12px">Dev + Projects Cash Profit</div>
+        <div class="dash-section-title" style="margin-bottom:12px">Projects Cash Profit</div>
         <div class="chart-bar-wrap" id="ncf-bar-devproj" style="height:130px"></div>
       </div>
     </div>
     <!-- Monthly breakdown table -->
     <div class="table-wrap">
-      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
+      <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
         <div class="th">Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
-        <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Developer Payment</span></div>
         <div class="th">Total Net Cash Flow</div>
@@ -933,7 +877,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
         <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Dev Support, Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
+          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
         </div>
         <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
         <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -1009,7 +953,6 @@ let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Q
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const DEV_COLS  ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 const FUNC_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 
@@ -1215,7 +1158,7 @@ function applyRoleUI(){
   // this internal dashboard (raw tickets, rates, profit, settings, etc.)
   // stays hidden. This matches how an external client sees portal.html:
   // access to nothing but the client-facing board.
-  const allTabs = ['dashboard','dev','func','proj','cdone','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
+  const allTabs = ['dashboard','func','proj','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
   allTabs.forEach(t=>{
     const el = document.querySelector(`.nav-tab[data-tab="${t}"]`);
     if (el) el.style.display = clientAdmin ? 'none' : '';
@@ -1690,7 +1633,7 @@ function initPortalTab() {
   // "Requester Name" datalist: distinct req values across dev/func/proj —
   // these are individual staff names on your tickets, e.g. "Theekshana".
   const reqNames = new Set();
-  [...DB.dev, ...DB.devDone, ...DB.func, ...DB.funcDone, ...DB.proj, ...DB.projDone].forEach(r=>{
+  [...DB.func, ...DB.funcDone, ...DB.proj, ...DB.projDone].forEach(r=>{
     if (r.req) reqNames.add(r.req.trim());
   });
   document.getElementById('portal-requester-name-list').innerHTML =
@@ -2025,7 +1968,7 @@ async function deletePortalAccount(id) {
 const STORE_KEY = 'techstar2026_v3';
 
 function initStore() {
-  return { dev:[], devDone:[], func:[], funcDone:[], proj:[], projDone:[],
+  return { func:[], funcDone:[], proj:[], projDone:[],
            setoff:[], setoffActive:[], setoffArchived:[], notes:[],
            settings:{ funcRate:'8000.00', devRate:'5000.00',
                       statuses:[...STATUSES], clientPayStatuses:[...CLIENT_PAY], devPayStatuses:[...DEV_PAY] } };
@@ -2034,12 +1977,6 @@ function initStore() {
 // ── Row builders (in-memory → Supabase flat row) ───────────────────
 function buildRow(listKey, r) {
   const done = listKey.endsWith('Done');
-  if (listKey==='dev'||listKey==='devDone')
-    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
-             estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
-             comp:r.comp||'', status:r.status||'', devpay:r.devpay||r.devpaystat||'',
-             clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
-             func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'', comp:r.comp||'',
@@ -2067,12 +2004,6 @@ function buildRow(listKey, r) {
 
 // ── Row parsers (Supabase flat row → in-memory) ────────────────────
 function parseRow(table, row) {
-  if (table==='dev_support')
-    return { ...row,
-      devpaystat: row.devpay||'',
-      year: row.year||CURRENT_YEAR,
-      funcRate: String(row.func_rate || getFuncRate()),
-      devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='func_support')
     return { ...row,
       year: row.year||CURRENT_YEAR,
@@ -2101,12 +2032,10 @@ function parseRow(table, row) {
 async function loadFromSupabase() {
   showLoader(true);
   try {
-    const [devRows, funcRows, projRows, soActive, soArch, noteRows] = await Promise.all([
-      sbGet('dev_support'), sbGet('func_support'), sbGet('projects'),
+    const [funcRows, projRows, soActive, soArch, noteRows] = await Promise.all([
+      sbGet('func_support'), sbGet('projects'),
       sbGet('setoff_active'), sbGet('setoff_archived'), sbGet('project_notes'),
     ]);
-    DB.dev      = devRows.filter(r=>!r.done).map(r=>parseRow('dev_support',r));
-    DB.devDone  = devRows.filter(r=> r.done).map(r=>parseRow('dev_support',r));
     DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('func_support',r));
     DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('func_support',r));
     DB.proj     = projRows.filter(r=>!r.done).map(r=>parseRow('projects',r));
@@ -2131,7 +2060,6 @@ async function loadFromSupabase() {
 
 // ── saveRecord: persist one record to Supabase ─────────────────────
 const TABLE_MAP = {
-  dev:'dev_support', devDone:'dev_support',
   func:'func_support', funcDone:'func_support',
   proj:'projects', projDone:'projects',
   setoffActive:'setoff_active', setoffArchived:'setoff_archived',
@@ -2465,14 +2393,8 @@ function moveStatusItem(listKey, idx, dir){
 function stampMissingRates() {
   const fR = String(getFuncRate());
   const dR = String(getDevRate());
-  const devNeedSave=[], funcNeedSave=[], projNeedSave=[];
+  const funcNeedSave=[], projNeedSave=[];
 
-  [...DB.dev,...DB.devDone].forEach(r=>{
-    let changed=false;
-    if (!r.funcRate||r.funcRate==='0'){ r.funcRate=fR; changed=true; }
-    if (!r.devRate ||r.devRate ==='0'){ r.devRate =dR; changed=true; }
-    if (changed) devNeedSave.push(r);
-  });
   [...DB.func,...DB.funcDone].forEach(r=>{
     if (!r.funcRate||r.funcRate==='0'){ r.funcRate=fR; funcNeedSave.push(r); }
   });
@@ -2483,24 +2405,14 @@ function stampMissingRates() {
     if (changed) projNeedSave.push(r);
   });
 
-  if (devNeedSave.length||funcNeedSave.length||projNeedSave.length) {
+  if (funcNeedSave.length||projNeedSave.length) {
     saveStore();
     // Push to Supabase in background
-    devNeedSave.forEach(r=>saveRecord('dev',r));
     funcNeedSave.forEach(r=>saveRecord('func',r));
     projNeedSave.forEach(r=>saveRecord('proj',r));
   }
 }
 
-function calcDev(d){
-  const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
-  // Use ONLY the rate frozen on the record — never the live settings
-  const fRate=parseFloat(d.funcRate)||0;
-  const dRate=parseFloat(d.devRate) ||0;
-  if (!fRate && !dRate) return {devPmt:0,invF:0,invD:0,invFull:0,profit:0};
-  const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
-  return {devPmt,invF,invD,invFull,profit};
-}
 function calcFunc(d){
   const fRate=parseFloat(d.funcRate)||0;
   if (!fRate) return 0;
@@ -2535,12 +2447,6 @@ function fmtOr(n,has){ return has?fmt(n):'—'; }
 // ── Cash-basis calculations for NCF (Net Cash Flow) ────────────────
 // Revenue is only recognized once the client has actually paid.
 // Developer cost is only recognized once the developer has actually been paid.
-function calcDevCash(d){
-  const c=calcDev(d);
-  const cashIn  = d.clipay==='Customer Paid' ? c.invFull : 0;
-  const cashOut = d.devpay==='Developer Paid' ? c.devPmt : 0;
-  return {cashIn,cashOut,profit:cashIn-cashOut};
-}
 function calcFuncCash(d){
   return d.clipay==='Customer Paid' ? calcFunc(d) : 0;
 }
@@ -2567,41 +2473,6 @@ function isClientUnpaid(clipay){ return clipay==='Customer NOT Paid'; }
 // ══════════════════════════════════════════════════════════════════════
 // ROW HTML RENDERERS
 // ══════════════════════════════════════════════════════════════════════
-function rowDev(d){
-  const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
-  if (d.done) {
-    // "Invoiced" view (Invoiced Dev): swap estimate/completed-date columns for financial figures
-    const DCOLS = '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px';
-    const c = calcDev(d);
-    return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DCOLS}">
-      <div class="td" title="${d.dev}">${d.dev||'—'}</div>
-      <div class="td muted">${d.req||'—'}</div>
-      <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${badge(d.status,['Finished','Client Testing'],'b-yellow')}</div>
-      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
-      <div class="td mono">${fmt(c.devPmt)}</div>
-      <div class="td mono">${fmt(c.invFull)}</div>
-      <div class="td mono green">${fmt(c.profit)}</div>
-      <div class="td mono">${d.inv||'—'}</div>
-      <div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
-        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cdone" data-id="${d.id}">✏</button>
-        <button class="btn btn-sm" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:var(--red)" data-action="delete" data-tab="cdone" data-id="${d.id}">🗑</button>
-      </div>
-    </div>`;
-  }
-  return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${DEV_COLS}">
-    <div class="td" title="${d.dev}">${d.dev||'—'}</div>
-    <div class="td muted">${d.req||'—'}</div>
-    <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
-    <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-    <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payment','Client Testing'],'b-yellow')}</div>
-    <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-    <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
-    <div class="td mono">${d.inv||'—'}</div>
-  </div>`;
-}
 function rowFunc(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   if (d.done) {
@@ -2677,9 +2548,6 @@ function rowProj(d){
 // RENDER ALL BODIES
 // ══════════════════════════════════════════════════════════════════════
 function renderAll(){
-  // Dev
-  document.getElementById('dev-body').innerHTML    = renderGroupedByMonth(DB.dev, rowDev);
-  document.getElementById('cdone-body').innerHTML  = renderGroupedByMonthWithTotals(DB.devDone, rowDev, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcDev);
   // Func
   document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
   document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.funcDone, rowFunc, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcFuncFull);
@@ -2699,8 +2567,6 @@ function renderAll(){
 
 function attachAllClicks(){
   const pairs=[
-    ['dev-body',    'dev',   false],
-    ['cdone-body',  'cdone', true],
     ['func-body',   'func',  false],
     ['cfdone-body', 'cfdone',true],
     ['proj-body',   'proj',  false],
@@ -2738,15 +2604,6 @@ function attachAllClicks(){
 // STATS
 // ══════════════════════════════════════════════════════════════════════
 function renderStats(){
-  // Dev stats
-  const devAll=[...DB.dev,...DB.devDone];
-  const devProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0);
-  const devNotPaid=DB.dev.filter(d=>isClientUnpaid(d.clipay)).length;
-  document.getElementById('dev-stats').innerHTML=`
-    <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.dev.length}</div></div>
-    <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.devDone.length}</div></div>
-    <div class="stat"><div class="stat-label">Client NOT paid</div><div class="stat-val red">${devNotPaid}</div></div>
-    <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(devProfit)}</div></div>`;
   // Func stats
   const funcProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0);
   const funcNotPaid=DB.func.filter(d=>isClientUnpaid(d.clipay)).length;
@@ -2769,15 +2626,13 @@ function renderStats(){
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════════════
 function renderDashboard(){
-  const allDev=[...DB.dev,...DB.devDone],allFunc=[...DB.func,...DB.funcDone],allProj=[...DB.proj,...DB.projDone];
-  const totalProfit=DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0)+
-                    DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
+  const allFunc=[...DB.func,...DB.funcDone],allProj=[...DB.proj,...DB.projDone];
+  const totalProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                     DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const notPaid=[...allDev,...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay)).length;
-  const invFull=DB.devDone.reduce((s,d)=>s+calcDev(d).invFull,0)+
-                DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
+  const notPaid=[...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay)).length;
+  const invFull=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
                 DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
-  const active=DB.dev.length+DB.func.length+DB.proj.length;
+  const active=DB.func.length+DB.proj.length;
   document.getElementById('dash-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit</div><div class="dash-val green">${fmt(totalProfit)}</div></div>
     <div class="dash-card"><div class="dash-label">Invoice Full Total</div><div class="dash-val accent">${fmt(invFull)}</div></div>
@@ -2786,7 +2641,6 @@ function renderDashboard(){
   // Monthly profit chart
   const byMonth={};
   MONTH_LABELS.forEach(m=>byMonth[m]=0);
-  DB.devDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcDev(d).profit; });
   DB.funcDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcFunc(d); });
   DB.projDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcProj(d).profit; });
   const months=MONTH_LABELS.slice(0,6);
@@ -2799,12 +2653,11 @@ function renderDashboard(){
       <div class="chart-bar-label">${m}</div>
     </div>`).join('');
   // Overdue list
-  const overdueItems=[...allDev,...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay));
+  const overdueItems=[...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay));
   const ol=document.getElementById('overdue-list');
   if(!overdueItems.length){ ol.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px 0">No unpaid items 🎉</div>'; }
   else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev} <span style="font-size:10px;font-weight:600;color:${d.done?'#16a34a':'#d97706'};background:${d.done?'#dcfce7':'#fef3c7'};padding:1px 6px;border-radius:999px;margin-left:4px">${d.done?'Invoiced':'Active'}</span></div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
   // Mini summaries
-  document.getElementById('dash-dev-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.dev.length}</span> · Done: <span style="color:var(--green)">${DB.devDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.devDone.reduce((s,d)=>s+calcDev(d).profit,0))}</span></div>`;
   document.getElementById('dash-func-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.func.length}</span> · Done: <span style="color:var(--green)">${DB.funcDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.funcDone.reduce((s,d)=>s+calcFunc(d),0))}</span></div>`;
   document.getElementById('dash-proj-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.proj.length}</span> · Done: <span style="color:var(--green)">${DB.projDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0))}</span></div>`;
 }
@@ -2813,14 +2666,14 @@ function renderDashboard(){
 // PROFIT TABLE + CHARTS
 // ══════════════════════════════════════════════════════════════════════
 function renderProfit(){
-  const COLS = '80px 130px 1fr 1fr 1fr 1fr 1fr';
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('profit-year-filter');
   if (filterEl) {
     // Collect all years present in data
     const dataYears = new Set([
-      ...[...DB.devDone,...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+      ...[...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
     ]);
     // Also always include current year and a range of years
     YEARS.forEach(y=>dataYears.add(y));
@@ -2839,31 +2692,27 @@ function renderProfit(){
   const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
   const ensure = d => {
     const k=ymKey(d);
-    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0,loss:0};
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,proj:0,loss:0};
   };
 
   DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFunc(d); });
-  DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDev(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
 
   // ── Set Off Loss — Developer Payment + Invoiced Functional total for
-  // Dev/Func/Project tickets whose status is "SetOff Action". Shown as a
+  // Func/Project tickets whose status is "SetOff Action". Shown as a
   // reference figure; not subtracted from Total Profit.
   const isSetOff = d => d.status==='SetOff Action';
-  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ const c=calcDev(d); ensure(d); ymData[ymKey(d)].loss += c.devPmt + c.invF; });
   [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
   [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ const c=calcProj(d); ensure(d); ymData[ymKey(d)].loss += c.devPmt + c.invF; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
   const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0);
-  const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDev(d).profit, 0);
   const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
   const totalLoss  =
-    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>{ const c=calcDev(d); return s+c.devPmt+c.invF; }, 0) +
     [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
     [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>{ const c=calcProj(d); return s+c.devPmt+c.invF; }, 0);
-  const grandTotal = totalFunc + totalDev + totalProj - totalLoss;
+  const grandTotal = totalFunc + totalProj - totalLoss;
   const gtColor = grandTotal<0 ? 'red' : 'green';
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
@@ -2871,35 +2720,33 @@ function renderProfit(){
   document.getElementById('profit-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
-    <div class="dash-card"><div class="dash-label">Dev Support</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
     <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
     <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   // Build month totals for the selected year
   const monthlyForCharts = {};
-  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,dev:0,proj:0});
+  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,proj:0});
 
   Object.values(ymData).forEach(r=>{
     if((selectedYear==='all' || r.year===selectedYear) && monthlyForCharts[r.month]) {
       monthlyForCharts[r.month].func += r.func;
-      monthlyForCharts[r.month].dev  += r.dev;
       monthlyForCharts[r.month].proj += r.proj;
     }
   });
 
   // Only show months that have data
   const activeMonths = MONTHS.filter(m=>{
-    const r=monthlyForCharts[m]; return r.func||r.dev||r.proj;
+    const r=monthlyForCharts[m]; return r.func||r.proj;
   });
   const chartMonths = activeMonths.length
     ? activeMonths.map(m=>m.substring(0,3).toUpperCase())
     : MONTH_LABELS.slice(0,6);
 
   const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
-  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.proj||0); });
   const funcVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).func||0; });
-  const devprojVals  = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+  const projVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).proj||0; });
 
   // Update chart titles
   const ct = document.getElementById('chart-title-total');
@@ -2922,7 +2769,7 @@ function renderProfit(){
 
   renderBarChart('profit-bar-total',   totalVals,   '#16a34a');
   renderBarChart('profit-bar-func',    funcVals,    '#2563eb');
-  renderBarChart('profit-bar-devproj', devprojVals, '#d97706');
+  renderBarChart('profit-bar-devproj', projVals,    '#d97706');
 
   // ── Table — show all years or filtered year ────────────────────────
   const profitHeader = document.querySelector('#tab-profit .table-header');
@@ -2932,7 +2779,6 @@ function renderProfit(){
       <div class="th">Year</div>
       <div class="th">Month</div>
       <div class="th">Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
-      <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Dev Pay + Inv Func</span></div>
       <div class="th">Total Profit</div>`;
@@ -2949,15 +2795,14 @@ function renderProfit(){
   let prevYear='';
   const rows = sortedKeys.map(k=>{
     const r=ymData[k];
-    const total=r.func+r.dev+r.proj-r.loss;
-    if(!r.func && !r.dev && !r.proj && !r.loss) return '';
+    const total=r.func+r.proj-r.loss;
+    if(!r.func && !r.proj && !r.loss) return '';
     const showYear = r.year!==prevYear;
     prevYear=r.year;
     return `<div class="table-row" style="grid-template-columns:${COLS};cursor:default${showYear&&selectedYear==='all'?';border-top:2px solid var(--b2)':''}">
       <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
       <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${r.func?'green':'muted'} mono">${r.func?fmt(r.func):'—'}</div>
-      <div class="td ${r.dev?'green':'muted'} mono">${r.dev?fmt(r.dev):'—'}</div>
       <div class="td ${r.proj?'green':'muted'} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
       <div class="td ${total?(total<0?'red fw':'green fw'):'muted'} mono">${total?fmt(total):'—'}</div>
@@ -2968,7 +2813,6 @@ function renderProfit(){
     <div class="td fw" style="color:var(--t2)">TOTAL</div>
     <div class="td"></div>
     <div class="td green fw mono">${fmt(totalFunc)}</div>
-    <div class="td green fw mono">${fmt(totalDev)}</div>
     <div class="td green fw mono">${fmt(totalProj)}</div>
     <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
     <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
@@ -2984,13 +2828,13 @@ function renderProfit(){
 // only counts once Dev Pay Status = Developer Paid.
 // ══════════════════════════════════════════════════════════════════════
 function renderNCF(){
-  const COLS = '80px 130px 1fr 1fr 1fr 1fr 1fr';
+  const COLS = '80px 130px 1fr 1fr 1fr 1fr';
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('ncf-year-filter');
   if (filterEl) {
     const dataYears = new Set([
-      ...[...DB.devDone,...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+      ...[...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
     ]);
     YEARS.forEach(y=>dataYears.add(y));
     const sortedYears = [...dataYears].sort();
@@ -3007,30 +2851,26 @@ function renderNCF(){
   const ymKey  = d => `${d.year||CURRENT_YEAR}__${d.month||''}`;
   const ensure = d => {
     const k=ymKey(d);
-    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,dev:0,proj:0,loss:0};
+    if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,proj:0,loss:0};
   };
 
   DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
-  DB.devDone.forEach(d=>{  ensure(d); ymData[ymKey(d)].dev  += calcDevCash(d).profit; });
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
 
-  // ── Set Off Loss — Developer Payment total for Dev/Func/Project tickets
+  // ── Set Off Loss — Developer Payment total for Func/Project tickets
   // whose status is "Set Off". Support tickets carry no dev cost, so
   // they always contribute 0 here. Shown as a reference figure; not
   // subtracted from Total Net Cash Flow.
   const isSetOff = d => d.status==='SetOff Action';
-  [...DB.dev, ...DB.devDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcDev(d).devPmt; });
   [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).devPmt; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
   const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFuncCash(d), 0);
-  const totalDev   = DB.devDone.filter(filterFn).reduce((s,d)=>s+calcDevCash(d).profit, 0);
   const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
   const totalLoss  =
-    [...DB.dev, ...DB.devDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcDev(d).devPmt, 0) +
     [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).devPmt, 0);
-  const grandTotal = totalFunc + totalDev + totalProj - totalLoss;
+  const grandTotal = totalFunc + totalProj - totalLoss;
   const gtColor = grandTotal<0 ? 'red' : 'green';
 
   const yearLabel = selectedYear==='all' ? 'All Years' : selectedYear;
@@ -3038,33 +2878,31 @@ function renderNCF(){
   document.getElementById('ncf-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
     <div class="dash-card"><div class="dash-label">Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
-    <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
     <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
     <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
 
   // ── Charts — show monthly breakdown for selected year only ─────────
   const monthlyForCharts = {};
-  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,dev:0,proj:0});
+  MONTHS.forEach(m=>monthlyForCharts[m]={func:0,proj:0});
 
   Object.values(ymData).forEach(r=>{
     if((selectedYear==='all' || r.year===selectedYear) && monthlyForCharts[r.month]) {
       monthlyForCharts[r.month].func += r.func;
-      monthlyForCharts[r.month].dev  += r.dev;
       monthlyForCharts[r.month].proj += r.proj;
     }
   });
 
   const activeMonths = MONTHS.filter(m=>{
-    const r=monthlyForCharts[m]; return r.func||r.dev||r.proj;
+    const r=monthlyForCharts[m]; return r.func||r.proj;
   });
   const chartMonths = activeMonths.length
     ? activeMonths.map(m=>m.substring(0,3).toUpperCase())
     : MONTH_LABELS.slice(0,6);
 
   const getMF = tag => MONTHS.find(x=>x.substring(0,3).toUpperCase()===tag)||tag;
-  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.dev||0)+(r.proj||0); });
+  const totalVals    = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.func||0)+(r.proj||0); });
   const funcVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).func||0; });
-  const devprojVals  = chartMonths.map(m=>{ const r=monthlyForCharts[getMF(m)]||{}; return (r.dev||0)+(r.proj||0); });
+  const projVals     = chartMonths.map(m=>{ return (monthlyForCharts[getMF(m)]||{}).proj||0; });
 
   const ct = document.getElementById('chart-title-ncf-total');
   if(ct) ct.textContent = `Monthly Net Cash Flow — ${yearLabel}`;
@@ -3089,7 +2927,7 @@ function renderNCF(){
 
   renderCashBarChart('ncf-bar-total',   totalVals,   '#16a34a');
   renderCashBarChart('ncf-bar-func',    funcVals,    '#2563eb');
-  renderCashBarChart('ncf-bar-devproj', devprojVals, '#d97706');
+  renderCashBarChart('ncf-bar-devproj', projVals,    '#d97706');
 
   // ── Table — show all years or filtered year ────────────────────────
   const monthOrder = Object.fromEntries(MONTHS.map((m,i)=>[m,i]));
@@ -3103,8 +2941,8 @@ function renderNCF(){
   let prevYear='';
   const rows = sortedKeys.map(k=>{
     const r=ymData[k];
-    const total=r.func+r.dev+r.proj-r.loss;
-    if(!r.func && !r.dev && !r.proj && !r.loss) return '';
+    const total=r.func+r.proj-r.loss;
+    if(!r.func && !r.proj && !r.loss) return '';
     const showYear = r.year!==prevYear;
     prevYear=r.year;
     const cls = v => v>0?'green':v<0?'red':'muted';
@@ -3112,7 +2950,6 @@ function renderNCF(){
       <div class="td fw mono" style="color:#2563eb">${showYear?r.year:''}</div>
       <div class="td fw">${(r.month||'').substring(0,3).toUpperCase()}</div>
       <div class="td ${cls(r.func)} mono">${r.func?fmt(r.func):'—'}</div>
-      <div class="td ${cls(r.dev)} mono">${r.dev?fmt(r.dev):'—'}</div>
       <div class="td ${cls(r.proj)} mono">${r.proj?fmt(r.proj):'—'}</div>
       <div class="td ${r.loss?'red':'muted'} mono">${r.loss?'-'+fmt(r.loss):'—'}</div>
       <div class="td ${cls(total)} fw mono">${total?fmt(total):'—'}</div>
@@ -3123,7 +2960,6 @@ function renderNCF(){
     <div class="td fw" style="color:var(--t2)">TOTAL</div>
     <div class="td"></div>
     <div class="td ${totalFunc<0?'red':'green'} fw mono">${fmt(totalFunc)}</div>
-    <div class="td ${totalDev<0?'red':'green'} fw mono">${fmt(totalDev)}</div>
     <div class="td ${totalProj<0?'red':'green'} fw mono">${fmt(totalProj)}</div>
     <div class="td ${totalLoss?'red':'muted'} fw mono">${totalLoss?'-'+fmt(totalLoss):'—'}</div>
     <div class="td ${gtColor} fw mono" style="font-size:15px">${fmt(grandTotal)}</div>
@@ -3140,19 +2976,6 @@ let currentDetail={tab:null,id:null,done:false};
 
 const YEARS=['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
 const SCHEMAS={
-  dev:[
-    {key:'year',label:'Year',type:'select',options:YEARS},
-    {key:'month',label:'Month',type:'select',options:MONTHS},
-    {key:'dev',label:'Description',type:'text',wide:true},
-    {key:'req',label:'Requester',type:'text'},
-    {key:'estf',label:'Est Func Hrs',type:'number'},{key:'actf',label:'Act Func Hrs',type:'number'},
-    {key:'estd',label:'Est Dev Hrs',type:'number'},{key:'actd',label:'Act Dev Hrs',type:'number'},
-    {key:'comp',label:'Completed Date',type:'date'},
-    {key:'status',label:'Project Status',type:'select',options:STATUSES},
-    {key:'devpay',label:'Dev Pay Status',type:'select',options:DEV_PAY},
-    {key:'clipay',label:'Client Payment',type:'select',options:CLIENT_PAY},
-    {key:'inv',label:'Invoice Number',type:'text'},
-  ],
   func:[
     {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
@@ -3183,10 +3006,8 @@ const SCHEMAS={
 
 function getRecord(tab, id) {
   const searchMap = {
-    dev:    ['dev','devDone'],
     func:   ['func','funcDone'],
     proj:   ['proj','projDone'],
-    cdone:  ['devDone','dev'],
     cfdone: ['funcDone','func'],
     cpdone: ['projDone','proj'],
   };
@@ -3197,8 +3018,8 @@ function getRecord(tab, id) {
   return null;
 }
 function schemaKey(tab) {
-  const map = { dev:'dev', func:'func', proj:'proj', cdone:'dev', cfdone:'func', cpdone:'proj' };
-  return map[tab] || 'dev';
+  const map = { func:'func', proj:'proj', cfdone:'func', cpdone:'proj' };
+  return map[tab] || 'func';
 }
 
 function openDetail(tab,id,done){
@@ -3206,7 +3027,7 @@ function openDetail(tab,id,done){
   if(!found) return;
   const rec=found.rec;
   const sk=schemaKey(tab);
-  const schema=SCHEMAS[sk]||SCHEMAS.dev;
+  const schema=SCHEMAS[sk]||SCHEMAS.func;
 
   currentDetail={tab, id, done, listKey: found.list, sk};
   // Also store on window for reliable access from onclick handlers
@@ -3276,8 +3097,8 @@ function currentDpData(){
 
 function updateDpCalc(d,sk,strip){
   let items=[];
-  if(sk==='dev'||sk==='proj'||sk==='func'){
-    const c=sk==='dev'?calcDev(d):sk==='proj'?calcProj(d):calcFuncFull(d);
+  if(sk==='proj'||sk==='func'){
+    const c=sk==='proj'?calcProj(d):calcFuncFull(d);
     const has=(parseFloat(d.actf)||0)+(parseFloat(d.actd)||0)>0;
     const f=n=>has?fmt(n):'—',pc=c.profit<0?'var(--red)':'var(--green)';
     items=[['Developer Payment',f(c.devPmt),'var(--accent)'],['Invoiced Functional',f(c.invF),'var(--t2)'],
@@ -3333,14 +3154,14 @@ function saveDetail(tab){
   if(savedFuncRate) rec.funcRate=savedFuncRate;
   if(savedDevRate)  rec.devRate =savedDevRate;
   if(!rec.funcRate) rec.funcRate=String(getFuncRate());
-  if(!rec.devRate&&(sk==='dev'||sk==='proj')) rec.devRate=String(getDevRate());
+  if(!rec.devRate&&(sk==='proj'||sk==='func')) rec.devRate=String(getDevRate());
 
   const isFinished=rec.status==='Finished';
-  const activeKeys={dev:'dev',func:'func',proj:'proj'};
-  const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
-  const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
-  const doneTabLabels={dev:'Invoiced Dev',func:'Invoiced Support',proj:'Invoiced Projects'};
-  const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
+  const activeKeys={func:'func',proj:'proj'};
+  const doneKeys  ={func:'funcDone',proj:'projDone'};
+  const doneTabs  ={func:'cfdone',proj:'cpdone'};
+  const doneTabLabels={func:'Invoiced Support',proj:'Invoiced Projects'};
+  const isDoneList= listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
     // Active → Done (record moves to the Invoiced list, but we stay on the current page)
@@ -3369,14 +3190,14 @@ function saveDetail(tab){
 // ══════════════════════════════════════════════════════════════════════
 // MODAL (new ticket)
 // ══════════════════════════════════════════════════════════════════════
-const MODAL_TITLES={dev:'New Dev Support Ticket',func:'New Support Ticket',proj:'New Project'};
+const MODAL_TITLES={func:'New Support Ticket',proj:'New Project'};
 function openModal(){ document.getElementById('modalOverlay').style.display='flex'; }
 function closeModal(){ document.getElementById('modalOverlay').style.display='none'; }
 document.getElementById('modalOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
 
 document.getElementById('addBtn').addEventListener('click',()=>{
   const sk=currentTab.replace(/^c.+/,'')||currentTab;
-  const schema=SCHEMAS[sk]||SCHEMAS.dev;
+  const schema=SCHEMAS[sk]||SCHEMAS.func;
   document.getElementById('modalTitle').textContent=MODAL_TITLES[sk]||'New';
   document.getElementById('modalSave').textContent=sk==='proj'?'Save project':'Save ticket';
   const body=document.getElementById('modalBody'); body.innerHTML='';
@@ -3412,14 +3233,14 @@ function buildMField(field, rec){
 
 document.getElementById('modalSave').addEventListener('click',()=>{
   const sk=currentTab.replace(/^c.+/,'')||currentTab;
-  const schema=SCHEMAS[sk]||SCHEMAS.dev;
+  const schema=SCHEMAS[sk]||SCHEMAS.func;
   // Start with frozen rates; year and other fields read from form below
   const rec={id:newId(),done:false,funcRate:String(getFuncRate()),devRate:String(getDevRate()),year:CURRENT_YEAR};
   schema.forEach(f=>{ const el=document.getElementById('mf-'+f.key); if(el) rec[f.key]=el.value; });
   // Ensure year has a value
   if(!rec.year) rec.year=CURRENT_YEAR;
   if(!rec.dev){ alert('Please enter a development description.'); return; }
-  const listKey={dev:'dev',func:'func',proj:'proj'}[sk];
+  const listKey={func:'func',proj:'proj'}[sk];
   if(!listKey) return;
   DB[listKey].unshift(rec);
   saveStore();
@@ -3433,12 +3254,12 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={dev:'+ New Ticket',func:'+ New Ticket',proj:'+ New Project',dashboard:'',cdone:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'','notes-detail':'',settings:''};
+const NEW_LABELS={func:'+ New Ticket',proj:'+ New Project',dashboard:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'','notes-detail':'',settings:''};
 const SIDEBAR_DEFS={
   dashboard:[],
-  dev:[],func:[],proj:[],cdone:[],cfdone:[],cpdone:[],profit:[],setoff:[],
+  func:[],proj:[],cfdone:[],cpdone:[],profit:[],setoff:[],
 };
-const BODY_MAP={dev:'dev-body',func:'func-body',proj:'proj-body',cdone:'cdone-body',cfdone:'cfdone-body',cpdone:'cpdone-body'};
+const BODY_MAP={func:'func-body',proj:'proj-body',cfdone:'cfdone-body',cpdone:'cpdone-body'};
 
 function renderSidebar(tab){
   const sb=document.getElementById('sidebar'); sb.innerHTML='';
@@ -3465,7 +3286,7 @@ function applyFilter(tab,fType,fVal){
 
 function switchTab(t){
   // Close any open detail panels
-  ['dev','func','proj','cdone','cfdone','cpdone'].forEach(k=>{
+  ['func','proj','cfdone','cpdone'].forEach(k=>{
     document.getElementById(k+'-detail')?.classList.remove('open');
   });
   document.querySelectorAll('.table-row.selected').forEach(r=>r.classList.remove('selected'));
@@ -3479,7 +3300,7 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(isClientAdmin()||lbl===''||['cdone','cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
+  btn.style.display=(isClientAdmin()||lbl===''||['cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
@@ -3513,10 +3334,9 @@ function searchTable(bodyId,q){
 document.getElementById('exportBtn').addEventListener('click',()=>{
   const rows=[['Tab','Month','Development','Requester','Est F','Act F','Est D','Act D','Completed','Status','Dev Pay','Client Pay','Invoice','Dev Pmt','Inv Func','Inv Dev','Inv Full','Profit']];
   const addRows=(arr,tab)=>arr.forEach(d=>{
-    const c=tab==='func'?{devPmt:0,invF:calcFunc(d),invD:0,invFull:calcFunc(d),profit:calcFunc(d)}:tab==='dev'?calcDev(d):calcProj(d);
+    const c=tab==='func'?calcFuncFull(d):calcProj(d);
     rows.push([tab,d.month||'',d.dev||'',d.req||'',d.estf||'',d.actf||'',d.estd||'',d.actd||'',d.comp||'',d.status||'',d.devpay||'',d.clipay||'',d.inv||'',c.devPmt||'',c.invF||'',c.invD||'',c.invFull||'',c.profit||'']);
   });
-  addRows(DB.dev,'dev'); addRows(DB.devDone,'dev');
   addRows(DB.func,'func'); addRows(DB.funcDone,'func');
   addRows(DB.proj,'proj'); addRows(DB.projDone,'proj');
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -3574,10 +3394,8 @@ function confirmQuickDelete(tab, id, btn) {
 function resolveListKey(tab, id) {
   // Map of tab → list keys to search
   const searchMap = {
-    dev:    ['dev','devDone'],
     func:   ['func','funcDone'],
     proj:   ['proj','projDone'],
-    cdone:  ['devDone','dev'],
     cfdone: ['funcDone','func'],
     cpdone: ['projDone','proj'],
   };
@@ -3650,14 +3468,14 @@ let currentSoId = null; // ID of currently open setoff record
 
 // ── Project name helpers ────────────────────────────────────────────
 function getAllProjectNames() {
-  const all=[...DB.dev,...DB.devDone,...DB.func,...DB.funcDone,...DB.proj,...DB.projDone];
+  const all=[...DB.func,...DB.funcDone,...DB.proj,...DB.projDone];
   return [...new Set(all.map(d=>d.dev).filter(Boolean))].sort();
 }
 // Looks up a ticket/project's actual hours by its name (the "dev" description field),
-// searching across all 6 lists — used to auto-fill Func/Dev Hours when a project is picked.
+// searching across all 4 lists — used to auto-fill Func/Dev Hours when a project is picked.
 function findProjectActualHours(name){
   if (!name) return {func:'', dev:''};
-  const all=[...DB.dev,...DB.devDone,...DB.func,...DB.funcDone,...DB.proj,...DB.projDone];
+  const all=[...DB.func,...DB.funcDone,...DB.proj,...DB.projDone];
   const rec = all.find(d=>d.dev===name);
   if (!rec) return {func:'', dev:''};
   return { func: rec.actf||'', dev: rec.actd||'' };
