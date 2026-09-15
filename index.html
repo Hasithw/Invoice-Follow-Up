@@ -331,10 +331,11 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="stats" id="func-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
           <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Est Func Hours</div><div class="th">Act Func Hours</div><div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Client Payment</div><div class="th">Invoice Number</div>
+          <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
+          <div class="th">Invoice Number</div>
         </div>
         <div id="func-body"></div>
       </div>
@@ -1009,7 +1010,7 @@ let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer 
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const DEV_COLS  ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
-const FUNC_COLS ='1fr 120px 140px 140px 140px 150px 155px 150px';
+const FUNC_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 
 // Group/sort rows by month (Jan→Dec). Records with no month go last; stable within a month.
@@ -2627,8 +2628,10 @@ function rowFunc(d){
     <div class="td" title="${d.dev}">${d.dev||'—'}</div>
     <div class="td muted">${d.req||'—'}</div>
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
+    <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
     <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
+    <div class="td mono">${fmt(calcFuncFull(d).devPmt)}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
