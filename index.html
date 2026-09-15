@@ -2043,7 +2043,7 @@ function buildRow(listKey, r) {
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'', comp:r.comp||'',
              status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
-             func_rate:parseFloat(r.funcRate)||null };
+             func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='proj'||listKey==='projDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
@@ -2075,7 +2075,8 @@ function parseRow(table, row) {
   if (table==='func_support')
     return { ...row,
       year: row.year||CURRENT_YEAR,
-      funcRate: String(row.func_rate || getFuncRate()) };
+      funcRate: String(row.func_rate || getFuncRate()),
+      devRate:  String(row.dev_rate  || getDevRate()) };
   if (table==='projects')
     return { ...row,
       year: row.year||CURRENT_YEAR,
@@ -2506,6 +2507,19 @@ function calcFunc(d){
 }
 // Wrapper so Func totals can be summed the same way as Dev/Proj (no developer cost on func-only tickets)
 function calcFuncForTotals(d){ const amt=calcFunc(d); return {devPmt:0, invFull:amt, profit:amt}; }
+// Full Dev/Proj-style breakdown for a Support ticket, now that Support tickets can
+// also carry Dev hours: Developer Payment, Invoiced Functional, Invoiced Development,
+// Invoiced Full Amount, Profit. Used by the detail-panel calc strip and the
+// Invoiced Support table row. (Dashboard/Profit/Set-Off/NCF totals elsewhere in the
+// app still use the simpler calcFunc()/calcFuncForTotals() above and are unaffected.)
+function calcFuncFull(d){
+  const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
+  const fRate=parseFloat(d.funcRate)||0;
+  const dRate=parseFloat(d.devRate) ||0;
+  if (!fRate && !dRate) return {devPmt:0,invF:0,invD:0,invFull:0,profit:0};
+  const devPmt=ad*dRate, invF=af*fRate, invD=ad*fRate, invFull=invF+invD, profit=invFull-devPmt;
+  return {devPmt,invF,invD,invFull,profit};
+}
 function calcProj(d){
   const af=parseFloat(d.actf)||0, ad=parseFloat(d.actd)||0;
   const fRate=parseFloat(d.funcRate)||0;
@@ -2592,16 +2606,16 @@ function rowFunc(d){
   if (d.done) {
     // "Invoiced" view (Invoiced Support): swap estimate/completed-date columns for financial figures
     const FCOLS = '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px';
-    const amt = calcFunc(d); // func-only tickets have no developer cost — profit equals the invoiced amount
+    const c = calcFuncFull(d); // now accounts for Dev hours too, if the ticket has any
     return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div>
       <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
       <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
-      <div class="td mono">${fmt(0)}</div>
-      <div class="td mono">${fmt(amt)}</div>
-      <div class="td mono green">${fmt(amt)}</div>
+      <div class="td mono">${fmt(c.devPmt)}</div>
+      <div class="td mono">${fmt(c.invFull)}</div>
+      <div class="td mono green">${fmt(c.profit)}</div>
       <div class="td mono">${d.inv||'—'}</div>
       <div class="td" style="display:flex;gap:4px;align-items:center;justify-content:center">
         <button class="btn btn-sm" style="padding:3px 8px;font-size:11px" data-action="edit" data-tab="cfdone" data-id="${d.id}">✏</button>
@@ -3257,8 +3271,8 @@ function currentDpData(){
 
 function updateDpCalc(d,sk,strip){
   let items=[];
-  if(sk==='dev'||sk==='proj'){
-    const c=sk==='dev'?calcDev(d):calcProj(d);
+  if(sk==='dev'||sk==='proj'||sk==='func'){
+    const c=sk==='dev'?calcDev(d):sk==='proj'?calcProj(d):calcFuncFull(d);
     const has=(parseFloat(d.actf)||0)+(parseFloat(d.actd)||0)>0;
     const f=n=>has?fmt(n):'—',pc=c.profit<0?'var(--red)':'var(--green)';
     items=[['Developer Payment',f(c.devPmt),'var(--accent)'],['Invoiced Functional',f(c.invF),'var(--t2)'],
