@@ -405,10 +405,10 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="list-pane">
       <div class="toolbar"><input class="search-box" placeholder="Search completed func…" oninput="searchTable('cfdone-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
           <div class="th">Description</div><div class="th">Requester</div>
-          <div class="th">Act Func Hours</div>
-          <div class="th">Project Status</div><div class="th">Client Payment</div>
+          <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
           <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
@@ -2043,7 +2043,7 @@ function buildRow(listKey, r) {
   if (listKey==='func'||listKey==='funcDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'', comp:r.comp||'',
-             status:r.status||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
+             status:r.status||'', devpay:r.devpay||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='proj'||listKey==='projDone')
     return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
@@ -2606,13 +2606,14 @@ function rowFunc(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   if (d.done) {
     // "Invoiced" view (Invoiced Support): swap estimate/completed-date columns for financial figures
-    const FCOLS = '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px';
+    const FCOLS = '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px';
     const c = calcFuncFull(d); // now accounts for Dev hours too, if the ticket has any
     return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
-      <div class="td muted">${d.actf||'—'}</div>
+      <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
       <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
+      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
       <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
       <div class="td mono">${fmt(c.invFull)}</div>
@@ -2681,7 +2682,7 @@ function renderAll(){
   document.getElementById('cdone-body').innerHTML  = renderGroupedByMonthWithTotals(DB.devDone, rowDev, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcDev);
   // Func
   document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
-  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.funcDone, rowFunc, '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px', 5, calcFuncForTotals);
+  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.funcDone, rowFunc, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcFuncFull);
   // Proj
   document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(DB.proj, rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
   document.getElementById('cpdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.projDone, rowProj, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcProj);
@@ -3161,6 +3162,7 @@ const SCHEMAS={
     {key:'estd',label:'Est Dev Hrs',type:'number'},{key:'actd',label:'Act Dev Hrs',type:'number'},
     {key:'comp',label:'Completed Date',type:'date'},
     {key:'status',label:'Project Status',type:'select',options:STATUSES},
+    {key:'devpay',label:'Dev Pay Status',type:'select',options:DEV_PAY},
     {key:'clipay',label:'Client Payment',type:'select',options:CLIENT_PAY},
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
