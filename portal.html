@@ -592,7 +592,7 @@ function renderOverview(){
   document.getElementById('overview-kpis').innerHTML = `
     <div class="kpi"><div class="kpi-label">Total Requests</div><div class="kpi-val">${total}</div></div>
     <div class="kpi"><div class="kpi-label">Dev Support</div><div class="kpi-val">${DATA.dev.length}</div></div>
-    <div class="kpi"><div class="kpi-label">Functional Support</div><div class="kpi-val">${DATA.func.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Support</div><div class="kpi-val">${DATA.func.length}</div></div>
     <div class="kpi"><div class="kpi-label">Projects</div><div class="kpi-val">${DATA.proj.length}</div></div>
   `;
   const all = [...DATA.dev.map(r=>({...r,_cat:'dev'})), ...DATA.func.map(r=>({...r,_cat:'func'})), ...DATA.proj.map(r=>({...r,_cat:'proj'}))];
@@ -603,7 +603,7 @@ function renderCategory(cat){
   const el = document.getElementById(cat+'-list');
   const list = DATA[cat];
   el.innerHTML = list.length ? tableHtml(list) :
-    `<div class="empty-state">No ${cat==='dev'?'dev support':cat==='func'?'functional support':'project'} requests yet.</div>`;
+    `<div class="empty-state">No ${cat==='dev'?'dev support':cat==='func'?'support':'project'} requests yet.</div>`;
 }
 
 function tableHtml(rows){

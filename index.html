@@ -248,10 +248,10 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="nav-tabs" id="navTabs">
     <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
     <div class="nav-tab" data-tab="dev">Dev Support</div>
-    <div class="nav-tab" data-tab="func">Func Support</div>
+    <div class="nav-tab" data-tab="func">Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
     <div class="nav-tab done" data-tab="cdone">Invoiced Dev</div>
-    <div class="nav-tab done" data-tab="cfdone">Invoiced Func</div>
+    <div class="nav-tab done" data-tab="cfdone">Invoiced Support</div>
     <div class="nav-tab done" data-tab="cpdone">Invoiced Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
     <div class="nav-tab" data-tab="ncf">NCF</div>
@@ -290,7 +290,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%">
       <div class="dash-card"><div class="dash-section-title">Dev Support</div><div id="dash-dev-summary"></div></div>
-      <div class="dash-card"><div class="dash-section-title">Func Support</div><div id="dash-func-summary"></div></div>
+      <div class="dash-card"><div class="dash-section-title">Support</div><div id="dash-func-summary"></div></div>
       <div class="dash-card"><div class="dash-section-title">Projects</div><div id="dash-proj-summary"></div></div>
     </div>
   </div>
@@ -327,9 +327,9 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Func</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Support</div>
       <div class="stats" id="func-stats"></div>
-      <div class="toolbar"><input class="search-box" placeholder="Search func support…" oninput="searchTable('func-body',this.value)"></div>
+      <div class="toolbar"><input class="search-box" placeholder="Search support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
         <div class="table-header" style="grid-template-columns:1fr 120px 140px 140px 140px 150px 155px 150px">
           <div class="th">Description</div><div class="th">Requester</div>
@@ -472,7 +472,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="chart-bar-wrap" id="profit-bar-total" style="height:130px"></div>
       </div>
       <div class="dash-card">
-        <div class="dash-section-title" style="margin-bottom:12px">Func Support Profit</div>
+        <div class="dash-section-title" style="margin-bottom:12px">Support Profit</div>
         <div class="chart-bar-wrap" id="profit-bar-func" style="height:130px"></div>
       </div>
       <div class="dash-card">
@@ -485,7 +485,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
-        <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
+        <div class="th">Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
         <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
         <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Dev Pay + Inv Func</span></div>
@@ -522,7 +522,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="chart-bar-wrap" id="ncf-bar-total" style="height:130px"></div>
       </div>
       <div class="dash-card">
-        <div class="dash-section-title" style="margin-bottom:12px">Func Support Cash Profit</div>
+        <div class="dash-section-title" style="margin-bottom:12px">Support Cash Profit</div>
         <div class="chart-bar-wrap" id="ncf-bar-func" style="height:130px"></div>
       </div>
       <div class="dash-card">
@@ -535,7 +535,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="table-header" style="grid-template-columns:80px 130px 1fr 1fr 1fr 1fr 1fr">
         <div class="th">Year</div>
         <div class="th">Month</div>
-        <div class="th">Func Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
+        <div class="th">Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Only if Client Paid</span></div>
         <div class="th">Dev Support Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th">Projects Cash Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Cash In − Cash Out</span></div>
         <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Developer Payment</span></div>
@@ -932,7 +932,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
         <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Dev Support, Func Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
+          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Dev Support, Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
         </div>
         <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
         <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -2590,7 +2590,7 @@ function rowDev(d){
 function rowFunc(d){
   const overdue=isClientUnpaid(d.clipay)&&!d.done?'overdue-flag':'';
   if (d.done) {
-    // "Invoiced" view (Invoiced Func): swap estimate/completed-date columns for financial figures
+    // "Invoiced" view (Invoiced Support): swap estimate/completed-date columns for financial figures
     const FCOLS = '1fr 120px 140px 155px 150px 175px 190px 150px 150px 88px';
     const amt = calcFunc(d); // func-only tickets have no developer cost — profit equals the invoiced amount
     return `<div class="table-row ${overdue}" data-id="${d.id}" style="grid-template-columns:${FCOLS}">
@@ -2852,7 +2852,7 @@ function renderProfit(){
   { const kEl=document.getElementById('profit-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
   document.getElementById('profit-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
-    <div class="dash-card"><div class="dash-label">Func Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
+    <div class="dash-card"><div class="dash-label">Support</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
     <div class="dash-card"><div class="dash-label">Projects</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
     <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
@@ -2913,7 +2913,7 @@ function renderProfit(){
     profitHeader.innerHTML = `
       <div class="th">Year</div>
       <div class="th">Month</div>
-      <div class="th">Func Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
+      <div class="th">Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Invoiced Full Amt</span></div>
       <div class="th">Dev Support Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th">Projects Profit<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Inv Full − Dev Pay</span></div>
       <div class="th" style="color:#dc2626">Set Off Loss<br><span style="font-size:9px;font-weight:400;color:#94a3b8">Dev Pay + Inv Func</span></div>
@@ -2997,7 +2997,7 @@ function renderNCF(){
   DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
 
   // ── Set Off Loss — Developer Payment total for Dev/Func/Project tickets
-  // whose status is "Set Off". Func Support tickets carry no dev cost, so
+  // whose status is "Set Off". Support tickets carry no dev cost, so
   // they always contribute 0 here. Shown as a reference figure; not
   // subtracted from Total Net Cash Flow.
   const isSetOff = d => d.status==='SetOff Action';
@@ -3019,7 +3019,7 @@ function renderNCF(){
   { const kEl=document.getElementById('ncf-kpis'); if(kEl) kEl.style.gridTemplateColumns='repeat(5,1fr)'; }
   document.getElementById('ncf-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Net Cash Flow (${yearLabel})</div><div class="dash-val ${gtColor}">${fmt(grandTotal)}</div></div>
-    <div class="dash-card"><div class="dash-label">Func Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
+    <div class="dash-card"><div class="dash-label">Support (Cash)</div><div class="dash-val accent">${fmt(totalFunc)}</div></div>
     <div class="dash-card"><div class="dash-label">Dev Support (Cash)</div><div class="dash-val accent">${fmt(totalDev)}</div></div>
     <div class="dash-card"><div class="dash-label">Projects (Cash)</div><div class="dash-val accent">${fmt(totalProj)}</div></div>
     <div class="dash-card"><div class="dash-label">Set Off Loss</div><div class="dash-val red">${totalLoss?'-'+fmt(totalLoss):'0'}</div></div>`;
@@ -3319,7 +3319,7 @@ function saveDetail(tab){
   const activeKeys={dev:'dev',func:'func',proj:'proj'};
   const doneKeys  ={dev:'devDone',func:'funcDone',proj:'projDone'};
   const doneTabs  ={dev:'cdone',func:'cfdone',proj:'cpdone'};
-  const doneTabLabels={dev:'Invoiced Dev',func:'Invoiced Func',proj:'Invoiced Projects'};
+  const doneTabLabels={dev:'Invoiced Dev',func:'Invoiced Support',proj:'Invoiced Projects'};
   const isDoneList= listKey==='devDone'||listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
@@ -3349,7 +3349,7 @@ function saveDetail(tab){
 // ══════════════════════════════════════════════════════════════════════
 // MODAL (new ticket)
 // ══════════════════════════════════════════════════════════════════════
-const MODAL_TITLES={dev:'New Dev Support Ticket',func:'New Func Support Ticket',proj:'New Project'};
+const MODAL_TITLES={dev:'New Dev Support Ticket',func:'New Support Ticket',proj:'New Project'};
 function openModal(){ document.getElementById('modalOverlay').style.display='flex'; }
 function closeModal(){ document.getElementById('modalOverlay').style.display='none'; }
 document.getElementById('modalOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
