@@ -249,8 +249,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
     <div class="nav-tab" data-tab="func">Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
-    <div class="nav-tab done" data-tab="cfdone">Invoiced Support</div>
-    <div class="nav-tab done" data-tab="cpdone">Invoiced Projects</div>
+    <div class="nav-tab done" data-tab="cfdone">Completed Support</div>
+    <div class="nav-tab done" data-tab="cpdone">Completed Projects</div>
     <div class="nav-tab" data-tab="profit">Profit</div>
     <div class="nav-tab" data-tab="ncf">NCF</div>
     <div class="nav-tab" data-tab="setoff">Set Off</div>
@@ -297,7 +297,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Support</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Completed Support</div>
       <div class="stats" id="func-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
@@ -322,7 +322,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 <div class="tab-panel" id="tab-proj">
   <div class="md-wrap">
     <div class="list-pane">
-      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Invoiced Projects</div>
+      <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Completed Projects</div>
       <div class="stats" id="proj-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search projects…" oninput="searchTable('proj-body',this.value)"></div>
       <div class="table-wrap">
@@ -3160,7 +3160,7 @@ function saveDetail(tab){
   const activeKeys={func:'func',proj:'proj'};
   const doneKeys  ={func:'funcDone',proj:'projDone'};
   const doneTabs  ={func:'cfdone',proj:'cpdone'};
-  const doneTabLabels={func:'Invoiced Support',proj:'Invoiced Projects'};
+  const doneTabLabels={func:'Completed Support',proj:'Completed Projects'};
   const isDoneList= listKey==='funcDone'||listKey==='projDone';
 
   if(isFinished && !isDoneList){
