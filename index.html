@@ -301,10 +301,10 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="stats" id="func-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search support…" oninput="searchTable('func-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 170px 150px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
           <div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div><div class="th">Developer Payment</div>
+          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
           <div class="th">Invoice Number</div>
         </div>
         <div id="func-body"></div>
@@ -326,12 +326,12 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="stats" id="proj-stats"></div>
       <div class="toolbar"><input class="search-box" placeholder="Search projects…" oninput="searchTable('proj-body',this.value)"></div>
       <div class="table-wrap">
-        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 170px 150px">
+        <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px">
           <div class="th">Description</div>
           <div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div><div class="th">Developer Payment</div>
+          <div class="th">Project Status</div><div class="th">Developer Payment</div><div class="th">Client Payment</div>
           <div class="th">Invoice Number</div>
         </div>
         <div id="proj-body"></div>
@@ -354,7 +354,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <div class="table-header" style="grid-template-columns:1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px">
           <div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Pay Status</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
           <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
@@ -379,7 +379,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           <div class="th">Description</div>
           <div class="th">Requester</div>
           <div class="th">Act Func Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Pay Status</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
           <div class="th">Developer Payment</div><div class="th">Invoiced Full Amount</div><div class="th">Profit</div>
           <div class="th">Invoice Number</div><div class="th">Actions</div>
         </div>
@@ -953,8 +953,8 @@ let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Q
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
 const MONTH_LABELS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const FUNC_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 170px 150px';
-const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 170px 150px';
+const FUNC_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
+const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 170px 155px 150px';
 
 // Group/sort rows by month (Jan→Dec). Records with no month go last; stable within a month.
 function monthIdx(m){ const i=MONTHS.indexOf(m); return i===-1?99:i; }
@@ -2503,9 +2503,8 @@ function rowFunc(d){
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
     <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
-    <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-    <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td mono">${fmt(calcFuncFull(d).devPmt)}</div>
+    <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
 }
@@ -2541,7 +2540,6 @@ function rowProj(d){
     <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
     <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
     <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
-    <div class="td mono">${fmt(calcProj(d).devPmt)}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
   </div>`;
 }
