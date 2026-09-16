@@ -1855,7 +1855,7 @@ async function renderSuperAdminBoardPreview(){
     return;
   }
   const client = CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER);
-  const tickets = [...VF(), ...VP()]; // active tickets only — matches what a client's board shows (completed items live under Completed Support/Projects instead)
+  const tickets = [...VF(), ...VFD(), ...VP(), ...VPD()]; // ALL tickets for this client — the real client board shows everything (including Finished), not just active items
   const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
   tickets.forEach(t=>{
     const m = map[t.status];
