@@ -1798,10 +1798,10 @@ function showPortalSubTab(which) {
     const nativeBox = document.getElementById('superadmin-native-board');
     const iframe = document.getElementById('portal-preview-iframe');
     const info = document.getElementById('portal-preview-info');
-    if (isSuperAdmin() && ACTIVE_CLIENT_FILTER) {
-      // Super Admin viewing a specific client: render their board directly
-      // from data already loaded here (Super Admin already has full read
-      // access) — no second login, no iframe reload needed.
+    if (isSuperAdmin()) {
+      // Super Admin never needs the iframe/login screen — always render
+      // natively from data already loaded here (Super Admin already has
+      // full read access to every client).
       info.style.display = 'none';
       iframe.style.display = 'none';
       nativeBox.style.display = 'block';
@@ -1845,6 +1845,18 @@ async function fetchStatusMapCached(){
 async function renderSuperAdminBoardPreview(){
   const box = document.getElementById('superadmin-native-board');
   if (!box) return;
+  if (!ACTIVE_CLIENT_FILTER) {
+    box.innerHTML = `
+      <div style="text-align:center;padding:30px 20px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Pick a client to preview their board</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:18px">No login required — Super Admin can view any client's board directly.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          ${CLIENTS.length ? CLIENTS.map(c=>`<button class="btn btn-primary" onclick="viewClientDashboardInPortalTab('${c.id}')">${esc(c.company_name)}</button>`).join('')
+            : '<span style="font-size:12px;color:var(--t3)">No clients yet — add one on the Super Admin page.</span>'}
+        </div>
+      </div>`;
+    return;
+  }
   box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Loading board…</div>';
   const map = await fetchStatusMapCached();
   if (!map) {
@@ -1861,7 +1873,10 @@ async function renderSuperAdminBoardPreview(){
     (cols[helpdesk] || cols[KANBAN_COLUMNS_ADMIN[0]]).push(t);
   });
   box.innerHTML = `
-    <div style="font-size:14px;font-weight:700;margin-bottom:12px">${esc(client?client.company_name:'')}'s board <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s board <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="viewAllClients()">✕ Choose a different client</button>
+    </div>
     <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px">
       ${KANBAN_COLUMNS_ADMIN.map(colName=>`
         <div style="min-width:230px;flex:0 0 230px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;max-height:65vh">
@@ -1878,6 +1893,16 @@ async function renderSuperAdminBoardPreview(){
         </div>
       `).join('')}
     </div>`;
+}
+
+// Same as viewClientDashboard, but stays on the Client Portal tab instead
+// of jumping to Dashboard — used by the inline picker above.
+function viewClientDashboardInPortalTab(clientId){
+  ACTIVE_CLIENT_FILTER = clientId;
+  renderSuperAdminViewingBadge();
+  refreshViewingCompanyBar();
+  renderAll();
+  renderSuperAdminBoardPreview();
 }
 
 function initPortalTab() {
@@ -1959,6 +1984,7 @@ function viewAllClients() {
   refreshViewingCompanyBar();
   loadClientsAdmin();
   renderAll();
+  if (document.getElementById('tab-portal')?.classList.contains('active')) renderSuperAdminBoardPreview();
 }
 
 function renderSuperAdminViewingBadge() {
