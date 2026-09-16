@@ -2177,17 +2177,23 @@ async function loadPendingSignups() {
   if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
   box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
   try {
-    const [usersRes, accountsRes] = await Promise.all([
+    const [usersRes, accountsRes, adminsRes] = await Promise.all([
       fetch(`${SB_URL}/auth/v1/admin/users?per_page=200`, { headers: portalSbHeaders() }),
-      fetch(`${SB_URL}/rest/v1/client_accounts?select=id`, { headers: portalSbHeaders() })
+      fetch(`${SB_URL}/rest/v1/client_accounts?select=id`, { headers: portalSbHeaders() }),
+      fetch(`${SB_URL}/rest/v1/admin_profiles?select=id,role`, { headers: authedHdrs() })
     ]);
     if (!usersRes.ok) throw new Error(await usersRes.text());
     if (!accountsRes.ok) throw new Error(await accountsRes.text());
     const usersData = await usersRes.json();
     const accounts = await accountsRes.json();
+    const admins = adminsRes.ok ? await adminsRes.json() : [];
     const users = usersData.users || usersData; // admin API shape can vary by version
     const existingIds = new Set(accounts.map(a=>a.id));
-    const pending = users.filter(u => !existingIds.has(u.id));
+    const superAdminIds = new Set(admins.filter(a=>a.role==='super_admin').map(a=>a.id));
+    // Super Admins already have full access to everything — they never
+    // need to go through client-portal approval, so they never show here
+    // even if something about their signup looks unfinished.
+    const pending = users.filter(u => !existingIds.has(u.id) && !superAdminIds.has(u.id));
     if (!pending.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No pending signups.</div>'; return; }
     box.innerHTML = pending.map(u => {
       const meta = u.user_metadata || {};
