@@ -316,7 +316,7 @@ const SESSION_KEY = 'techstar_portal_session';
 // translated Kanban stage name computed server-side (see
 // client-portal-setup.sql) — the raw internal status is never sent here.
 const PORTAL_COLUMNS = 'id,description,month,year,completed_date,invoice_number,requester,invoiced_functional,invoiced_development,invoiced_full,helpdesk_status';
-const VIEW_MAP = { dev:'portal_dev_support', func:'portal_func_support', proj:'portal_projects' };
+const VIEW_MAP = { func:'portal_func_support', proj:'portal_projects' };
 
 // Fixed board order. Any request whose helpdesk_status doesn't match one
 // of these (shouldn't happen — the DB constrains it) falls back into the
@@ -501,14 +501,14 @@ async function loadAllData(){
   const hdrs = await authHeaders();
   if (!hdrs) { logout(); return; }
   try{
-    const [dev, func, proj] = await Promise.all(
-      ['dev','func','proj'].map(cat =>
+    const [func, proj] = await Promise.all(
+      ['func','proj'].map(cat =>
         fetch(`${SB_URL}/rest/v1/${VIEW_MAP[cat]}?select=${PORTAL_COLUMNS}`, { headers: hdrs })
           .then(r=>r.ok ? r.json() : [])
       )
     );
-    DATA.dev = Array.isArray(dev)?dev:[]; DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
-    renderBoard(); renderOverview(); renderCategory('dev'); renderCategory('func'); renderCategory('proj');
+    DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
+    renderBoard(); renderOverview(); renderCategory('func'); renderCategory('proj');
     renderCompleted('func'); renderCompleted('proj');
   }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
 }
