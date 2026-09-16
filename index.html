@@ -61,6 +61,15 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .main{width:100%;overflow:hidden;display:flex;flex-direction:column}
 .tab-panel{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;min-width:0}
 .tab-panel.active{display:flex}
+/* Super Admin page: this panel scrolls itself directly rather than
+   delegating to a nested .list-pane, so it can't be affected by flex
+   sizing quirks in any browser — simplest possible guarantee of a
+   working scrollbar regardless of content height or window size. */
+#tab-superadmin.active{display:block;overflow-y:auto}
+#tab-superadmin .list-pane{overflow:visible;flex:none;height:auto}
+@media (max-width:720px){
+  .dp-row{grid-template-columns:1fr}
+}
 /* ── master-detail ── */
 .md-wrap{display:flex;flex:1;overflow:hidden;gap:0;width:100%}
 .list-pane{flex:1;min-height:0;overflow-y:auto;overflow-x:auto;padding:24px 32px;display:flex;flex-direction:column;gap:18px;width:100%}
@@ -1820,7 +1829,7 @@ async function loadClientsAdmin() {
     renderSuperAdminViewingBadge();
     if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No clients yet — add one below.</div>'; return; }
     box.innerHTML = rows.map(row => `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.id===ACTIVE_CLIENT_FILTER?'var(--adim)':(row.active?'var(--surface)':'#fafafa')};border-color:${row.id===ACTIVE_CLIENT_FILTER?'var(--accent)':'var(--border)'}">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.id===ACTIVE_CLIENT_FILTER?'var(--adim)':(row.active?'var(--surface)':'#fafafa')};border-color:${row.id===ACTIVE_CLIENT_FILTER?'var(--accent)':'var(--border)'}">
         <div style="flex:1;min-width:0;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.company_name)}</div>
         <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
         <button class="btn btn-sm btn-primary" onclick="viewClientDashboard('${row.id}')" ${row.id===ACTIVE_CLIENT_FILTER?'disabled':''}>${row.id===ACTIVE_CLIENT_FILTER?'✓ Viewing':'→ View Dashboard'}</button>
