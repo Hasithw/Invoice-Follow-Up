@@ -819,11 +819,16 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
     </div>
 
-    <!-- ══ CLIENT VIEW: live embedded preview of portal.html ══ -->
+    <!-- ══ CLIENT VIEW: for Super Admin viewing a specific client, render
+         their board natively (no second login needed, since Super Admin
+         already has full read access); otherwise show the live embedded
+         preview of portal.html (used for Client Admin's own board, or when
+         no client is selected). ══ -->
     <div id="portal-client-pane" style="display:flex;flex-direction:column;gap:10px">
-      <div class="info-bar" style="align-items:flex-start">
+      <div id="portal-preview-info" class="info-bar" style="align-items:flex-start">
         <span>⚡ This is a live preview of exactly what your client sees — login screen first, then the Kanban helpdesk board after signing in. It's loading the real <code>portal.html</code> file, so <strong>portal.html must be uploaded in the same folder as this file</strong> for the preview to work. <a href="portal.html" target="_blank" style="color:inherit;text-decoration:underline;font-weight:600">Open in a new tab instead ↗</a></span>
       </div>
+      <div id="superadmin-native-board" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px"></div>
       <iframe id="portal-preview-iframe" src="portal.html" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:var(--rlg);background:#f0f4f8" title="Client Portal Preview"></iframe>
     </div>
 
@@ -1790,13 +1795,89 @@ function showPortalSubTab(which) {
     clientPane.style.display = 'flex'; adminPane.style.display = 'none';
     clientBtn.style.background = 'var(--surface)'; clientBtn.style.borderColor = 'var(--b2)';
     adminBtn.style.background = 'transparent'; adminBtn.style.borderColor = 'transparent';
-    // Reload the iframe so it always starts fresh at the login screen
-    document.getElementById('portal-preview-iframe').src = 'portal.html?_=' + Date.now();
+    const nativeBox = document.getElementById('superadmin-native-board');
+    const iframe = document.getElementById('portal-preview-iframe');
+    const info = document.getElementById('portal-preview-info');
+    if (isSuperAdmin() && ACTIVE_CLIENT_FILTER) {
+      // Super Admin viewing a specific client: render their board directly
+      // from data already loaded here (Super Admin already has full read
+      // access) — no second login, no iframe reload needed.
+      info.style.display = 'none';
+      iframe.style.display = 'none';
+      nativeBox.style.display = 'block';
+      renderSuperAdminBoardPreview();
+    } else {
+      info.style.display = 'flex';
+      nativeBox.style.display = 'none';
+      iframe.style.display = 'block';
+      // Reload the iframe so it always starts fresh at the login screen
+      iframe.src = 'portal.html?_=' + Date.now();
+    }
   } else {
     clientPane.style.display = 'none'; adminPane.style.display = 'flex';
     adminBtn.style.background = 'var(--surface)'; adminBtn.style.borderColor = 'var(--b2)';
     clientBtn.style.background = 'transparent'; clientBtn.style.borderColor = 'transparent';
   }
+}
+
+// Cached lookup of internal_status -> {helpdesk_status, hidden}, needed to
+// group tickets into the same Kanban columns clients actually see. This
+// table is intentionally locked down to service_role only, so it needs the
+// same service key already used elsewhere on this tab.
+let STATUS_MAP_CACHE = null;
+async function fetchStatusMapCached(){
+  if (STATUS_MAP_CACHE) return STATUS_MAP_CACHE;
+  const key = getPortalServiceKey();
+  if (!key) return null;
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?select=*`, { headers: portalSbHeaders() });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    STATUS_MAP_CACHE = {};
+    rows.forEach(row=>{ STATUS_MAP_CACHE[row.internal_status] = row; });
+    return STATUS_MAP_CACHE;
+  }catch(e){ return null; }
+}
+
+// Renders the selected client's Kanban board natively — same columns and
+// grouping logic as portal.html's own board — using Support+Projects data
+// Super Admin already has loaded, filtered to ACTIVE_CLIENT_FILTER.
+async function renderSuperAdminBoardPreview(){
+  const box = document.getElementById('superadmin-native-board');
+  if (!box) return;
+  box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Loading board…</div>';
+  const map = await fetchStatusMapCached();
+  if (!map) {
+    box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Paste your service role key below (under ⚙ Admin Settings) to load this board preview.</div>';
+    return;
+  }
+  const client = CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER);
+  const tickets = [...VF(), ...VP()]; // active tickets only — matches what a client's board shows (completed items live under Completed Support/Projects instead)
+  const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
+  tickets.forEach(t=>{
+    const m = map[t.status];
+    if (m && m.hidden) return; // hidden statuses never shown to clients
+    const helpdesk = (m && m.helpdesk_status) || KANBAN_COLUMNS_ADMIN[0];
+    (cols[helpdesk] || cols[KANBAN_COLUMNS_ADMIN[0]]).push(t);
+  });
+  box.innerHTML = `
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">${esc(client?client.company_name:'')}'s board <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
+    <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px">
+      ${KANBAN_COLUMNS_ADMIN.map(colName=>`
+        <div style="min-width:230px;flex:0 0 230px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;max-height:65vh">
+          <div style="padding:10px 12px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span>${esc(colName)}</span><span style="color:var(--t3)">${cols[colName].length}</span>
+          </div>
+          <div style="padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+            ${cols[colName].length ? cols[colName].map(t=>`
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:12px">
+                <div style="font-weight:600;margin-bottom:2px">${esc(t.dev||'—')}</div>
+                <div style="color:var(--t3);font-size:11px">${esc(t.month||'')}${t.req?' · '+esc(t.req):''}</div>
+              </div>`).join('') : '<div style="color:var(--t3);font-size:11px;text-align:center;padding:10px 0">No tickets</div>'}
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
 }
 
 function initPortalTab() {
