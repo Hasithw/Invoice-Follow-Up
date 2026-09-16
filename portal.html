@@ -247,7 +247,13 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
     </div>
   </div>
   <div class="nav-tabs" id="navTabs" style="justify-content:space-between;align-items:center">
-    <div class="nav-tab active" data-tab="board">Board</div>
+    <div style="display:flex;gap:2px;flex-wrap:wrap">
+      <div class="nav-tab active" data-tab="board">Board</div>
+      <div class="nav-tab" data-tab="func">Support</div>
+      <div class="nav-tab" data-tab="proj">Projects</div>
+      <div class="nav-tab" data-tab="func-completed">Completed Support</div>
+      <div class="nav-tab" data-tab="proj-completed">Completed Projects</div>
+    </div>
     <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="margin:8px 16px 8px auto;padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:220px;max-width:40vw;background:var(--surface);color:var(--text)"/>
   </div>
   <div class="main">
@@ -263,10 +269,20 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <div id="dev-list"></div>
     </div>
     <div class="tab-panel" id="tab-func">
+      <div class="section-title">Support Requests</div>
       <div id="func-list"></div>
     </div>
     <div class="tab-panel" id="tab-proj">
+      <div class="section-title">Projects</div>
       <div id="proj-list"></div>
+    </div>
+    <div class="tab-panel" id="tab-func-completed">
+      <div class="section-title">Completed Support</div>
+      <div id="func-completed-list"></div>
+    </div>
+    <div class="tab-panel" id="tab-proj-completed">
+      <div class="section-title">Completed Projects</div>
+      <div id="proj-completed-list"></div>
     </div>
   </div>
 </div>
@@ -493,6 +509,7 @@ async function loadAllData(){
     );
     DATA.dev = Array.isArray(dev)?dev:[]; DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
     renderBoard(); renderOverview(); renderCategory('dev'); renderCategory('func'); renderCategory('proj');
+    renderCompleted('func'); renderCompleted('proj');
   }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
 }
 
@@ -602,22 +619,32 @@ function renderOverview(){
 function renderCategory(cat){
   const el = document.getElementById(cat+'-list');
   const list = DATA[cat];
-  el.innerHTML = list.length ? tableHtml(list) :
+  const withStatus = (cat === 'func' || cat === 'proj');
+  el.innerHTML = list.length ? tableHtml(list, withStatus) :
     `<div class="empty-state">No ${cat==='dev'?'dev support':cat==='func'?'support':'project'} requests yet.</div>`;
 }
 
-function tableHtml(rows){
+// "Completed" = the request has reached the final Kanban stage ('Finished').
+function renderCompleted(cat){
+  const el = document.getElementById(cat+'-completed-list');
+  const list = DATA[cat].filter(r => r.helpdesk_status === 'Finished');
+  el.innerHTML = list.length ? tableHtml(list, true) :
+    `<div class="empty-state">No completed ${cat==='func'?'support requests':'projects'} yet.</div>`;
+}
+
+function tableHtml(rows, withStatus){
   return `<div class="req-table">
-    <div class="req-row head">
-      <div>Description</div><div>Month</div><div>Year</div><div>Completed Date</div><div>Invoice Number</div>
+    <div class="req-row head" style="grid-template-columns:${withStatus?'1fr 110px 80px 130px 140px 150px':'1fr 110px 80px 130px 140px'}">
+      <div>Description</div><div>Month</div><div>Year</div><div>Completed Date</div><div>Invoice Number</div>${withStatus?'<div>Status</div>':''}
     </div>
     ${rows.map(r=>`
-      <div class="req-row">
+      <div class="req-row" style="grid-template-columns:${withStatus?'1fr 110px 80px 130px 140px 150px':'1fr 110px 80px 130px 140px'}">
         <div class="req-cell" data-label="Description" title="${esc(r.description)}">${esc(r.description||'—')}</div>
         <div class="req-cell muted" data-label="Month">${esc(r.month||'—')}</div>
         <div class="req-cell muted" data-label="Year">${esc(r.year||'—')}</div>
         <div class="req-cell muted" data-label="Completed Date">${esc(r.completed_date||'—')}</div>
         <div class="req-cell mono" data-label="Invoice Number">${esc(r.invoice_number||'—')}</div>
+        ${withStatus ? `<div class="req-cell" data-label="Status">${esc(r.helpdesk_status||'—')}</div>` : ''}
       </div>`).join('')}
   </div>`;
 }
