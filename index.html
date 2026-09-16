@@ -2471,10 +2471,7 @@ async function loadAdminUsersList(){
           <div style="font-size:11.5px;color:var(--t3)">${esc(u.email)}</div>
         </div>
         <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${pillColor};background:${pillBg};border-radius:99px;padding:4px 10px">${pillText}</span>
-        <select class="dp-input" style="width:auto;padding:6px 10px;font-size:12px" onchange="changeAdminRole('${u.id}', this.value)" ${u.id===me?'disabled title="You can\'t change your own role"':''}>
-          <option value="client_admin" ${u.role==='client_admin'?'selected':''}>Client Admin</option>
-          <option value="super_admin" ${u.role==='super_admin'?'selected':''}>Super Admin</option>
-        </select>
+        <span style="font-size:12px;font-weight:600;color:var(--t2);padding:6px 10px">Client Admin</span>
         ${pending ? `<button class="btn btn-sm btn-primary" onclick="approveAdminUser('${u.id}')">✓ Approve</button>` : ''}
         ${!pending ? `<button class="btn btn-sm" onclick="toggleAdminActive('${u.id}', ${!u.active})" ${u.id===me?'disabled':''}>${u.active?'Deactivate':'Reactivate'}</button>` : ''}
         <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeAdminUser('${u.id}','${esc(u.email)}')" ${u.id===me?'disabled':''}>🗑</button>
