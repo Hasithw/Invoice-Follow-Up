@@ -260,14 +260,17 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
-    <select id="clientFilterSelect" style="display:none;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);max-width:220px" title="Only Super Admins can switch clients; Client Admins only ever see their own client's data.">
-      <option value="">All Clients</option>
-    </select>
     <span id="adminUserLabel" style="font-size:11.5px;color:var(--t3);margin-right:6px;white-space:nowrap"></span>
     <button class="btn btn-sm" id="exportBtn" title="Export to Excel">⬇ Export</button>
     <button class="btn btn-primary btn-sm" id="addBtn" style="display:none">+ New</button>
     <button class="btn btn-sm" onclick="doAdminLogout()">Sign Out</button>
   </div>
+</div>
+
+<div id="viewingCompanyBar" style="display:none;align-items:center;gap:10px;padding:8px 20px;background:var(--adim);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--accent);font-weight:600">
+  <span>👁 Viewing client:</span>
+  <span id="viewingCompanyName"></span>
+  <button class="btn btn-sm" style="margin-left:auto" onclick="viewAllClients()">✕ Back to All Clients</button>
 </div>
 
 <div class="body">
@@ -1216,32 +1219,22 @@ function applyRoleUI(){
   const lbl = document.getElementById('adminUserLabel');
   const s = getAdminSession();
   if (lbl && s) lbl.textContent = `${s.email} · ${s.role==='super_admin'?'Super Admin':'Client Admin'}`;
-  const cfSel = document.getElementById('clientFilterSelect');
-  if (cfSel) cfSel.style.display = (isSuperAdmin() && !clientAdmin) ? '' : 'none';
+  refreshViewingCompanyBar();
 }
 
-// Populates the topbar Client dropdown (Super Admin only) from the real
-// clients table. This only sets the DEFAULT client for new tickets — it
-// does not hide any existing data, since a Super Admin is entitled to see
-// every client's records (enforced by is_active_super_admin() in RLS).
-function refreshClientFilterUI(){
-  const sel = document.getElementById('clientFilterSelect');
-  if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">All Clients</option>' +
-    CLIENTS.map(c=>`<option value="${c.id}">${esc(c.company_name)}${c.active===false?' (disabled)':''}</option>`).join('');
-  sel.value = CLIENTS.some(c=>c.id===prev) ? prev : '';
-  ACTIVE_CLIENT_FILTER = sel.value;
+// Shows/updates the read-only "Viewing client: X" bar under the topbar.
+// This is display-only — the actual client switch only ever happens from
+// the Super Admin page (Super Admin only); this bar just reminds every
+// tab which client's data is currently on screen.
+function refreshViewingCompanyBar(){
+  const bar = document.getElementById('viewingCompanyBar');
+  const nameEl = document.getElementById('viewingCompanyName');
+  if (!bar || !nameEl) return;
+  if (!ACTIVE_CLIENT_FILTER || isClientAdmin()) { bar.style.display = 'none'; return; }
+  const c = CLIENTS.find(x=>x.id===ACTIVE_CLIENT_FILTER);
+  nameEl.textContent = c ? c.company_name : '…';
+  bar.style.display = 'flex';
 }
-document.addEventListener('DOMContentLoaded', ()=>{
-  const cfSel = document.getElementById('clientFilterSelect');
-  if (cfSel) cfSel.addEventListener('change', ()=>{
-    ACTIVE_CLIENT_FILTER = cfSel.value;
-    if (typeof renderSuperAdminViewingBadge==='function') renderSuperAdminViewingBadge();
-    if (currentTab==='superadmin' && typeof loadClientsAdmin==='function') loadClientsAdmin();
-    renderAll();
-  });
-});
 
 function enterApp(){
   document.getElementById('authOverlay').style.display='none';
@@ -1734,7 +1727,7 @@ async function loadClientsAdmin() {
     if (!r.ok) throw new Error(await r.text());
     const rows = await r.json();
     CLIENTS = rows;
-    refreshClientFilterUI();
+    refreshViewingCompanyBar();
     populateClientDropdowns();
     renderSuperAdminViewingBadge();
     if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No clients yet — add one below.</div>'; return; }
@@ -1758,9 +1751,8 @@ async function loadClientsAdmin() {
 // so switching back to "All Clients" is instant, no re-fetch needed.
 function viewClientDashboard(clientId) {
   ACTIVE_CLIENT_FILTER = clientId;
-  const topbarSel = document.getElementById('clientFilterSelect');
-  if (topbarSel) topbarSel.value = clientId;
   renderSuperAdminViewingBadge();
+  refreshViewingCompanyBar();
   loadClientsAdmin();
   renderAll();
   switchTab('dashboard');
@@ -1770,9 +1762,8 @@ function viewClientDashboard(clientId) {
 
 function viewAllClients() {
   ACTIVE_CLIENT_FILTER = '';
-  const topbarSel = document.getElementById('clientFilterSelect');
-  if (topbarSel) topbarSel.value = '';
   renderSuperAdminViewingBadge();
+  refreshViewingCompanyBar();
   loadClientsAdmin();
   renderAll();
 }
@@ -2211,7 +2202,7 @@ async function loadFromSupabase() {
       sbGet('clients'),
     ]);
     CLIENTS = (Array.isArray(clientRows)?clientRows:[]).sort((a,b)=>a.company_name.localeCompare(b.company_name));
-    refreshClientFilterUI();
+    refreshViewingCompanyBar();
     DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('support',r));
     DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('support',r));
     DB.proj     = projRows.filter(r=>!r.done).map(r=>parseRow('projects',r));
