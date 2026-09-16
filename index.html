@@ -939,10 +939,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
           </div>
           <div class="dp-field">
             <div class="dp-label">Portal Role</div>
-            <select id="portal-new-role" class="dp-input">
-              <option value="client_user">Client User</option>
-              <option value="client_admin">Client Admin</option>
-            </select>
+            <input class="dp-input" value="Client Admin" disabled style="color:var(--t2);cursor:not-allowed"/>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end">
@@ -2251,7 +2248,7 @@ async function createClientAccess() {
   const key = getPortalServiceKey();
   if (!key) { showToast('Paste your Supabase service role key first','red'); return; }
   const clientId = document.getElementById('portal-new-client-id').value;
-  const role = document.getElementById('portal-new-role').value;
+  const role = 'client_admin';
   const fullName = document.getElementById('portal-new-name').value.trim();
   const email = document.getElementById('portal-new-email').value.trim();
   const password = document.getElementById('portal-new-password').value.trim();
