@@ -949,15 +949,15 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
     <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
 
-    <!-- Admin Users (Super Admin / Client Admin roles) -->
+    <!-- Admin Users — Client Admin accounts only (Super Admin accounts are managed from the Super Admin tab) -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Admin Users
-        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Approve new sign-ups and manage who can access this dashboard, and at what level</span>
+        Client Admin Users
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Approve new sign-ups and manage Client Admin access to this dashboard</span>
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
         <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ <strong>Super Admin</strong> has full read/write access to everything. <strong>Client Admin</strong> can only view Support and Projects — the database itself blocks any write attempt from a Client Admin, so this is enforced even if someone bypasses this page entirely.</span>
+          <span>⚡ <strong>Client Admin</strong> can only view Support and Projects — the database itself blocks any write attempt, so this is enforced even if someone bypasses this page entirely. Super Admin accounts aren't shown here; manage those from the <strong>Super Admin</strong> tab instead.</span>
         </div>
         <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
         <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -2426,8 +2426,9 @@ async function loadAdminUsersList(){
   try{
     const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?select=*&order=created_at.asc`, { headers: authedHdrs() });
     if (!r.ok) throw new Error('Failed to load');
-    const rows = await r.json();
-    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No admin accounts yet.</div>'; return; }
+    const allRows = await r.json();
+    const rows = allRows.filter(u => u.role === 'client_admin');
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No Client Admin accounts yet.</div>'; return; }
     const me = getAdminSession()?.user_id;
     box.innerHTML = rows.map(u => {
       const pending = !u.approved;
