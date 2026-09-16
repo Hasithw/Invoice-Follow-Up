@@ -17,7 +17,7 @@
   --r:6px;--rlg:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:15px}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:15px;display:flex;flex-direction:column}
 /* ── layout ── */
 .app{display:none;flex-direction:column;height:100vh}
 .app.show{display:flex}
@@ -51,7 +51,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn:disabled:hover{background:var(--s2)}
 /* ── body ── */
-.body{display:flex;flex:1;overflow:hidden;position:relative}
+.body{display:flex;flex:1;min-height:0;overflow:hidden;position:relative}
 .sidebar{position:fixed;top:52px;left:0;bottom:0;width:0;background:var(--surface);border-right:1px solid var(--border);padding:10px 0;overflow-y:auto;overflow-x:hidden;z-index:50;transition:width .22s ease;box-shadow:2px 0 12px rgba(0,0,0,.08)}
 .sb-section{font-size:11px;font-weight:600;color:var(--t3);padding:10px 14px 4px;letter-spacing:.06em;text-transform:uppercase}
 .sb-item{padding:8px 16px;font-size:13px;color:var(--t2);cursor:pointer;transition:all .1s}
@@ -59,11 +59,11 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .sb-item.active{background:var(--adim);color:var(--accent)}
 /* ── main ── */
 .main{width:100%;overflow:hidden;display:flex;flex-direction:column}
-.tab-panel{display:none;flex-direction:column;flex:1;overflow:hidden;min-width:0}
+.tab-panel{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;min-width:0}
 .tab-panel.active{display:flex}
 /* ── master-detail ── */
 .md-wrap{display:flex;flex:1;overflow:hidden;gap:0;width:100%}
-.list-pane{flex:1;overflow-y:auto;overflow-x:auto;padding:24px 32px;display:flex;flex-direction:column;gap:18px;width:100%}
+.list-pane{flex:1;min-height:0;overflow-y:auto;overflow-x:auto;padding:24px 32px;display:flex;flex-direction:column;gap:18px;width:100%}
 .detail-pane{position:fixed;top:52px;right:0;bottom:0;width:430px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:40;box-shadow:-4px 0 24px rgba(0,0,0,.1)}
 .detail-pane.open{transform:translateX(0)}
 .dp-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
@@ -301,7 +301,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
 <!-- ════ SUPER ADMIN ════ -->
 <div class="tab-panel" id="tab-superadmin">
-  <div class="list-pane" style="overflow-y:scroll;gap:18px;height:100%;scrollbar-gutter:stable">
+  <div class="list-pane" style="gap:18px">
     <div class="info-bar">⚡ Every client's data is fully isolated at the database level — a client can never see or modify another client's tickets, projects, or invoices. Select a client below to view their dashboard; Super Admin is the only role that can switch between clients.</div>
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
