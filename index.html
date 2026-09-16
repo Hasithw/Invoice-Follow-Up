@@ -1247,9 +1247,14 @@ async function doAdminForgotPassword(){
   if (!email) { errEl.textContent='Email is required'; errEl.style.display='block'; return; }
   btn.disabled = true; btn.textContent = 'Sending…';
   try{
-    const r = await fetch(`${SB_URL}/auth/v1/recover`, {
+    const redirectTo = window.location.origin + window.location.pathname;
+    // IMPORTANT: Supabase's /recover endpoint reads redirect_to from the URL
+    // query string, not from the JSON body — putting it only in the body
+    // (as earlier versions of this function did) makes the server silently
+    // fall back to the project's Site URL instead of honoring this value.
+    const r = await fetch(`${SB_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
       method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
-      body: JSON.stringify({ email, redirect_to: window.location.origin + window.location.pathname })
+      body: JSON.stringify({ email, redirect_to: redirectTo })
     });
     if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.msg || d.error_description || 'Could not send reset email'); }
     okEl.textContent = 'If that email has admin access, a reset link is on its way.';
