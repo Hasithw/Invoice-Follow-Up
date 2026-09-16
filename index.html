@@ -247,6 +247,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   <div class="divider"></div>
   <div class="nav-tabs" id="navTabs">
     <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
+    <div class="nav-tab" data-tab="superadmin">Super Admin</div>
     <div class="nav-tab" data-tab="func">Support</div>
     <div class="nav-tab" data-tab="proj">Projects</div>
     <div class="nav-tab done" data-tab="cfdone">Completed Support</div>
@@ -296,7 +297,37 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   </div>
 </div>
 
-<!-- ════ FUNC SUPPORT ════ -->
+<!-- ════ SUPER ADMIN ════ -->
+<div class="tab-panel" id="tab-superadmin">
+  <div class="list-pane" style="overflow-y:auto;gap:18px">
+    <div class="info-bar">⚡ Every client's data is fully isolated at the database level — a client can never see or modify another client's tickets, projects, or invoices. Select a client below to view their dashboard; Super Admin is the only role that can switch between clients.</div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em;display:flex;align-items:center">
+        <span>All Clients</span>
+        <span id="superadmin-viewing-badge" style="margin-left:10px"></span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="loadClientsAdmin()">↻ Refresh</button>
+      </div>
+      <div id="superadmin-clients-list" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;color:var(--t3)">Loading…</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Add New Client
+      </div>
+      <div style="padding:20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:640px">
+        <div class="dp-field" style="flex:1;min-width:260px">
+          <div class="dp-label">Client / Company Name</div>
+          <input id="new-client-company" class="dp-input" placeholder="e.g. Acme Manufacturing Ltd" onkeydown="if(event.key==='Enter')createClientCompany()"/>
+        </div>
+        <button class="btn btn-primary" onclick="createClientCompany()">+ Add Client</button>
+      </div>
+      <div style="padding:0 20px 18px;font-size:11px;color:var(--t3)">Once added, this client appears immediately in every Client dropdown across the app (new tickets, client logins, etc). Create their portal login from the Client Portal tab.</div>
+    </div>
+  </div>
+</div>
 <div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
@@ -753,25 +784,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
     </div>
 
-    <!-- Clients (tenants) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
-      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Clients
-        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Each client's data is fully isolated at the database level — a client can never see another client's tickets, projects, or invoices</span>
-        <button class="btn btn-sm" style="float:right" onclick="loadClientsAdmin()">↻ Refresh</button>
-      </div>
-      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
-        <div id="clients-admin-list" style="display:flex;flex-direction:column;gap:8px">
-          <div style="font-size:13px;color:var(--t3)">Loading…</div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="dp-field" style="flex:1;min-width:240px">
-            <div class="dp-label">New Client / Company Name</div>
-            <input id="new-client-company" class="dp-input" placeholder="e.g. Acme Manufacturing Ltd"/>
-          </div>
-          <button class="btn btn-primary" onclick="createClientCompany()">+ Add Client</button>
-        </div>
-      </div>
+    <div class="info-bar" style="flex-shrink:0">
+      <span>⚡ To add a new client company or switch which client's dashboard you're viewing, use the <strong>Super Admin</strong> tab. Client logins are still created here, below.</span>
     </div>
 
     <!-- Add client access -->
@@ -1188,7 +1202,7 @@ function applyRoleUI(){
   // this internal dashboard (raw tickets, rates, profit, settings, etc.)
   // stays hidden. This matches how an external client sees portal.html:
   // access to nothing but the client-facing board.
-  const allTabs = ['dashboard','func','proj','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
+  const allTabs = ['dashboard','superadmin','func','proj','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
   allTabs.forEach(t=>{
     const el = document.querySelector(`.nav-tab[data-tab="${t}"]`);
     if (el) el.style.display = clientAdmin ? 'none' : '';
@@ -1221,7 +1235,12 @@ function refreshClientFilterUI(){
 }
 document.addEventListener('DOMContentLoaded', ()=>{
   const cfSel = document.getElementById('clientFilterSelect');
-  if (cfSel) cfSel.addEventListener('change', ()=>{ ACTIVE_CLIENT_FILTER = cfSel.value; });
+  if (cfSel) cfSel.addEventListener('change', ()=>{
+    ACTIVE_CLIENT_FILTER = cfSel.value;
+    if (typeof renderSuperAdminViewingBadge==='function') renderSuperAdminViewingBadge();
+    if (currentTab==='superadmin' && typeof loadClientsAdmin==='function') loadClientsAdmin();
+    renderAll();
+  });
 });
 
 function enterApp(){
@@ -1707,7 +1726,8 @@ function populateClientDropdowns() {
 }
 
 async function loadClientsAdmin() {
-  const box = document.getElementById('clients-admin-list');
+  const box = document.getElementById('superadmin-clients-list');
+  if (!box) return;
   box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
   try {
     const r = await fetch(`${SB_URL}/rest/v1/clients?select=*&order=company_name.asc`, { headers: authedHdrs() });
@@ -1716,11 +1736,13 @@ async function loadClientsAdmin() {
     CLIENTS = rows;
     refreshClientFilterUI();
     populateClientDropdowns();
+    renderSuperAdminViewingBadge();
     if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No clients yet — add one below.</div>'; return; }
     box.innerHTML = rows.map(row => `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.active?'var(--surface)':'#fafafa'}">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.id===ACTIVE_CLIENT_FILTER?'var(--adim)':(row.active?'var(--surface)':'#fafafa')};border-color:${row.id===ACTIVE_CLIENT_FILTER?'var(--accent)':'var(--border)'}">
         <div style="flex:1;min-width:0;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.company_name)}</div>
         <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
+        <button class="btn btn-sm btn-primary" onclick="viewClientDashboard('${row.id}')" ${row.id===ACTIVE_CLIENT_FILTER?'disabled':''}>${row.id===ACTIVE_CLIENT_FILTER?'✓ Viewing':'→ View Dashboard'}</button>
         <button class="btn btn-sm" onclick="toggleClientActive('${row.id}',${!row.active})">${row.active?'Disable':'Enable'}</button>
       </div>
     `).join('');
@@ -1728,6 +1750,39 @@ async function loadClientsAdmin() {
     console.error(e);
     box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
   }
+}
+
+// Super-Admin-only: switch the whole app into "viewing one client" mode and
+// jump straight to their Dashboard. This only narrows what's DISPLAYED —
+// the underlying data fetch already has full access (is_active_super_admin()),
+// so switching back to "All Clients" is instant, no re-fetch needed.
+function viewClientDashboard(clientId) {
+  ACTIVE_CLIENT_FILTER = clientId;
+  const topbarSel = document.getElementById('clientFilterSelect');
+  if (topbarSel) topbarSel.value = clientId;
+  renderSuperAdminViewingBadge();
+  loadClientsAdmin();
+  renderAll();
+  switchTab('dashboard');
+  const c = CLIENTS.find(x=>x.id===clientId);
+  showToast(`Now viewing ${c ? c.company_name : 'client'}'s dashboard`, 'green');
+}
+
+function viewAllClients() {
+  ACTIVE_CLIENT_FILTER = '';
+  const topbarSel = document.getElementById('clientFilterSelect');
+  if (topbarSel) topbarSel.value = '';
+  renderSuperAdminViewingBadge();
+  loadClientsAdmin();
+  renderAll();
+}
+
+function renderSuperAdminViewingBadge() {
+  const el = document.getElementById('superadmin-viewing-badge');
+  if (!el) return;
+  if (!ACTIVE_CLIENT_FILTER) { el.innerHTML = ''; return; }
+  const c = CLIENTS.find(x=>x.id===ACTIVE_CLIENT_FILTER);
+  el.innerHTML = `<span class="badge b-accent">Viewing: ${esc(c?c.company_name:'…')}</span> <button class="btn btn-sm" style="margin-left:6px" onclick="viewAllClients()">✕ Back to All Clients</button>`;
 }
 
 async function createClientCompany() {
@@ -2211,6 +2266,16 @@ function loadLocalCache() {
 let DB = loadLocalCache();
 let CLIENTS = []; // [{id, company_name, active}] — the real tenant list, loaded from public.clients
 let ACTIVE_CLIENT_FILTER = ''; // '' = viewing all clients (Super Admin only); otherwise a clients.id
+
+// Read-only filtered views of the 4 core lists, used by every render/report
+// function below. DB.func/funcDone/proj/projDone themselves stay full and
+// unfiltered — they're the real data, mutated directly on add/edit/delete —
+// these just narrow what gets DISPLAYED when a Super Admin has picked one
+// client to view. Never used for writes.
+function VF(){ return ACTIVE_CLIENT_FILTER ? DB.func.filter(r=>r.client_id===ACTIVE_CLIENT_FILTER) : DB.func; }
+function VFD(){ return ACTIVE_CLIENT_FILTER ? DB.funcDone.filter(r=>r.client_id===ACTIVE_CLIENT_FILTER) : DB.funcDone; }
+function VP(){ return ACTIVE_CLIENT_FILTER ? DB.proj.filter(r=>r.client_id===ACTIVE_CLIENT_FILTER) : DB.proj; }
+function VPD(){ return ACTIVE_CLIENT_FILTER ? DB.projDone.filter(r=>r.client_id===ACTIVE_CLIENT_FILTER) : DB.projDone; }
 let _id = Date.now();
 const CURRENT_YEAR = String(new Date().getFullYear());
 function newId() { return 'r'+(++_id); }
@@ -2674,11 +2739,11 @@ function rowProj(d){
 // ══════════════════════════════════════════════════════════════════════
 function renderAll(){
   // Func
-  document.getElementById('func-body').innerHTML   = renderGroupedByMonth(DB.func, rowFunc);
-  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.funcDone, rowFunc, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcFuncFull);
+  document.getElementById('func-body').innerHTML   = renderGroupedByMonth(VF(), rowFunc);
+  document.getElementById('cfdone-body').innerHTML = renderGroupedByMonthWithTotals(VFD(), rowFunc, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcFuncFull);
   // Proj
-  document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(DB.proj, rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
-  document.getElementById('cpdone-body').innerHTML = renderGroupedByMonthWithTotals(DB.projDone, rowProj, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcProj);
+  document.getElementById('proj-body').innerHTML   = renderGroupedByMonth(VP(), rowProj)||'<div style="padding:24px;color:var(--t3);text-align:center">No active projects</div>';
+  document.getElementById('cpdone-body').innerHTML = renderGroupedByMonthWithTotals(VPD(), rowProj, '1fr 120px 120px 110px 150px 170px 155px 175px 190px 150px 150px 88px', 7, calcProj);
   // Profit
   renderProfit();
   renderNCF();
@@ -2729,35 +2794,37 @@ function attachAllClicks(){
 // STATS
 // ══════════════════════════════════════════════════════════════════════
 function renderStats(){
+  const func=VF(), funcDone=VFD(), proj=VP(), projDone=VPD();
   // Func stats
-  const funcProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0);
-  const funcNotPaid=DB.func.filter(d=>isClientUnpaid(d.clipay)).length;
+  const funcProfit=funcDone.reduce((s,d)=>s+calcFunc(d),0);
+  const funcNotPaid=func.filter(d=>isClientUnpaid(d.clipay)).length;
   document.getElementById('func-stats').innerHTML=`
-    <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${DB.func.length}</div></div>
-    <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.funcDone.length}</div></div>
+    <div class="stat"><div class="stat-label">Active tickets</div><div class="stat-val accent">${func.length}</div></div>
+    <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${funcDone.length}</div></div>
     <div class="stat"><div class="stat-label">Client NOT paid</div><div class="stat-val red">${funcNotPaid}</div></div>
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(funcProfit)}</div></div>`;
   // Proj stats
-  const projProfit=DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
-  const projNotPaid=DB.proj.filter(d=>isClientUnpaid(d.clipay)).length;
+  const projProfit=projDone.reduce((s,d)=>s+calcProj(d).profit,0);
+  const projNotPaid=proj.filter(d=>isClientUnpaid(d.clipay)).length;
   document.getElementById('proj-stats').innerHTML=`
-    <div class="stat"><div class="stat-label">Active projects</div><div class="stat-val accent">${DB.proj.length}</div></div>
-    <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${DB.projDone.length}</div></div>
+    <div class="stat"><div class="stat-label">Active projects</div><div class="stat-val accent">${proj.length}</div></div>
+    <div class="stat"><div class="stat-label">Completed</div><div class="stat-val green">${projDone.length}</div></div>
     <div class="stat"><div class="stat-label">Total profit</div><div class="stat-val green">${fmt(projProfit)}</div></div>
-    <div class="stat"><div class="stat-label">Inv Full total</div><div class="stat-val accent">${fmt(DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0))}</div></div>`;
+    <div class="stat"><div class="stat-label">Inv Full total</div><div class="stat-val accent">${fmt(projDone.reduce((s,d)=>s+calcProj(d).invFull,0))}</div></div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════════════
 function renderDashboard(){
-  const allFunc=[...DB.func,...DB.funcDone],allProj=[...DB.proj,...DB.projDone];
-  const totalProfit=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
-                    DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0);
+  const func=VF(), funcDone=VFD(), proj=VP(), projDone=VPD();
+  const allFunc=[...func,...funcDone],allProj=[...proj,...projDone];
+  const totalProfit=funcDone.reduce((s,d)=>s+calcFunc(d),0)+
+                    projDone.reduce((s,d)=>s+calcProj(d).profit,0);
   const notPaid=[...allFunc,...allProj].filter(d=>isClientUnpaid(d.clipay)).length;
-  const invFull=DB.funcDone.reduce((s,d)=>s+calcFunc(d),0)+
-                DB.projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
-  const active=DB.func.length+DB.proj.length;
+  const invFull=funcDone.reduce((s,d)=>s+calcFunc(d),0)+
+                projDone.reduce((s,d)=>s+calcProj(d).invFull,0);
+  const active=func.length+proj.length;
   document.getElementById('dash-kpis').innerHTML=`
     <div class="dash-card"><div class="dash-label">Total Profit</div><div class="dash-val green">${fmt(totalProfit)}</div></div>
     <div class="dash-card"><div class="dash-label">Invoice Full Total</div><div class="dash-val accent">${fmt(invFull)}</div></div>
@@ -2766,8 +2833,8 @@ function renderDashboard(){
   // Monthly profit chart
   const byMonth={};
   MONTH_LABELS.forEach(m=>byMonth[m]=0);
-  DB.funcDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcFunc(d); });
-  DB.projDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcProj(d).profit; });
+  funcDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcFunc(d); });
+  projDone.forEach(d=>{ const m=d.month?d.month.substring(0,3).toUpperCase():''; if(byMonth[m]!==undefined) byMonth[m]+=calcProj(d).profit; });
   const months=MONTH_LABELS.slice(0,6);
   const vals=months.map(m=>byMonth[m]||0);
   const maxV=Math.max(...vals,1);
@@ -2783,8 +2850,8 @@ function renderDashboard(){
   if(!overdueItems.length){ ol.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px 0">No unpaid items 🎉</div>'; }
   else { ol.innerHTML=overdueItems.map(d=>`<div class="overdue-row"><span style="font-size:16px">⚠</span><div><div style="font-size:12px;font-weight:500">${d.dev} <span style="font-size:10px;font-weight:600;color:${d.done?'#16a34a':'#d97706'};background:${d.done?'#dcfce7':'#fef3c7'};padding:1px 6px;border-radius:999px;margin-left:4px">${d.done?'Invoiced':'Active'}</span></div><div style="font-size:11px;color:var(--t3)">${d.month||''} · ${d.clipay||''}</div></div></div>`).join(''); }
   // Mini summaries
-  document.getElementById('dash-func-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.func.length}</span> · Done: <span style="color:var(--green)">${DB.funcDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.funcDone.reduce((s,d)=>s+calcFunc(d),0))}</span></div>`;
-  document.getElementById('dash-proj-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${DB.proj.length}</span> · Done: <span style="color:var(--green)">${DB.projDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(DB.projDone.reduce((s,d)=>s+calcProj(d).profit,0))}</span></div>`;
+  document.getElementById('dash-func-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${func.length}</span> · Done: <span style="color:var(--green)">${funcDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(funcDone.reduce((s,d)=>s+calcFunc(d),0))}</span></div>`;
+  document.getElementById('dash-proj-summary').innerHTML=`<div style="font-size:11px;color:var(--t3);margin-top:4px">Active: <span style="color:var(--accent)">${proj.length}</span> · Done: <span style="color:var(--green)">${projDone.length}</span><br>Profit: <span style="color:var(--green)">${fmt(projDone.reduce((s,d)=>s+calcProj(d).profit,0))}</span></div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2792,13 +2859,14 @@ function renderDashboard(){
 // ══════════════════════════════════════════════════════════════════════
 function renderProfit(){
   const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+  const func=VF(), funcDone=VFD(), proj=VP(), projDone=VPD();
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('profit-year-filter');
   if (filterEl) {
     // Collect all years present in data
     const dataYears = new Set([
-      ...[...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+      ...[...funcDone,...projDone].map(d=>d.year||CURRENT_YEAR)
     ]);
     // Also always include current year and a range of years
     YEARS.forEach(y=>dataYears.add(y));
@@ -2820,23 +2888,23 @@ function renderProfit(){
     if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,proj:0,loss:0};
   };
 
-  DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFunc(d); });
-  DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
+  funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFunc(d); });
+  projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProj(d).profit; });
 
   // ── Set Off Loss — Developer Payment + Invoiced Functional total for
   // Func/Project tickets whose status is "SetOff Action". Shown as a
   // reference figure; not subtracted from Total Profit.
   const isSetOff = d => d.status==='SetOff Action';
-  [...DB.func,...DB.funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
-  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ const c=calcProj(d); ensure(d); ymData[ymKey(d)].loss += c.devPmt + c.invF; });
+  [...func,...funcDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcFunc(d); });
+  [...proj,...projDone].filter(isSetOff).forEach(d=>{ const c=calcProj(d); ensure(d); ymData[ymKey(d)].loss += c.devPmt + c.invF; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
-  const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0);
-  const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
+  const totalFunc  = funcDone.filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0);
+  const totalProj  = projDone.filter(filterFn).reduce((s,d)=>s+calcProj(d).profit, 0);
   const totalLoss  =
-    [...DB.func,...DB.funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
-    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>{ const c=calcProj(d); return s+c.devPmt+c.invF; }, 0);
+    [...func,...funcDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcFunc(d), 0) +
+    [...proj,...projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>{ const c=calcProj(d); return s+c.devPmt+c.invF; }, 0);
   const grandTotal = totalFunc + totalProj - totalLoss;
   const gtColor = grandTotal<0 ? 'red' : 'green';
 
@@ -2954,12 +3022,13 @@ function renderProfit(){
 // ══════════════════════════════════════════════════════════════════════
 function renderNCF(){
   const COLS = '80px 130px 1fr 1fr 1fr 1fr';
+  const func=VF(), funcDone=VFD(), proj=VP(), projDone=VPD();
 
   // ── Populate year filter dropdown dynamically ──────────────────────
   const filterEl = document.getElementById('ncf-year-filter');
   if (filterEl) {
     const dataYears = new Set([
-      ...[...DB.funcDone,...DB.projDone].map(d=>d.year||CURRENT_YEAR)
+      ...[...funcDone,...projDone].map(d=>d.year||CURRENT_YEAR)
     ]);
     YEARS.forEach(y=>dataYears.add(y));
     const sortedYears = [...dataYears].sort();
@@ -2979,22 +3048,22 @@ function renderNCF(){
     if(!ymData[k]) ymData[k]={year:d.year||CURRENT_YEAR,month:d.month||'',func:0,proj:0,loss:0};
   };
 
-  DB.funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
-  DB.projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
+  funcDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].func += calcFuncCash(d); });
+  projDone.forEach(d=>{ ensure(d); ymData[ymKey(d)].proj += calcProjCash(d).profit; });
 
   // ── Set Off Loss — Developer Payment total for Func/Project tickets
   // whose status is "Set Off". Support tickets carry no dev cost, so
   // they always contribute 0 here. Shown as a reference figure; not
   // subtracted from Total Net Cash Flow.
   const isSetOff = d => d.status==='SetOff Action';
-  [...DB.proj,...DB.projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).devPmt; });
+  [...proj,...projDone].filter(isSetOff).forEach(d=>{ ensure(d); ymData[ymKey(d)].loss += calcProj(d).devPmt; });
 
   // ── KPIs — based on selected year (or all) ─────────────────────────
   const filterFn = d => selectedYear==='all' || (d.year||CURRENT_YEAR)===selectedYear;
-  const totalFunc  = DB.funcDone.filter(filterFn).reduce((s,d)=>s+calcFuncCash(d), 0);
-  const totalProj  = DB.projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
+  const totalFunc  = funcDone.filter(filterFn).reduce((s,d)=>s+calcFuncCash(d), 0);
+  const totalProj  = projDone.filter(filterFn).reduce((s,d)=>s+calcProjCash(d).profit, 0);
   const totalLoss  =
-    [...DB.proj,...DB.projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).devPmt, 0);
+    [...proj,...projDone].filter(isSetOff).filter(filterFn).reduce((s,d)=>s+calcProj(d).devPmt, 0);
   const grandTotal = totalFunc + totalProj - totalLoss;
   const gtColor = grandTotal<0 ? 'red' : 'green';
 
@@ -3450,7 +3519,7 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(isClientAdmin()||lbl===''||['cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal'].includes(t))?'none':'';
+  btn.style.display=(isClientAdmin()||lbl===''||['cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal','superadmin'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
@@ -3459,6 +3528,8 @@ function switchTab(t){
   if(t==='settings'){ loadSettingsUI(); }
   // Load client portal UI
   if(t==='portal'){ initPortalTab(); }
+  // Load the clients list on the Super Admin page
+  if(t==='superadmin'){ loadClientsAdmin(); }
   // Sidebar removed - always hidden
   const sb=document.getElementById('sidebar');
   sb.style.width='0';
@@ -3487,11 +3558,13 @@ document.getElementById('exportBtn').addEventListener('click',()=>{
     const c=tab==='func'?calcFuncFull(d):calcProj(d);
     rows.push([tab,d.month||'',d.dev||'',d.req||'',d.estf||'',d.actf||'',d.estd||'',d.actd||'',d.comp||'',d.status||'',d.devpay||'',d.clipay||'',d.inv||'',c.devPmt||'',c.invF||'',c.invD||'',c.invFull||'',c.profit||'']);
   });
-  addRows(DB.func,'func'); addRows(DB.funcDone,'func');
-  addRows(DB.proj,'proj'); addRows(DB.projDone,'proj');
+  addRows(VF(),'func'); addRows(VFD(),'func');
+  addRows(VP(),'proj'); addRows(VPD(),'proj');
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Techstar_2026_Export.csv'; a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  const exportClient = ACTIVE_CLIENT_FILTER ? (CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER)?.company_name||'Client').replace(/[^a-z0-9]+/gi,'_') : 'AllClients';
+  a.download=`${exportClient}_Export.csv`; a.click();
   showToast('Exported to CSV ✓','green');
 });
 
