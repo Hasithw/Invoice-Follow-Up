@@ -328,9 +328,40 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:0 20px 18px;font-size:11px;color:var(--t3)">Once added, this client appears immediately in every Client dropdown across the app (new tickets, client logins, etc). Create their portal login from the Client Portal tab.</div>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Create Super Admin
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Creates a new, pre-approved login with full read/write access to this dashboard</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px;max-width:760px">
+        <div class="dp-row">
+          <div class="dp-field">
+            <div class="dp-label">Full Name</div>
+            <input id="superadmin-new-name" class="dp-input" placeholder="Full name"/>
+          </div>
+          <div class="dp-field">
+            <div class="dp-label">Email</div>
+            <input id="superadmin-new-email" class="dp-input" type="email" placeholder="admin@company.com"/>
+          </div>
+        </div>
+        <div class="dp-row">
+          <div class="dp-field">
+            <div class="dp-label">Password</div>
+            <div style="display:flex;gap:6px">
+              <input id="superadmin-new-password" class="dp-input" type="text" placeholder="Set an initial password"/>
+              <button class="btn btn-sm" onclick="generateSuperAdminPassword()">🎲 Generate</button>
+            </div>
+          </div>
+          <div class="dp-field" style="justify-content:flex-end">
+            <button class="btn btn-primary" onclick="createSuperAdminUser()">+ Create Super Admin</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--t3)">This requires your Supabase service role key (pasted once in the Client Portal tab) since it creates a real login via Supabase's Auth Admin API. The account is created already approved and active — no separate approval step needed.</div>
+      </div>
+    </div>
+
   </div>
 </div>
-<div class="tab-panel" id="tab-func">
   <div class="md-wrap">
     <div class="list-pane">
       <div class="info-bar">⚡ Click any row to edit · Set status to <strong style="margin:0 4px">Invoiced</strong> to move to Completed Support</div>
@@ -1286,6 +1317,50 @@ function generatePortalPassword() {
   let pw = '';
   for (let i=0;i<12;i++) pw += chars[Math.floor(Math.random()*chars.length)];
   document.getElementById('portal-new-password').value = pw;
+}
+
+function generateSuperAdminPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let pw = '';
+  for (let i=0;i<12;i++) pw += chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('superadmin-new-password').value = pw;
+}
+
+// Creates a brand-new, pre-approved Super Admin login directly (skips the
+// self-signup + approval flow). Uses the service role key to call
+// Supabase's real Auth Admin API — the same mechanism client logins use —
+// then inserts the admin_profiles row with role='super_admin' already
+// approved+active.
+async function createSuperAdminUser() {
+  const key = getPortalServiceKey();
+  if (!key) { showToast('Paste your Supabase service role key first (Client Portal tab)','red'); return; }
+  const name = document.getElementById('superadmin-new-name').value.trim();
+  const email = document.getElementById('superadmin-new-email').value.trim();
+  const password = document.getElementById('superadmin-new-password').value.trim();
+  if (!email || !password) { showToast('Email and password are both required','red'); return; }
+  if (password.length < 8) { showToast('Password must be at least 8 characters','red'); return; }
+  try {
+    const r1 = await fetch(`${SB_URL}/auth/v1/admin/users`, {
+      method:'POST', headers: portalSbHeaders(),
+      body: JSON.stringify({ email, password, email_confirm:true })
+    });
+    const u = await r1.json();
+    if (!r1.ok) throw new Error(u.msg || u.message || 'Failed to create login');
+    const r2 = await fetch(`${SB_URL}/rest/v1/admin_profiles`, {
+      method:'POST',
+      headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
+      body: JSON.stringify([{ id:u.id, email, full_name:name, role:'super_admin', approved:true, active:true }])
+    });
+    if (!r2.ok) { const t=await r2.text(); throw new Error(t); }
+    showToast('Super Admin created ✓', 'green');
+    document.getElementById('superadmin-new-name').value='';
+    document.getElementById('superadmin-new-email').value='';
+    document.getElementById('superadmin-new-password').value='';
+    loadAdminUsersList();
+  } catch(e) {
+    console.error(e);
+    showToast('Failed: '+e.message, 'red');
+  }
 }
 
 
