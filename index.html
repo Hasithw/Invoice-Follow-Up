@@ -266,7 +266,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="setoff">Set Off</div>
     <div class="nav-tab" data-tab="notes">Notes</div>
     <div class="nav-tab" data-tab="portal">Client Portal</div>
-    <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
     <span id="adminUserLabel" style="font-size:11.5px;color:var(--t3);margin-right:6px;white-space:nowrap"></span>
@@ -378,6 +377,64 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div id="superadmin-list" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px">
         <div style="font-size:13px;color:var(--t3)">Loading…</div>
       </div>
+    </div>
+
+    <!-- Client Admin Users -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Client Admin Users
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Approve new sign-ups and manage Client Admin access to this dashboard</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div class="info-bar" style="align-items:flex-start">
+          <span>⚡ <strong>Client Admin</strong> can only view Support and Projects — the database itself blocks any write attempt, so this is enforced even if someone bypasses this page entirely. Super Admin accounts are listed above instead.</span>
+        </div>
+        <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
+        <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- Current Rates (full width) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Current Rates
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Invoice Rate Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
+          <div style="display:flex;align-items:center;gap:0">
+            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
+            <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
+              oninput="saveSettings()"
+              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
+        <span style="color:#16a34a;font-size:16px">✓</span>
+        Changes apply to new records only — existing data keeps its original calculated values.
+      </div>
+    </div>
+
+    <!-- Statuses (full width, one column per list) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Statuses
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets — use ▲ ▼ to reorder</span>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start" id="statusLists"></div>
     </div>
 
   </div>
@@ -974,70 +1031,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
   </div>
 </div>
 
-<div class="tab-panel" id="tab-settings">
-  <div class="list-pane" style="overflow-y:auto;gap:20px;max-width:1400px">
-    <div style="font-size:16px;font-weight:600;color:var(--text)">Settings</div>
-
-    <!-- Admin Users — Client Admin accounts only (Super Admin accounts are managed from the Super Admin tab) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
-      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Client Admin Users
-        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Approve new sign-ups and manage Client Admin access to this dashboard</span>
-      </div>
-      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-        <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ <strong>Client Admin</strong> can only view Support and Projects — the database itself blocks any write attempt, so this is enforced even if someone bypasses this page entirely. Super Admin accounts aren't shown here; manage those from the <strong>Super Admin</strong> tab instead.</span>
-        </div>
-        <button class="btn btn-sm" onclick="loadAdminUsersList()" style="align-self:flex-start">↻ Refresh</button>
-        <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
-      </div>
-    </div>
-
-    <!-- Current Rates (full width) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
-      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Current Rates
-        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Applied to all new tickets, projects and set offs</span>
-      </div>
-      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Invoice Rate Per Hour</div>
-          <div style="display:flex;align-items:center;gap:0">
-            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-            <input id="settings-func-rate" type="number" step="0.01" placeholder="e.g. 8000.00"
-              oninput="saveSettings()"
-              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#d97706;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-          </div>
-          <div style="font-size:11px;color:var(--t3)">Used to calculate Invoice Functional Amount</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Developer Per Hour</div>
-          <div style="display:flex;align-items:center;gap:0">
-            <span style="padding:9px 12px;background:#f1f5f9;border:1px solid var(--border);border-right:none;border-radius:var(--r) 0 0 var(--r);font-size:13px;color:var(--t3)">LKR</span>
-            <input id="settings-dev-rate" type="number" step="0.01" placeholder="e.g. 5000.00"
-              oninput="saveSettings()"
-              style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:0 var(--r) var(--r) 0;font-size:14px;font-weight:600;color:#2563eb;font-family:'JetBrains Mono',monospace;outline:none;background:var(--s2)"/>
-          </div>
-          <div style="font-size:11px;color:var(--t3)">Used to calculate Dev Payment & Invoice Dev Amount</div>
-        </div>
-      </div>
-      <div style="padding:0 20px 16px;font-size:12px;color:#64748b;background:#fafbfd;border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-        <span style="color:#16a34a;font-size:16px">✓</span>
-        Changes apply to new records only — existing data keeps its original calculated values.
-      </div>
-    </div>
-
-    <!-- Statuses (full width, one column per list) -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
-      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Statuses
-        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Editable option lists used across Dev, Func and Project tickets — use ▲ ▼ to reorder</span>
-      </div>
-      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start" id="statusLists"></div>
-    </div>
-  </div>
-</div>
-
 </div><!-- /main -->
 </div><!-- /body -->
 </div><!-- /app -->
@@ -1267,7 +1260,7 @@ function applyRoleUI(){
   // this internal dashboard (raw tickets, rates, profit, settings, etc.)
   // stays hidden. This matches how an external client sees portal.html:
   // access to nothing but the client-facing board.
-  const allTabs = ['dashboard','superadmin','func','proj','cfdone','cpdone','profit','ncf','setoff','notes','settings'];
+  const allTabs = ['dashboard','superadmin','func','proj','cfdone','cpdone','profit','ncf','setoff','notes'];
   allTabs.forEach(t=>{
     const el = document.querySelector(`.nav-tab[data-tab="${t}"]`);
     if (el) el.style.display = clientAdmin ? 'none' : '';
@@ -3618,7 +3611,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
 // TAB SWITCHING & SIDEBAR
 // ══════════════════════════════════════════════════════════════════════
 let currentTab='dashboard';
-const NEW_LABELS={func:'+ New Ticket',proj:'+ New Project',dashboard:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'','notes-detail':'',settings:''};
+const NEW_LABELS={func:'+ New Ticket',proj:'+ New Project',dashboard:'',cfdone:'',cpdone:'',profit:'',ncf:'',setoff:'','setoff-detail':'','setoff-archived':'',notes:'','notes-detail':''};
 const SIDEBAR_DEFS={
   dashboard:[],
   func:[],proj:[],cfdone:[],cpdone:[],profit:[],setoff:[],
@@ -3664,17 +3657,15 @@ function switchTab(t){
   const lbl=NEW_LABELS[t]||'';
   const btn=document.getElementById('addBtn');
   btn.textContent=lbl||'+ New';
-  btn.style.display=(isClientAdmin()||lbl===''||['cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','settings','portal','superadmin'].includes(t))?'none':'';
+  btn.style.display=(isClientAdmin()||lbl===''||['cfdone','cpdone','profit','ncf','setoff','setoff-detail','setoff-archived','notes','notes-detail','dashboard','portal','superadmin'].includes(t))?'none':'';
   // Refresh setoff list when navigating to it
   if(t==='setoff'){ renderSoActiveList(); renderSoArchivedList(); }
   // Refresh notes list when navigating to it
   if(t==='notes'){ renderNotesList(); }
-  // Load settings UI
-  if(t==='settings'){ loadSettingsUI(); }
   // Load client portal UI
   if(t==='portal'){ initPortalTab(); }
-  // Load the clients list on the Super Admin page
-  if(t==='superadmin'){ loadClientsAdmin(); loadSuperAdminsList(); }
+  // Load the clients list, admins, rates and statuses on the Super Admin page
+  if(t==='superadmin'){ loadClientsAdmin(); loadSuperAdminsList(); loadAdminUsersList(); loadSettingsUI(); }
   // Sidebar removed - always hidden
   const sb=document.getElementById('sidebar');
   sb.style.width='0';
