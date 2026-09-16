@@ -2004,7 +2004,7 @@ function buildRow(listKey, r) {
 
 // ── Row parsers (Supabase flat row → in-memory) ────────────────────
 function parseRow(table, row) {
-  if (table==='func_support')
+  if (table==='support')
     return { ...row,
       year: row.year||CURRENT_YEAR,
       funcRate: String(row.func_rate || getFuncRate()),
@@ -2033,11 +2033,11 @@ async function loadFromSupabase() {
   showLoader(true);
   try {
     const [funcRows, projRows, soActive, soArch, noteRows] = await Promise.all([
-      sbGet('func_support'), sbGet('projects'),
+      sbGet('support'), sbGet('projects'),
       sbGet('setoff_active'), sbGet('setoff_archived'), sbGet('project_notes'),
     ]);
-    DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('func_support',r));
-    DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('func_support',r));
+    DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('support',r));
+    DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('support',r));
     DB.proj     = projRows.filter(r=>!r.done).map(r=>parseRow('projects',r));
     DB.projDone = projRows.filter(r=> r.done).map(r=>parseRow('projects',r));
     DB.setoffActive   = soActive.map(r=>parseRow('setoff_active',r));
@@ -2060,7 +2060,7 @@ async function loadFromSupabase() {
 
 // ── saveRecord: persist one record to Supabase ─────────────────────
 const TABLE_MAP = {
-  func:'func_support', funcDone:'func_support',
+  func:'support', funcDone:'support',
   proj:'projects', projDone:'projects',
   setoffActive:'setoff_active', setoffArchived:'setoff_archived',
   notes:'project_notes',
