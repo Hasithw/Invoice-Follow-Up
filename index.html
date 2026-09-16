@@ -259,6 +259,9 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <div class="nav-tab" data-tab="settings">Settings</div>
   </div>
   <div class="topbar-right">
+    <select id="clientFilterSelect" style="display:none;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);max-width:220px" title="Only Super Admins can switch clients; Client Admins only ever see their own client's data.">
+      <option value="">All Clients</option>
+    </select>
     <span id="adminUserLabel" style="font-size:11.5px;color:var(--t3);margin-right:6px;white-space:nowrap"></span>
     <button class="btn btn-sm" id="exportBtn" title="Export to Excel">⬇ Export</button>
     <button class="btn btn-primary btn-sm" id="addBtn" style="display:none">+ New</button>
@@ -750,6 +753,27 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
     </div>
 
+    <!-- Clients (tenants) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Clients
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Each client's data is fully isolated at the database level — a client can never see another client's tickets, projects, or invoices</span>
+        <button class="btn btn-sm" style="float:right" onclick="loadClientsAdmin()">↻ Refresh</button>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div id="clients-admin-list" style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:13px;color:var(--t3)">Loading…</div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="dp-field" style="flex:1;min-width:240px">
+            <div class="dp-label">New Client / Company Name</div>
+            <input id="new-client-company" class="dp-input" placeholder="e.g. Acme Manufacturing Ltd"/>
+          </div>
+          <button class="btn btn-primary" onclick="createClientCompany()">+ Add Client</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Add client access -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;flex-shrink:0">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
@@ -759,9 +783,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px;max-width:760px">
         <div class="dp-row">
           <div class="dp-field">
-            <div class="dp-label">Client / Company Name</div>
-            <input id="portal-new-company" class="dp-input" list="portal-company-list" placeholder="e.g. Techstar Packaging (Private) Limited"/>
-            <datalist id="portal-company-list"></datalist>
+            <div class="dp-label">Client / Company</div>
+            <select id="portal-new-client-id" class="dp-input"><option value="">— add a client above first —</option></select>
           </div>
           <div class="dp-field">
             <div class="dp-label">Client Email</div>
@@ -776,11 +799,18 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
               <button class="btn btn-sm" onclick="generatePortalPassword()">🎲 Generate</button>
             </div>
           </div>
-          <div class="dp-field" style="justify-content:flex-end">
-            <button class="btn btn-primary" onclick="createClientAccess()">+ Create Client Login</button>
+          <div class="dp-field">
+            <div class="dp-label">Portal Role</div>
+            <select id="portal-new-role" class="dp-input">
+              <option value="client_user">Client User</option>
+              <option value="client_admin">Client Admin</option>
+            </select>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--t3)">This creates the client's login and company record. To control <em>which</em> Requester names (e.g. individual staff) belong to this company, use the Requester Assignment panel below — that's what actually scopes their portal view.</div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-primary" onclick="createClientAccess()">+ Create Client Login</button>
+        </div>
+        <div style="font-size:11px;color:var(--t3)">This creates a login tied directly to the selected client's <code>client_id</code> — the database enforces that this login can only ever read that one client's tickets, projects, and invoices, no matter what.</div>
       </div>
     </div>
 
@@ -793,7 +823,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       </div>
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
         <div class="info-bar" style="align-items:flex-start">
-          <span>⚡ A client only sees tickets whose Requester name is assigned to their company here. Unassigned requester names won't show up for anyone in the portal until you assign them.</span>
+          <span>⚡ A client's portal visibility is now enforced by each ticket's own <code>Client</code> field (set when creating/editing a ticket) — this mapping is just a convenience for keeping requester names organized, it no longer controls what a client can see.</span>
         </div>
         <div id="portal-requester-map-list" style="display:flex;flex-direction:column;gap:6px">
           <div style="font-size:13px;color:var(--t3)">Enter your service role key above, then Refresh to load assignments.</div>
@@ -805,8 +835,8 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
             <datalist id="portal-requester-name-list"></datalist>
           </div>
           <div class="dp-field" style="flex:1;min-width:220px">
-            <div class="dp-label">Belongs To Company</div>
-            <input id="portal-req-new-company" class="dp-input" list="portal-company-list" placeholder="Must match a Client Login's company name"/>
+            <div class="dp-label">Belongs To Client</div>
+            <select id="portal-req-new-client-id" class="dp-input"><option value="">— select a client —</option></select>
           </div>
           <button class="btn btn-primary" onclick="addRequesterAssignment()">+ Assign</button>
         </div>
@@ -1172,7 +1202,27 @@ function applyRoleUI(){
   const lbl = document.getElementById('adminUserLabel');
   const s = getAdminSession();
   if (lbl && s) lbl.textContent = `${s.email} · ${s.role==='super_admin'?'Super Admin':'Client Admin'}`;
+  const cfSel = document.getElementById('clientFilterSelect');
+  if (cfSel) cfSel.style.display = (isSuperAdmin() && !clientAdmin) ? '' : 'none';
 }
+
+// Populates the topbar Client dropdown (Super Admin only) from the real
+// clients table. This only sets the DEFAULT client for new tickets — it
+// does not hide any existing data, since a Super Admin is entitled to see
+// every client's records (enforced by is_active_super_admin() in RLS).
+function refreshClientFilterUI(){
+  const sel = document.getElementById('clientFilterSelect');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">All Clients</option>' +
+    CLIENTS.map(c=>`<option value="${c.id}">${esc(c.company_name)}${c.active===false?' (disabled)':''}</option>`).join('');
+  sel.value = CLIENTS.some(c=>c.id===prev) ? prev : '';
+  ACTIVE_CLIENT_FILTER = sel.value;
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const cfSel = document.getElementById('clientFilterSelect');
+  if (cfSel) cfSel.addEventListener('change', ()=>{ ACTIVE_CLIENT_FILTER = cfSel.value; });
+});
 
 function enterApp(){
   document.getElementById('authOverlay').style.display='none';
@@ -1642,16 +1692,73 @@ function initPortalTab() {
   const sel = document.getElementById('portal-map-new-internal');
   sel.innerHTML = STATUSES.map(s=>`<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
   if (stored) { loadClientAccounts(); loadStatusMap(); loadRequesterMap(); loadPendingSignups(); }
+  loadClientsAdmin();
 }
 
-// "Company" datalist (used by both the Add Client Login form and the
-// Requester Assignment form) is refreshed from actual client_accounts
-// rows once loaded, so it always reflects real companies you've created
-// — never individual requester names.
-function refreshCompanyDatalist(rows) {
-  const dl = document.getElementById('portal-company-list');
-  const names = [...new Set(rows.map(r=>r.company_name))].sort();
-  dl.innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+// Populates every "pick a client" dropdown in the Client Portal admin
+// panel from the real `clients` table — never from free text.
+function populateClientDropdowns() {
+  const optsHtml = (placeholder) => `<option value="">${placeholder}</option>` +
+    CLIENTS.map(c=>`<option value="${c.id}">${esc(c.company_name)}${c.active===false?' (disabled)':''}</option>`).join('');
+  const loginSel = document.getElementById('portal-new-client-id');
+  if (loginSel) loginSel.innerHTML = CLIENTS.length ? optsHtml('Select a client…') : '<option value="">— add a client above first —</option>';
+  const reqSel = document.getElementById('portal-req-new-client-id');
+  if (reqSel) reqSel.innerHTML = optsHtml('— select a client —');
+}
+
+async function loadClientsAdmin() {
+  const box = document.getElementById('clients-admin-list');
+  box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/clients?select=*&order=company_name.asc`, { headers: authedHdrs() });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    CLIENTS = rows;
+    refreshClientFilterUI();
+    populateClientDropdowns();
+    if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No clients yet — add one below.</div>'; return; }
+    box.innerHTML = rows.map(row => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.active?'var(--surface)':'#fafafa'}">
+        <div style="flex:1;min-width:0;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.company_name)}</div>
+        <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
+        <button class="btn btn-sm" onclick="toggleClientActive('${row.id}',${!row.active})">${row.active?'Disable':'Enable'}</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function createClientCompany() {
+  const input = document.getElementById('new-client-company');
+  const name = input.value.trim();
+  if (!name) { showToast('Enter a company name','red'); return; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/clients`, {
+      method:'POST', headers:{ ...authedHdrs(), 'Prefer':'return=minimal' },
+      body: JSON.stringify([{ company_name: name, active: true }])
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Client added','green');
+    input.value='';
+    loadClientsAdmin();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
+}
+
+// Disabling a client here blocks all of that client's logins at once —
+// each login's own client_accounts.active flag still works too, for
+// disabling one login without touching the whole company.
+async function toggleClientActive(id, makeActive) {
+  if (!makeActive && !confirm('Disable this client? All of their portal logins will immediately lose access.')) return;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/clients?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers:{ ...authedHdrs(), 'Prefer':'return=minimal' },
+      body: JSON.stringify({ active: makeActive })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    loadClientsAdmin();
+  } catch(e) { showToast('Failed: '+e.message,'red'); }
 }
 
 const KANBAN_COLUMNS_ADMIN = [
@@ -1772,13 +1879,15 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&am
 
 async function addRequesterAssignment() {
   const requesterName = document.getElementById('portal-req-new-name').value.trim();
-  const companyName = document.getElementById('portal-req-new-company').value.trim();
-  if (!requesterName || !companyName) { showToast('Both fields are required','red'); return; }
+  const clientId = document.getElementById('portal-req-new-client-id').value;
+  if (!requesterName || !clientId) { showToast('Both fields are required','red'); return; }
+  const client = CLIENTS.find(c=>c.id===clientId);
+  if (!client) { showToast('Unknown client — refresh and try again','red'); return; }
   try {
     const r = await fetch(`${SB_URL}/rest/v1/client_requesters`, {
       method:'POST',
       headers:{ ...portalSbHeaders(), 'Prefer':'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify([{ company_name: companyName, requester_name: requesterName }])
+      body: JSON.stringify([{ company_name: client.company_name, requester_name: requesterName, client_id: clientId }])
     });
     if (!r.ok) throw new Error(await r.text());
     showToast('Requester assigned','green');
@@ -1837,7 +1946,10 @@ async function loadPendingSignups() {
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input class="dp-input" id="pending-company-${cssId(u.id)}" value="${requestedCompany}" list="portal-company-list" placeholder="Confirm company name" style="flex:1;min-width:220px"/>
+          <select class="dp-input" id="pending-client-${cssId(u.id)}" style="flex:1;min-width:220px">
+            <option value="">${requestedCompany ? 'Match "'+esc(requestedCompany)+'" to a client…' : 'Select a client…'}</option>
+            ${CLIENTS.map(c=>`<option value="${c.id}" ${c.company_name.trim().toLowerCase()===requestedCompany.trim().toLowerCase()?'selected':''}>${esc(c.company_name)}</option>`).join('')}
+          </select>
           <button class="btn btn-sm btn-primary" onclick="approveSignup('${u.id}','${u.email.replace(/'/g,"\\'")}')">✓ Approve</button>
           <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="rejectSignup('${u.id}')">✕ Reject</button>
         </div>
@@ -1850,17 +1962,17 @@ async function loadPendingSignups() {
 }
 
 async function approveSignup(userId, email) {
-  const companyInput = document.getElementById('pending-company-'+cssId(userId));
-  const companyName = companyInput.value.trim();
-  if (!companyName) { showToast('Enter/confirm a company name first','red'); return; }
+  const clientSel = document.getElementById('pending-client-'+cssId(userId));
+  const clientId = clientSel.value;
+  if (!clientId) { showToast('Select which client this login belongs to first — add the client under Clients above if it doesn\'t exist yet','red'); return; }
   try {
     const r = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
       method:'POST',
       headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
-      body: JSON.stringify([{ id: userId, email, company_name: companyName, active: true }])
+      body: JSON.stringify([{ id: userId, email, client_id: clientId, role:'client_user', active: true }])
     });
     if (!r.ok) throw new Error(await r.text());
-    showToast('Approved — remember to assign their requester name(s) below','green');
+    showToast('Approved','green');
     loadPendingSignups(); loadClientAccounts();
   } catch(e) { showToast('Failed: '+e.message,'red'); }
 }
@@ -1878,10 +1990,12 @@ async function rejectSignup(userId) {
 async function createClientAccess() {
   const key = getPortalServiceKey();
   if (!key) { showToast('Paste your Supabase service role key first','red'); return; }
-  const company = document.getElementById('portal-new-company').value.trim();
+  const clientId = document.getElementById('portal-new-client-id').value;
+  const role = document.getElementById('portal-new-role').value;
   const email = document.getElementById('portal-new-email').value.trim();
   const password = document.getElementById('portal-new-password').value.trim();
-  if (!company || !email || !password) { showToast('Company, email and password are all required','red'); return; }
+  if (!clientId) { showToast('Select which client this login belongs to (add one under Clients above first)','red'); return; }
+  if (!email || !password) { showToast('Email and password are both required','red'); return; }
   if (password.length < 8) { showToast('Password must be at least 8 characters','red'); return; }
   try {
     // 1) Create a pre-confirmed auth user via the Supabase admin API
@@ -1891,15 +2005,14 @@ async function createClientAccess() {
     });
     const u = await r1.json();
     if (!r1.ok) throw new Error(u.msg || u.message || 'Failed to create login');
-    // 2) Link that user to the company name in client_accounts (service role bypasses RLS)
+    // 2) Link that user to the real client_id (service role bypasses RLS)
     const r2 = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
       method:'POST',
       headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
-      body: JSON.stringify([{ id:u.id, email, company_name:company, active:true }])
+      body: JSON.stringify([{ id:u.id, email, client_id:clientId, role, active:true }])
     });
     if (!r2.ok) { const t=await r2.text(); throw new Error(t); }
     showToast('Client login created', 'green');
-    document.getElementById('portal-new-company').value='';
     document.getElementById('portal-new-email').value='';
     document.getElementById('portal-new-password').value='';
     loadClientAccounts();
@@ -1915,22 +2028,27 @@ async function loadClientAccounts() {
   if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
   box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Loading…</div>';
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?select=*&order=company_name.asc`, { headers: portalSbHeaders() });
+    // client_id/role come straight from client_accounts; company name is
+    // resolved from the real clients table (already loaded into CLIENTS),
+    // never from a free-text field on this row.
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?select=*&order=email.asc`, { headers: portalSbHeaders() });
     if (!r.ok) throw new Error(await r.text());
     const rows = await r.json();
-    refreshCompanyDatalist(rows);
     if (!rows.length) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">No client logins yet.</div>'; return; }
-    box.innerHTML = rows.map(row => `
+    const clientById = Object.fromEntries(CLIENTS.map(c=>[c.id,c]));
+    box.innerHTML = rows.map(row => {
+      const client = clientById[row.client_id];
+      return `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.active?'var(--surface)':'#fafafa'}">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.company_name}</div>
-          <div style="font-size:12px;color:var(--t2)">${row.email}</div>
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(client ? client.company_name : '— unknown client —')}</div>
+          <div style="font-size:12px;color:var(--t2)">${esc(row.email)}${row.role==='client_admin' ? ' · Client Admin' : ''}</div>
         </div>
         <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
         <button class="btn btn-sm" onclick="togglePortalAccount('${row.id}',${!row.active})">${row.active?'Disable':'Enable'}</button>
         <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deletePortalAccount('${row.id}')">🗑 Remove</button>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   } catch(e) {
     console.error(e);
     box.innerHTML = `<div style="font-size:13px;color:var(--red)">Failed to load: ${e.message}</div>`;
@@ -1978,12 +2096,12 @@ function initStore() {
 function buildRow(listKey, r) {
   const done = listKey.endsWith('Done');
   if (listKey==='func'||listKey==='funcDone')
-    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
+    return { id:r.id, client_id:r.client_id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'', comp:r.comp||'',
              status:r.status||'', devpay:r.devpay||'', clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
              func_rate:parseFloat(r.funcRate)||null, dev_rate:parseFloat(r.devRate)||null };
   if (listKey==='proj'||listKey==='projDone')
-    return { id:r.id, month:r.month||'', dev:r.dev||'', req:r.req||'',
+    return { id:r.id, client_id:r.client_id, month:r.month||'', dev:r.dev||'', req:r.req||'',
              estf:r.estf||'', actf:r.actf||'', estd:r.estd||'', actd:r.actd||'',
              comp:r.comp||'', status:r.status||'', devpay:r.devpay||'',
              clipay:r.clipay||'', inv:r.inv||'', done, year:r.year||CURRENT_YEAR,
@@ -2032,10 +2150,13 @@ function parseRow(table, row) {
 async function loadFromSupabase() {
   showLoader(true);
   try {
-    const [funcRows, projRows, soActive, soArch, noteRows] = await Promise.all([
+    const [funcRows, projRows, soActive, soArch, noteRows, clientRows] = await Promise.all([
       sbGet('support'), sbGet('projects'),
       sbGet('setoff_active'), sbGet('setoff_archived'), sbGet('project_notes'),
+      sbGet('clients'),
     ]);
+    CLIENTS = (Array.isArray(clientRows)?clientRows:[]).sort((a,b)=>a.company_name.localeCompare(b.company_name));
+    refreshClientFilterUI();
     DB.func     = funcRows.filter(r=>!r.done).map(r=>parseRow('support',r));
     DB.funcDone = funcRows.filter(r=> r.done).map(r=>parseRow('support',r));
     DB.proj     = projRows.filter(r=>!r.done).map(r=>parseRow('projects',r));
@@ -2088,6 +2209,8 @@ function loadLocalCache() {
 }
 
 let DB = loadLocalCache();
+let CLIENTS = []; // [{id, company_name, active}] — the real tenant list, loaded from public.clients
+let ACTIVE_CLIENT_FILTER = ''; // '' = viewing all clients (Super Admin only); otherwise a clients.id
 let _id = Date.now();
 const CURRENT_YEAR = String(new Date().getFullYear());
 function newId() { return 'r'+(++_id); }
@@ -2979,6 +3102,7 @@ let currentDetail={tab:null,id:null,done:false};
 const YEARS=['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
 const SCHEMAS={
   func:[
+    {key:'client_id',label:'Client',type:'client-select',wide:true},
     {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
     {key:'dev',label:'Description',type:'text',wide:true},
@@ -2992,6 +3116,7 @@ const SCHEMAS={
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
   proj:[
+    {key:'client_id',label:'Client',type:'client-select',wide:true},
     {key:'year',label:'Year',type:'select',options:YEARS},
     {key:'month',label:'Month',type:'select',options:MONTHS},
     {key:'dev',label:'Description',type:'text',wide:true},
@@ -3117,7 +3242,14 @@ function buildDpField(field,rec){
   const lbl=document.createElement('div'); lbl.className='dp-label'; lbl.textContent=field.label;
   wrap.appendChild(lbl);
   let inp;
-  if(field.type==='select'){
+  if(field.type==='client-select'){
+    inp=document.createElement('select'); inp.className='dp-input';
+    CLIENTS.filter(c=>c.active!==false || rec.client_id===c.id).forEach(c=>{
+      const opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.company_name;
+      if(rec.client_id===c.id) opt.selected=true;
+      inp.appendChild(opt);
+    });
+  } else if(field.type==='select'){
     inp=document.createElement('select'); inp.className='dp-input';
     const opts=[...(field.options||[])];
     const recVal = rec[field.key];
@@ -3157,6 +3289,7 @@ function saveDetail(tab){
   if(savedDevRate)  rec.devRate =savedDevRate;
   if(!rec.funcRate) rec.funcRate=String(getFuncRate());
   if(!rec.devRate&&(sk==='proj'||sk==='func')) rec.devRate=String(getDevRate());
+  if((sk==='proj'||sk==='func') && !rec.client_id){ alert('Please select which client this belongs to.'); return; }
 
   const isFinished=rec.status==='Finished';
   const activeKeys={func:'func',proj:'proj'};
@@ -3217,7 +3350,21 @@ function buildMField(field, rec){
   const lbl=document.createElement('div'); lbl.className='mlabel'; lbl.textContent=field.label;
   wrap.appendChild(lbl);
   let inp;
-  if(field.type==='select'){
+  if(field.type==='client-select'){
+    inp=document.createElement('select'); inp.className='minput';
+    if(!CLIENTS.length){
+      const opt=document.createElement('option'); opt.value=''; opt.textContent='No clients yet — add one in Settings → Clients'; inp.appendChild(opt);
+    }
+    CLIENTS.filter(c=>c.active!==false || (rec && rec.client_id===c.id)).forEach(c=>{
+      const opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.company_name;
+      if(rec && rec.client_id===c.id) opt.selected=true;
+      inp.appendChild(opt);
+    });
+    // When editing/adding within a single-client filter, or when there's
+    // only one client, default to it so this never blocks daily use.
+    if(!(rec && rec.client_id) && ACTIVE_CLIENT_FILTER) inp.value = ACTIVE_CLIENT_FILTER;
+    else if(!(rec && rec.client_id) && CLIENTS.length===1) inp.value = CLIENTS[0].id;
+  } else if(field.type==='select'){
     inp=document.createElement('select'); inp.className='minput';
     (field.options||[]).forEach(o=>{
       const opt=document.createElement('option'); opt.value=o; opt.textContent=o;
@@ -3242,6 +3389,7 @@ document.getElementById('modalSave').addEventListener('click',()=>{
   // Ensure year has a value
   if(!rec.year) rec.year=CURRENT_YEAR;
   if(!rec.dev){ alert('Please enter a development description.'); return; }
+  if(!rec.client_id){ alert('Please select which client this belongs to.'); return; }
   const listKey={func:'func',proj:'proj'}[sk];
   if(!listKey) return;
   DB[listKey].unshift(rec);

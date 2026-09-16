@@ -471,30 +471,38 @@ function logout(){
 
 // ── data state ──────────────────────────────────────────────────────
 let COMPANY = '';
+let CLIENT_ID = '';
+let PORTAL_ROLE = 'client_user';
 let DATA = { dev:[], func:[], proj:[] };
 
 async function boot(){
   const hdrs = await authHeaders();
   if (!hdrs) { showLogin(); return; }
-  // Look up this user's OWN client_accounts row only (RLS: id = auth.uid()).
+  // Look up this user's OWN client_accounts row only (RLS: id = auth.uid()),
+  // then resolve the display name via the real clients table — never trust
+  // a free-text company string as the security boundary, only client_id.
   try{
     const s = getSession();
-    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=company_name,active`, { headers: hdrs });
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=active,role,client_id,clients(company_name)`, { headers: hdrs });
     if (!r.ok) throw new Error('lookup failed');
     const rows = await r.json();
     if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return; }
-    COMPANY = rows[0].company_name;
+    CLIENT_ID = rows[0].client_id;
+    PORTAL_ROLE = rows[0].role || 'client_user';
+    COMPANY = (rows[0].clients && rows[0].clients.company_name) || '';
   }catch(e){
     hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return;
   }
   hideAllAuth();
   document.getElementById('app').classList.add('show');
-  document.getElementById('companyNameLabel').textContent = COMPANY;
+  document.getElementById('companyNameLabel').textContent = COMPANY + (PORTAL_ROLE==='client_admin' ? ' · Client Admin' : '');
   await loadAllData();
 }
 
 // Fetches ONLY from the locked-down portal_* views (see client-portal-
 // setup.sql). These views already contain just this client's own rows
+// — filtered server-side by client_id, enforced by RLS, never by anything
+// this page sends — so there is no client_id/tenant filtering to do here.
 // and just the 5 approved columns — there is no other data to fetch,
 // and no raw table is ever queried from this page.
 async function loadAllData(){
@@ -548,7 +556,7 @@ function boardCardHtml(r){
   if (r.month || r.year) meta.push(`<span>🕐 ${esc([r.month, r.year].filter(Boolean).join(' '))}</span>`);
   return `<div class="board-card" onclick="openDrawer('${esc(r.id)}')">
     <div class="board-card-desc">${esc(r.description||'Untitled request')}</div>
-    <div class="board-card-company">${esc(COMPANY || 'Techstar Packaging (Private) Limited')}</div>
+    <div class="board-card-company">${esc(COMPANY)}</div>
     ${meta.length ? `<div class="board-card-meta">${meta.join('')}</div>` : ''}
   </div>`;
 }
