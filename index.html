@@ -825,9 +825,6 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
          preview of portal.html (used for Client Admin's own board, or when
          no client is selected). ══ -->
     <div id="portal-client-pane" style="display:flex;flex-direction:column;gap:10px">
-      <div id="portal-preview-info" class="info-bar" style="align-items:flex-start">
-        <span>⚡ This is a live preview of exactly what your client sees — login screen first, then the Kanban helpdesk board after signing in. It's loading the real <code>portal.html</code> file, so <strong>portal.html must be uploaded in the same folder as this file</strong> for the preview to work. <a href="portal.html" target="_blank" style="color:inherit;text-decoration:underline;font-weight:600">Open in a new tab instead ↗</a></span>
-      </div>
       <div id="superadmin-native-board" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px"></div>
       <iframe id="portal-preview-iframe" src="portal.html" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:var(--rlg);background:#f0f4f8" title="Client Portal Preview"></iframe>
     </div>
@@ -1797,17 +1794,14 @@ function showPortalSubTab(which) {
     adminBtn.style.background = 'transparent'; adminBtn.style.borderColor = 'transparent';
     const nativeBox = document.getElementById('superadmin-native-board');
     const iframe = document.getElementById('portal-preview-iframe');
-    const info = document.getElementById('portal-preview-info');
     if (isSuperAdmin()) {
       // Super Admin never needs the iframe/login screen — always render
       // natively from data already loaded here (Super Admin already has
       // full read access to every client).
-      info.style.display = 'none';
       iframe.style.display = 'none';
       nativeBox.style.display = 'block';
       renderSuperAdminBoardPreview();
     } else {
-      info.style.display = 'flex';
       nativeBox.style.display = 'none';
       iframe.style.display = 'block';
       // Reload the iframe so it always starts fresh at the login screen
