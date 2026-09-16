@@ -783,9 +783,12 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
         <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Required once, stored only in this browser — never sent anywhere except your own Supabase project</span>
       </div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:10px;max-width:760px">
+        <div class="info-bar" style="align-items:flex-start;background:#fef3c7;border-color:#fde68a">
+          <span>⚠️ Supabase now has <strong>two</strong> kinds of full-access key: the old <strong>legacy service_role</strong> key (a long JWT starting with <code>eyJ...</code>) and the new <strong>secret</strong> key (starts with <code>sb_secret_...</code>). Supabase itself blocks the new <code>sb_secret_</code> key from ever being used in a browser — you'll get a "Forbidden use of secret API key in browser" error. You must use the <strong>legacy</strong> one here: Supabase Dashboard → Project Settings → API Keys → look for a "Legacy API Keys" section (you may need to click "reveal") → copy <strong>service_role</strong>.</span>
+        </div>
         <div class="dp-field">
           <div class="dp-label">Supabase Service Role Key</div>
-          <input id="portal-service-key" class="dp-input" type="password" placeholder="Paste your service_role key (Supabase → Project Settings → API)" oninput="savePortalServiceKey()"/>
+          <input id="portal-service-key" class="dp-input" type="password" placeholder="Paste your LEGACY service_role key (starts with eyJ...) — NOT the new secret key" oninput="savePortalServiceKey()"/>
           <div style="font-size:11px;color:var(--t3)">Needed to create client logins and manage portal access. <strong>Keep this file private</strong> — never send <code>index.html</code> itself to a client, since it can fully manage your database.</div>
         </div>
       </div>
@@ -853,9 +856,15 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px;max-width:760px">
         <div class="dp-row">
           <div class="dp-field">
+            <div class="dp-label">Client Name</div>
+            <input id="portal-new-name" class="dp-input" type="text" placeholder="Contact person's name"/>
+          </div>
+          <div class="dp-field">
             <div class="dp-label">Client / Company</div>
             <select id="portal-new-client-id" class="dp-input"><option value="">— add a client above first —</option></select>
           </div>
+        </div>
+        <div class="dp-row">
           <div class="dp-field">
             <div class="dp-label">Client Email</div>
             <input id="portal-new-email" class="dp-input" type="email" placeholder="client@company.com"/>
@@ -1330,6 +1339,9 @@ function getPortalServiceKey() {
 function savePortalServiceKey() {
   const v = document.getElementById('portal-service-key').value.trim();
   if (v) localStorage.setItem(PORTAL_KEY_STORAGE, v);
+  if (v.startsWith('sb_secret_')) {
+    showToast('⚠️ That\'s the NEW secret key — Supabase blocks it in browsers. Use the LEGACY service_role key (starts with eyJ...) instead.', 'red');
+  }
 }
 function portalSbHeaders() {
   const key = getPortalServiceKey();
@@ -2093,7 +2105,7 @@ async function loadPendingSignups() {
             <option value="">${requestedCompany ? 'Match "'+esc(requestedCompany)+'" to a client…' : 'Select a client…'}</option>
             ${CLIENTS.map(c=>`<option value="${c.id}" ${c.company_name.trim().toLowerCase()===requestedCompany.trim().toLowerCase()?'selected':''}>${esc(c.company_name)}</option>`).join('')}
           </select>
-          <button class="btn btn-sm btn-primary" onclick="approveSignup('${u.id}','${u.email.replace(/'/g,"\\'")}')">✓ Approve</button>
+          <button class="btn btn-sm btn-primary" onclick="approveSignup('${u.id}','${u.email.replace(/'/g,"\\'")}','${fullName.replace(/'/g,"\\'")}')">✓ Approve</button>
           <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="rejectSignup('${u.id}')">✕ Reject</button>
         </div>
       </div>`;
@@ -2104,15 +2116,16 @@ async function loadPendingSignups() {
   }
 }
 
-async function approveSignup(userId, email) {
+async function approveSignup(userId, email, fullName) {
   const clientSel = document.getElementById('pending-client-'+cssId(userId));
   const clientId = clientSel.value;
   if (!clientId) { showToast('Select which client this login belongs to first — add the client under Clients above if it doesn\'t exist yet','red'); return; }
+  const companyName = (CLIENTS.find(c=>c.id===clientId)||{}).company_name || null;
   try {
     const r = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
       method:'POST',
       headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
-      body: JSON.stringify([{ id: userId, email, client_id: clientId, role:'client_user', active: true }])
+      body: JSON.stringify([{ id: userId, email, full_name: (fullName && fullName!=='—') ? fullName : null, client_id: clientId, company_name: companyName, role:'client_user', active: true }])
     });
     if (!r.ok) throw new Error(await r.text());
     showToast('Approved','green');
@@ -2135,11 +2148,13 @@ async function createClientAccess() {
   if (!key) { showToast('Paste your Supabase service role key first','red'); return; }
   const clientId = document.getElementById('portal-new-client-id').value;
   const role = document.getElementById('portal-new-role').value;
+  const fullName = document.getElementById('portal-new-name').value.trim();
   const email = document.getElementById('portal-new-email').value.trim();
   const password = document.getElementById('portal-new-password').value.trim();
   if (!clientId) { showToast('Select which client this login belongs to (add one under Clients above first)','red'); return; }
   if (!email || !password) { showToast('Email and password are both required','red'); return; }
   if (password.length < 8) { showToast('Password must be at least 8 characters','red'); return; }
+  const companyName = (CLIENTS.find(c=>c.id===clientId)||{}).company_name || null;
   try {
     // 1) Create a pre-confirmed auth user via the Supabase admin API
     const r1 = await fetch(`${SB_URL}/auth/v1/admin/users`, {
@@ -2152,10 +2167,11 @@ async function createClientAccess() {
     const r2 = await fetch(`${SB_URL}/rest/v1/client_accounts`, {
       method:'POST',
       headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
-      body: JSON.stringify([{ id:u.id, email, client_id:clientId, role, active:true }])
+      body: JSON.stringify([{ id:u.id, email, full_name:fullName||null, client_id:clientId, company_name:companyName, role, active:true }])
     });
     if (!r2.ok) { const t=await r2.text(); throw new Error(t); }
     showToast('Client login created', 'green');
+    document.getElementById('portal-new-name').value='';
     document.getElementById('portal-new-email').value='';
     document.getElementById('portal-new-password').value='';
     loadClientAccounts();
@@ -2185,7 +2201,7 @@ async function loadClientAccounts() {
       <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:${row.active?'var(--surface)':'#fafafa'}">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(client ? client.company_name : '— unknown client —')}</div>
-          <div style="font-size:12px;color:var(--t2)">${esc(row.email)}${row.role==='client_admin' ? ' · Client Admin' : ''}</div>
+          <div style="font-size:12px;color:var(--t2)">${row.full_name ? esc(row.full_name)+' · ' : ''}${esc(row.email)}${row.role==='client_admin' ? ' · Client Admin' : ''}</div>
         </div>
         <span class="badge ${row.active?'b-green':'b-gray'}">${row.active?'Active':'Disabled'}</span>
         <button class="btn btn-sm" onclick="togglePortalAccount('${row.id}',${!row.active})">${row.active?'Disable':'Enable'}</button>
