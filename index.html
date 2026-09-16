@@ -29,7 +29,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);height:
 .auth-error{font-size:12.5px;color:var(--red,#dc2626);background:rgba(220,38,38,.08);border-radius:8px;padding:9px 12px}
 .auth-switch{font-size:12.5px;color:var(--t3);text-align:center;margin-top:4px}
 .auth-switch a{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline}
-#authRegisterForm,#authPendingScreen,#authDeactivatedScreen{display:flex;flex-direction:column;gap:14px}
+#authPendingScreen,#authDeactivatedScreen{display:flex;flex-direction:column;gap:14px}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;height:52px;flex-shrink:0}
 .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;white-space:nowrap}
 .logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -221,18 +221,24 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
       <div class="dp-field"><div class="dp-label">Password</div><input id="authLoginPassword" class="dp-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
       <div id="authLoginError" class="auth-error" style="display:none"></div>
       <button class="btn btn-primary" style="width:100%" onclick="doAdminLogin()">Sign In</button>
-      <div class="auth-switch">New here? <a onclick="showAuthForm('register')">Create an account</a></div>
+      <div class="auth-switch"><a onclick="showAuthForm('forgot')">Forgot password?</a></div>
     </div>
 
-    <div id="authRegisterForm" style="display:none">
-      <div class="auth-title">Create account</div>
-      <div class="dp-field"><div class="dp-label">Full Name</div><input id="authRegName" class="dp-input" type="text" placeholder="Your name"/></div>
-      <div class="dp-field"><div class="dp-label">Email</div><input id="authRegEmail" class="dp-input" type="email" placeholder="you@company.com"/></div>
-      <div class="dp-field"><div class="dp-label">Password</div><input id="authRegPassword" class="dp-input" type="password" placeholder="At least 8 characters"/></div>
-      <div id="authRegError" class="auth-error" style="display:none"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="doAdminRegister()">Request Access</button>
-      <div style="font-size:11px;color:var(--t3)">New accounts start as <strong>Client Admin (view-only)</strong> and need approval from a Super Admin before you can sign in.</div>
-      <div class="auth-switch">Already have an account? <a onclick="showAuthForm('login')">Sign in</a></div>
+    <div id="authForgotForm" style="display:none;flex-direction:column;gap:14px">
+      <div class="auth-title">Reset your password</div>
+      <p style="font-size:12.5px;color:var(--t3);margin:0">Enter your email and we'll send a link to set a new password.</p>
+      <div class="dp-field"><div class="dp-label">Email</div><input id="authForgotEmail" class="dp-input" type="email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doAdminForgotPassword()"/></div>
+      <div id="authForgotError" class="auth-error" style="display:none"></div>
+      <div id="authForgotSuccess" style="display:none;font-size:12.5px;color:#16a34a;background:rgba(22,163,74,.08);border-radius:8px;padding:9px 12px"></div>
+      <button class="btn btn-primary" style="width:100%" id="authForgotBtn" onclick="doAdminForgotPassword()">Send Reset Link</button>
+      <div class="auth-switch"><a onclick="showAuthForm('login')">Back to Sign In</a></div>
+    </div>
+
+    <div id="authResetForm" style="display:none;flex-direction:column;gap:14px">
+      <div class="auth-title">Set a new password</div>
+      <div class="dp-field"><div class="dp-label">New Password</div><input id="authResetPassword" class="dp-input" type="password" placeholder="At least 8 characters" onkeydown="if(event.key==='Enter')doAdminSetNewPassword()"/></div>
+      <div id="authResetError" class="auth-error" style="display:none"></div>
+      <button class="btn btn-primary" style="width:100%" id="authResetBtn" onclick="doAdminSetNewPassword()">Save New Password</button>
     </div>
 
     <div id="authPendingScreen" style="display:none">
@@ -271,6 +277,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
     <span id="adminUserLabel" style="font-size:11.5px;color:var(--t3);margin-right:6px;white-space:nowrap"></span>
     <button class="btn btn-sm" id="exportBtn" title="Export to Excel">⬇ Export</button>
     <button class="btn btn-primary btn-sm" id="addBtn" style="display:none">+ New</button>
+    <button class="btn btn-sm" onclick="openChangePasswordModal()">Change Password</button>
     <button class="btn btn-sm" onclick="doAdminLogout()">Sign Out</button>
   </div>
 </div>
@@ -1164,10 +1171,12 @@ function authedHdrs(){
 
 function showAuthForm(which){
   document.getElementById('authLoginForm').style.display     = which==='login'       ? 'flex':'none';
-  document.getElementById('authRegisterForm').style.display  = which==='register'    ? 'flex':'none';
+  document.getElementById('authForgotForm').style.display    = which==='forgot'      ? 'flex':'none';
+  document.getElementById('authResetForm').style.display     = which==='reset'       ? 'flex':'none';
   document.getElementById('authPendingScreen').style.display = which==='pending'     ? 'flex':'none';
   document.getElementById('authDeactivatedScreen').style.display = which==='deactivated' ? 'flex':'none';
-  ['authLoginError','authRegError'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
+  ['authLoginError','authForgotError','authResetError'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
+  const fs = document.getElementById('authForgotSuccess'); if (fs) { fs.style.display='none'; fs.textContent=''; }
   document.getElementById('authOverlay').style.display='flex';
   document.getElementById('appRoot').classList.remove('show');
 }
@@ -1228,33 +1237,98 @@ async function doAdminLogin(){
   }
 }
 
-async function doAdminRegister(){
-  const full_name = document.getElementById('authRegName').value.trim();
-  const email = document.getElementById('authRegEmail').value.trim();
-  const password = document.getElementById('authRegPassword').value;
-  const errEl = document.getElementById('authRegError');
-  errEl.style.display='none';
-  if (!email || !password) { errEl.textContent='Email and password are required'; errEl.style.display='block'; return; }
-  if (password.length < 8) { errEl.textContent='Password must be at least 8 characters'; errEl.style.display='block'; return; }
+// ---------- Forgot password: step 1, request the reset email ----------
+async function doAdminForgotPassword(){
+  const email = document.getElementById('authForgotEmail').value.trim();
+  const errEl = document.getElementById('authForgotError');
+  const okEl = document.getElementById('authForgotSuccess');
+  const btn = document.getElementById('authForgotBtn');
+  errEl.style.display='none'; okEl.style.display='none';
+  if (!email) { errEl.textContent='Email is required'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
   try{
-    const r = await fetch(`${SB_URL}/auth/v1/signup`, {
+    const r = await fetch(`${SB_URL}/auth/v1/recover`, {
       method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
-      body: JSON.stringify({ email, password, options: { data: { full_name } } })
+      body: JSON.stringify({ email, redirect_to: window.location.origin + window.location.pathname })
     });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error_description || data.msg || data.error || 'Registration failed');
-    if (data.access_token && data.user) {
-      // Email confirmation is off on this project, so we already have a usable session — create the pending profile now.
-      await fetchOrCreateProfile(data.user.id, email, data.access_token);
-    }
-    document.getElementById('authRegName').value='';
-    document.getElementById('authRegEmail').value='';
-    document.getElementById('authRegPassword').value='';
-    showAuthForm('pending');
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.msg || d.error_description || 'Could not send reset email'); }
+    okEl.textContent = 'If that email has admin access, a reset link is on its way.';
+    okEl.style.display='block';
   }catch(e){
-    errEl.textContent = e.message || 'Registration failed';
+    errEl.textContent = e.message || 'Could not send reset email';
     errEl.style.display='block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Send Reset Link';
   }
+}
+
+// ---------- Forgot password: step 2, set the new password ----------
+// Reached via the emailed link, which lands back here with #access_token=...
+// &type=recovery in the URL hash (checked at startup, below).
+async function doAdminSetNewPassword(){
+  const password = document.getElementById('authResetPassword').value;
+  const errEl = document.getElementById('authResetError');
+  const btn = document.getElementById('authResetBtn');
+  errEl.style.display='none';
+  if (!password || password.length < 8) { errEl.textContent='Password must be at least 8 characters'; errEl.style.display='block'; return; }
+  const token = window._adminRecoveryAccessToken;
+  if (!token) { errEl.textContent='This reset link has expired. Please request a new one.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {
+      method:'PUT', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+token},
+      body: JSON.stringify({ password })
+    });
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.msg || d.error_description || 'Could not set password'); }
+    history.replaceState(null,'',window.location.pathname);
+    document.getElementById('authResetPassword').value='';
+    showAuthForm('login');
+    const errLogin = document.getElementById('authLoginError');
+    errLogin.textContent = 'Password updated — please sign in.';
+    errLogin.style.color = '#16a34a';
+    errLogin.style.background = 'rgba(22,163,74,.08)';
+    errLogin.style.display = 'block';
+  }catch(e){
+    errEl.textContent = e.message || 'Could not set password';
+    errEl.style.display='block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save New Password';
+  }
+}
+
+// ---------- Change password (already signed in) ----------
+// Uses the current session's access token — no need to re-enter the old
+// password, matching how Supabase's own updateUser() call works.
+async function doChangeOwnPassword(){
+  const password = document.getElementById('changePasswordInput').value;
+  const errEl = document.getElementById('changePasswordError');
+  if (errEl) { errEl.style.display='none'; }
+  if (!password || password.length < 8) {
+    if (errEl) { errEl.textContent='Password must be at least 8 characters'; errEl.style.display='block'; }
+    return;
+  }
+  const s = getAdminSession();
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {
+      method:'PUT', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+(s&&s.access_token)},
+      body: JSON.stringify({ password })
+    });
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.msg || d.error_description || 'Could not update password'); }
+    closeModal();
+  }catch(e){
+    if (errEl) { errEl.textContent = e.message || 'Could not update password'; errEl.style.display='block'; }
+  }
+}
+
+function openChangePasswordModal(){
+  document.getElementById('modalTitle').textContent = 'Change Password';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="dp-field"><div class="dp-label">New Password</div><input id="changePasswordInput" class="dp-input" type="password" placeholder="At least 8 characters" onkeydown="if(event.key==='Enter')doChangeOwnPassword()"/></div>
+    <div id="changePasswordError" class="auth-error" style="display:none;margin-top:8px"></div>
+  `;
+  document.getElementById('modalSave').textContent = 'Save';
+  document.getElementById('modalSave').onclick = doChangeOwnPassword;
+  openModal();
 }
 
 function doAdminLogout(){
@@ -4520,7 +4594,19 @@ function startApp(){
   // Load fresh data from Supabase (updates UI when done)
   loadFromSupabase();
 }
-tryRestoreSession();
+(function checkForRecoveryLink(){
+  const hash = window.location.hash;
+  if (hash && hash.includes('type=recovery')) {
+    const params = new URLSearchParams(hash.slice(1));
+    const at = params.get('access_token');
+    if (at) {
+      window._adminRecoveryAccessToken = at;
+      showAuthForm('reset');
+      return;
+    }
+  }
+  tryRestoreSession();
+})();
 </script>
 </body>
 </html>
