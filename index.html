@@ -301,7 +301,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
 <!-- ════ SUPER ADMIN ════ -->
 <div class="tab-panel" id="tab-superadmin">
-  <div class="list-pane" style="overflow-y:auto;gap:18px">
+  <div class="list-pane" style="overflow-y:scroll;gap:18px;height:100%;scrollbar-gutter:stable">
     <div class="info-bar">⚡ Every client's data is fully isolated at the database level — a client can never see or modify another client's tickets, projects, or invoices. Select a client below to view their dashboard; Super Admin is the only role that can switch between clients.</div>
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
@@ -317,14 +317,14 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
-        Add New Client
+        Add New Company
       </div>
       <div style="padding:20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:640px">
         <div class="dp-field" style="flex:1;min-width:260px">
           <div class="dp-label">Company Name</div>
           <input id="new-client-company" class="dp-input" placeholder="e.g. Acme Manufacturing Ltd" onkeydown="if(event.key==='Enter')createClientCompany()"/>
         </div>
-        <button class="btn btn-primary" onclick="createClientCompany()">+ Add Client</button>
+        <button class="btn btn-primary" onclick="createClientCompany()">+ Add Company</button>
       </div>
       <div style="padding:0 20px 18px;font-size:11px;color:var(--t3)">Once added, this client appears immediately in every Client dropdown across the app (new tickets, client logins, etc). Create their portal login from the Client Portal tab.</div>
     </div>
