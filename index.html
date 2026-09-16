@@ -1212,6 +1212,16 @@ async function doAdminLogin(){
       access_token: data.access_token, refresh_token: data.refresh_token,
       user_id: data.user.id, email, role: profile.role, full_name: profile.full_name||''
     });
+    // A Client Admin login is (by design) also registered as a real portal
+    // client_accounts login under the same auth user id. Bridge the session
+    // into portal.html's own storage key so the embedded board loads
+    // straight in, instead of asking them to sign in a second time.
+    try {
+      localStorage.setItem('techstar_portal_session', JSON.stringify({
+        access_token: data.access_token, refresh_token: data.refresh_token,
+        user_id: data.user.id, expires_at: Date.now() + (data.expires_in*1000)
+      }));
+    } catch(e){}
     enterApp();
   }catch(e){
     errEl.textContent = e.message || 'Sign in failed';
