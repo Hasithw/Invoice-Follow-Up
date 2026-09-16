@@ -27,8 +27,8 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 .auth-sub{font-size:12px;color:var(--t3)}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .field label{font-size:12px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.04em}
-.field input{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;font-size:14px;color:var(--text);font-family:Inter,sans-serif;outline:none;width:100%}
-.field input:focus{border-color:var(--accent)}
+.field input,.field select{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;font-size:14px;color:var(--text);font-family:Inter,sans-serif;outline:none;width:100%}
+.field input:focus,.field select:focus{border-color:var(--accent)}
 .btn{padding:11px 16px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s2);color:var(--text);font-size:14px;cursor:pointer;font-family:Inter,sans-serif;transition:all .15s;width:100%;font-weight:600}
 .btn:hover{background:var(--s3)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -135,7 +135,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
   .req-cell:first-child::before{display:none;margin-top:0}
   .auth-wrap{padding:14px}
   .auth-card{padding:24px 18px}
-  .field input{padding:12px 13px;font-size:16px}
+  .field input,.field select{padding:12px 13px;font-size:16px}
   .btn{min-height:44px}
   .drawer{width:100%;max-width:100%}
   .drawer-hdr,.drawer-body{padding:16px 18px}
@@ -183,7 +183,12 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
     <div id="signupError" class="auth-error hidden"></div>
     <form id="signupForm">
       <div class="field"><label>Your Name</label><input type="text" id="signupName" required/></div>
-      <div class="field"><label>Company Name</label><input type="text" id="signupCompany" required placeholder="e.g. Techstar Packaging (Private) Limited"/></div>
+      <div class="field"><label>Company Name</label>
+        <select id="signupCompany" required onchange="document.getElementById('signupCompanyOther').style.display=this.value==='__other__'?'block':'none'">
+          <option value="" disabled selected>Select your company…</option>
+        </select>
+        <input type="text" id="signupCompanyOther" placeholder="Type your company name" style="display:none;margin-top:8px"/>
+      </div>
       <div class="field"><label>Email</label><input type="email" id="signupEmail" required autocomplete="username"/></div>
       <div class="field"><label>Password</label><input type="password" id="signupPassword" minlength="8" required autocomplete="new-password"/></div>
       <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
@@ -430,11 +435,14 @@ document.getElementById('resetForm').addEventListener('submit', async (e)=>{
 document.getElementById('signupForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const name = document.getElementById('signupName').value.trim();
-  const company = document.getElementById('signupCompany').value.trim();
+  const companySel = document.getElementById('signupCompany').value;
+  const company = companySel === '__other__' ? document.getElementById('signupCompanyOther').value.trim() : companySel;
   const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
   const btn = document.getElementById('signupBtn'); const err = document.getElementById('signupError');
-  err.classList.add('hidden'); btn.disabled = true; btn.textContent = 'Creating…';
+  err.classList.add('hidden');
+  if (!company) { err.textContent = 'Please select or enter your company name'; err.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'Creating…';
   try{
     // Public signup — creates a login only. It grants NO portal access by
     // itself: access is only ever turned on when Techstar approves the
@@ -451,6 +459,8 @@ document.getElementById('signupForm').addEventListener('submit', async (e)=>{
     hideAllAuth();
     document.getElementById('signupReceivedScreen').classList.remove('hidden');
     document.getElementById('signupForm').reset();
+    document.getElementById('signupCompanyOther').style.display = 'none';
+    document.getElementById('signupCompanyOther').value = '';
   }catch(ex){
     err.textContent = ex.message; err.classList.remove('hidden');
   }finally{
@@ -460,8 +470,30 @@ document.getElementById('signupForm').addEventListener('submit', async (e)=>{
 
 function showLogin(){ hideAllAuth(); document.getElementById('loginScreen').classList.remove('hidden'); }
 function showForgot(){ hideAllAuth(); document.getElementById('forgotScreen').classList.remove('hidden'); }
-function showSignup(){ hideAllAuth(); document.getElementById('signupScreen').classList.remove('hidden'); }
+function showSignup(){ hideAllAuth(); document.getElementById('signupScreen').classList.remove('hidden'); loadSignupCompanies(); }
 function hideAllAuth(){ ['loginScreen','forgotScreen','resetScreen','noAccessScreen','signupScreen','signupReceivedScreen'].forEach(id=>document.getElementById(id).classList.add('hidden')); }
+
+// Populates the Company Name dropdown from the real, active clients —
+// public/unauthenticated read via the signup_clients view (id+name only,
+// active clients only; nothing else about a client is ever exposed here).
+async function loadSignupCompanies(){
+  const sel = document.getElementById('signupCompany');
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled selected>Loading…</option>';
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/signup_clients?select=company_name&order=company_name.asc`, {
+      headers: { 'apikey': SB_ANON_KEY, 'Authorization': 'Bearer '+SB_ANON_KEY }
+    });
+    if (!r.ok) throw new Error('failed');
+    const rows = await r.json();
+    sel.innerHTML = '<option value="" disabled selected>Select your company…</option>' +
+      rows.map(c=>`<option value="${esc(c.company_name)}">${esc(c.company_name)}</option>`).join('') +
+      `<option value="__other__">My company isn't listed</option>`;
+  }catch(e){
+    sel.innerHTML = '<option value="" disabled selected>Couldn\'t load companies — try again</option>' +
+      `<option value="__other__">My company isn't listed</option>`;
+  }
+}
 
 function logout(){
   clearSession();
