@@ -257,11 +257,15 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <div class="nav-tab" data-tab="proj-completed">Completed Projects</div>
       <div class="nav-tab" data-tab="pending-payment">Pending Payment</div>
     </div>
-    <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="margin:8px 16px 8px auto;padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:220px;max-width:40vw;background:var(--surface);color:var(--text)"/>
+    <div style="display:flex;align-items:center;gap:8px;margin:8px 16px 8px auto;flex-wrap:nowrap">
+      <select id="statusFilter" onchange="setStatusFilter(this.value)" title="Show all requests in a project status" style="padding:7px 10px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:210px;max-width:44vw;background:var(--surface);color:var(--text);font-family:Inter,sans-serif"><option value="">All statuses</option></select>
+      <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:200px;max-width:36vw;background:var(--surface);color:var(--text)"/>
+    </div>
   </div>
   <div class="main">
     <div class="tab-panel active" id="tab-board">
       <div class="board-wrap" id="board-wrap"></div>
+      <div id="status-results" style="display:none"></div>
     </div>
     <div class="tab-panel" id="tab-overview">
       <div class="kpi-grid" id="overview-kpis"></div>
@@ -584,7 +588,53 @@ async function loadAllData(){
 
 // ── Kanban board ──────────────────────────────────────────────────────
 let BOARD_SEARCH = '';
+// ── Project-status filter ─────────────────────────────────────────────
+// Pick a status (same names as the board columns) to see EVERY request in it,
+// support + projects, oldest month first. "All statuses" brings the board back.
+let STATUS_FILTER = '';
+function boardColOf(r){ return KANBAN_COLUMNS.includes(r.helpdesk_status) ? r.helpdesk_status : KANBAN_COLUMNS[0]; }
+function populateStatusFilter(){
+  const sel = document.getElementById('statusFilter');
+  if (!sel) return;
+  const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
+  const counts = {}; KANBAN_COLUMNS.forEach(c => counts[c] = 0);
+  all.forEach(r => counts[boardColOf(r)]++);
+  sel.innerHTML = '<option value="">All statuses</option>' +
+    KANBAN_COLUMNS.map(c => `<option value="${esc(c)}">${esc(c)} (${counts[c]})</option>`).join('');
+  sel.value = STATUS_FILTER;
+}
+function setStatusFilter(v){
+  STATUS_FILTER = v || '';
+  // Results are shown in the Board tab, so jump there if the user is on another tab
+  if (STATUS_FILTER && !document.getElementById('tab-board').classList.contains('active')) {
+    document.querySelector('.nav-tab[data-tab="board"]').click();
+  }
+  renderBoard();
+}
+function renderStatusResults(){
+  const q = BOARD_SEARCH.trim().toLowerCase();
+  const pick = list => sortByMonthAsc(list.filter(r => boardColOf(r) === STATUS_FILTER && (!q || (r.description||'').toLowerCase().includes(q))));
+  const func = pick(DATA.func), proj = pick(DATA.proj);
+  const total = func.length + proj.length;
+  const section = (label, list) => `
+    <div class="section-title" style="margin-top:14px">${label} (${list.length})</div>
+    ${list.length ? tableHtml(list, true) : `<div class="empty-state">No ${label.toLowerCase()} in this status${q ? ' matching your search' : ''}.</div>`}`;
+  document.getElementById('status-results').innerHTML = `
+    <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:15px;font-weight:700">${esc(STATUS_FILTER)} <span style="font-weight:500;color:var(--t3);font-size:13px">— ${total} request${total===1?'':'s'}</span></div>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="document.getElementById('statusFilter').value='';setStatusFilter('')">✕ Show all statuses</button>
+      </div>
+      ${section('Support', func)}
+      ${section('Projects', proj)}
+    </div>`;
+}
+
 function renderBoard(){
+  populateStatusFilter();
+  const wrapEl = document.getElementById('board-wrap'), resEl = document.getElementById('status-results');
+  if (STATUS_FILTER) { wrapEl.style.display = 'none'; resEl.style.display = 'block'; renderStatusResults(); return; }
+  resEl.style.display = 'none'; wrapEl.style.display = '';
   const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
   const byCol = {};
   KANBAN_COLUMNS.forEach(c => byCol[c] = []);
