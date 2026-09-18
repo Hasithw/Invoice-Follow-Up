@@ -1516,6 +1516,7 @@ function getPortalServiceKey() {
 function savePortalServiceKey() {
   const v = document.getElementById('portal-service-key').value.trim();
   if (v) localStorage.setItem(PORTAL_KEY_STORAGE, v);
+  STATUS_MAP_CACHE = null; // a new key may unlock the real mapping
   if (v.startsWith('sb_secret_')) {
     showToast('⚠️ That\'s the NEW secret key — Supabase blocks it in browsers. Use the LEGACY service_role key (starts with eyJ...) instead.', 'red');
   }
@@ -2013,28 +2014,157 @@ function showPortalSubTab(which) {
   }
 }
 
-// Cached lookup of internal_status -> {helpdesk_status, hidden}, needed to
-// group tickets into the same Kanban columns clients actually see. This
-// table is intentionally locked down to service_role only, so it needs the
-// same service key already used elsewhere on this tab.
-let STATUS_MAP_CACHE = null;
+// ── Internal status -> client-facing Kanban column ───────────────────
+// The real mapping lives in the helpdesk_status_map table, which is locked
+// down to service_role. Super Admin should NOT need to paste that key just to
+// LOOK at a client's board, so we try, in order:
+//   1) the Super Admin's own login,  2) the service key (if one was pasted),
+//   3) this built-in copy of the default mapping.
+// Option 3 means the board always renders. If you've customised the mapping
+// in the admin UI and want the preview to reflect it exactly, paste the key.
+const DEFAULT_STATUS_MAP = {
+  'With Developer':      { helpdesk_status:'With Developer',        hidden:false },
+  'Prepare Quote/Scope': { helpdesk_status:'Prepare Quote/Scope',   hidden:false },
+  'Approve Quote/Scope': { helpdesk_status:'Pending Approval',      hidden:false },
+  'Functional Testing':  { helpdesk_status:'Functional Testing',    hidden:false },
+  'Client Testing':      { helpdesk_status:'Client Testing',        hidden:false },
+  'Deployed':            { helpdesk_status:'Deployed to Production',hidden:false },
+  'Pending Payment':     { helpdesk_status:'Pending Payment',       hidden:false },
+  'Finished':            { helpdesk_status:'Finished',              hidden:false },
+  'SetOff Action':       { helpdesk_status:'With Developer',        hidden:true  }
+};
+let STATUS_MAP_CACHE = null;      // only ever holds the REAL mapping from the DB
+let STATUS_MAP_IS_FALLBACK = false;
 async function fetchStatusMapCached(){
-  if (STATUS_MAP_CACHE) return STATUS_MAP_CACHE;
-  const key = getPortalServiceKey();
-  if (!key) return null;
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/helpdesk_status_map?select=*`, { headers: portalSbHeaders() });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    STATUS_MAP_CACHE = {};
-    rows.forEach(row=>{ STATUS_MAP_CACHE[row.internal_status] = row; });
-    return STATUS_MAP_CACHE;
-  }catch(e){ return null; }
+  if (STATUS_MAP_CACHE) { STATUS_MAP_IS_FALLBACK = false; return STATUS_MAP_CACHE; }
+  const url = `${SB_URL}/rest/v1/helpdesk_status_map?select=*`;
+  const attempts = [authedHdrs()];
+  if (getPortalServiceKey()) attempts.push(portalSbHeaders());
+  for (const hdrs of attempts){
+    try{
+      const r = await fetch(url, { headers: hdrs });
+      if (!r.ok) continue;
+      const rows = await r.json();
+      if (!Array.isArray(rows) || !rows.length) continue;
+      const m = {};
+      rows.forEach(row=>{ m[row.internal_status] = row; });
+      STATUS_MAP_CACHE = m; STATUS_MAP_IS_FALLBACK = false;
+      return m;
+    }catch(e){ /* try the next option */ }
+  }
+  STATUS_MAP_IS_FALLBACK = true;     // not cached, so a key pasted later is picked up
+  return DEFAULT_STATUS_MAP;
+}
+// Statuses marked hidden (e.g. "SetOff Action") never reach clients.
+function isHiddenStatus(status){
+  const m = (STATUS_MAP_CACHE || DEFAULT_STATUS_MAP)[status];
+  return !!(m && m.hidden);
 }
 
-// Renders the selected client's Kanban board natively — same columns and
-// grouping logic as portal.html's own board — using Support+Projects data
-// Super Admin already has loaded, filtered to ACTIVE_CLIENT_FILTER.
+// ── The 17-column sheet (same columns as the Excel export, minus Profit) ──
+const SHEET_HEADERS = ['Tab','Month','Development','Requester','Est F','Act F','Est D','Act D','Completed','Status','Dev Pay','Client Pay','Invoice','Dev Pmt','Inv Func','Inv Dev','Inv Full'];
+const SHEET_NUM_COLS = new Set([4,5,6,7,13,14,15,16]); // right-aligned on screen
+
+function sheetRow(d, tab, includeProfit){
+  const c = tab==='func' ? calcFuncFull(d) : calcProj(d);
+  const row = [tab,d.month||'',d.dev||'',d.req||'',d.estf||'',d.actf||'',d.estd||'',d.actd||'',d.comp||'',d.status||'',d.devpay||'',d.clipay||'',d.inv||'',c.devPmt||'',c.invF||'',c.invD||'',c.invFull||''];
+  if (includeProfit) row.push(c.profit||'');
+  return row;
+}
+// Rows for the currently selected client (or all clients for Super Admin
+// with no client picked). clientFacing=true drops hidden internal statuses.
+function buildSheetData({ includeProfit=false, clientFacing=false } = {}){
+  const rows = [];
+  const add = (arr, tab) => arr.forEach(d=>{
+    if (clientFacing && isHiddenStatus(d.status)) return;
+    rows.push(sheetRow(d, tab, includeProfit));
+  });
+  add(VF(),'func'); add(VFD(),'func'); add(VP(),'proj'); add(VPD(),'proj');
+  return { header: includeProfit ? [...SHEET_HEADERS,'Profit'] : SHEET_HEADERS.slice(), rows };
+}
+
+// Real .xlsx download (SheetJS, loaded on demand); falls back to CSV if the
+// library can't be loaded (offline / blocked), so the button always works.
+function loadSheetJS(){
+  return new Promise((resolve, reject)=>{
+    if (window.XLSX) return resolve(window.XLSX);
+    const el = document.createElement('script');
+    el.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    el.onload = ()=> window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX missing'));
+    el.onerror = ()=> reject(new Error('Could not load Excel library'));
+    document.head.appendChild(el);
+  });
+}
+async function downloadSheetFile(baseName, header, rows){
+  try{
+    const X = await loadSheetJS();
+    // Hours/amounts are stored as text; hand Excel real numbers so they sum/sort properly
+    const out = rows.map(r=>r.map((v,i)=> ((SHEET_NUM_COLS.has(i) || i===17) && v!=='' && v!=null && !isNaN(Number(v))) ? Number(v) : v));
+    const ws = X.utils.aoa_to_sheet([header, ...out]);
+    ws['!cols'] = header.map((h,i)=>({ wch: i===2 ? 46 : Math.max(10, String(h).length+3) }));
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, 'Export');
+    X.writeFile(wb, baseName + '.xlsx');
+    showToast('Exported to Excel ✓','green');
+  }catch(e){
+    const csv = [header, ...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = baseName + '.csv'; a.click();
+    showToast('Exported to CSV ✓ (Excel library unavailable)','green');
+  }
+}
+function exportFileBaseName(){
+  return ACTIVE_CLIENT_FILTER
+    ? (CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER)?.company_name||'Client').replace(/[^a-z0-9]+/gi,'_')
+    : 'AllClients';
+}
+function downloadClientSheet(){
+  const { header, rows } = buildSheetData({ includeProfit:false, clientFacing:true });
+  downloadSheetFile(exportFileBaseName() + '_Sheet', header, rows);
+}
+
+// Board | Sheet toggle inside Client Portal → Client View (Super Admin)
+let PORTAL_NATIVE_VIEW = 'board';
+function setPortalNativeView(v){ PORTAL_NATIVE_VIEW = v; renderSuperAdminBoardPreview(); }
+function filterNativeSheet(q){
+  const ql = (q||'').toLowerCase().trim();
+  let shown = 0;
+  document.querySelectorAll('#native-sheet-body tr').forEach(tr=>{
+    const hit = !ql || tr.textContent.toLowerCase().includes(ql);
+    tr.style.display = hit ? '' : 'none';
+    if (hit) shown++;
+  });
+  const c = document.getElementById('native-sheet-count');
+  if (c) c.textContent = shown + ' row' + (shown===1?'':'s');
+}
+function nativeSheetHtml(){
+  const { header, rows } = buildSheetData({ includeProfit:false, clientFacing:true });
+  const fmtCell = (v, i) => {
+    if (v === '' || v == null) return '';
+    if ([13,14,15,16].includes(i) && typeof v === 'number') return v.toLocaleString();
+    return esc(v);
+  };
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <input type="text" placeholder="🔍 Search rows…" oninput="filterNativeSheet(this.value)" style="padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:240px;max-width:100%"/>
+      <span id="native-sheet-count" style="font-size:12px;color:var(--t3)">${rows.length} row${rows.length===1?'':'s'}</span>
+      <button class="btn btn-sm btn-primary" style="margin-left:auto" onclick="downloadClientSheet()">⬇ Download Excel</button>
+    </div>
+    <div style="overflow:auto;max-height:65vh;border:1px solid var(--border);border-radius:var(--r)">
+      <table style="border-collapse:separate;border-spacing:0;width:100%;font-size:12px;white-space:nowrap">
+        <thead><tr>${header.map((h,i)=>`<th style="position:sticky;top:0;z-index:1;background:#eef2f7;color:#334155;text-align:${SHEET_NUM_COLS.has(i)?'right':'left'};padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em">${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody id="native-sheet-body">
+          ${rows.length ? rows.map(r=>`<tr>${r.map((v,i)=>`<td style="padding:7px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:${SHEET_NUM_COLS.has(i)?'right':'left'};${i===2?'white-space:normal;min-width:260px;max-width:420px;':''}${SHEET_NUM_COLS.has(i)?"font-family:'JetBrains Mono',monospace;":''}">${fmtCell(v,i)}</td>`).join('')}</tr>`).join('')
+            : `<tr><td colspan="${header.length}" style="padding:30px;text-align:center;color:var(--t3)">No rows for this client yet.</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// Renders the selected client's view natively (Board or Sheet) using the
+// Support+Projects data Super Admin already has loaded, filtered to
+// ACTIVE_CLIENT_FILTER. Needs NO service key — see fetchStatusMapCached().
 async function renderSuperAdminBoardPreview(){
   const box = document.getElementById('superadmin-native-board');
   if (!box) return;
@@ -2050,12 +2180,8 @@ async function renderSuperAdminBoardPreview(){
       </div>`;
     return;
   }
-  box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Loading board…</div>';
+  box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Loading…</div>';
   const map = await fetchStatusMapCached();
-  if (!map) {
-    box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Paste your service role key below (under ⚙ Admin Settings) to load this board preview.</div>';
-    return;
-  }
   const client = CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER);
   const tickets = [...VF(), ...VFD(), ...VP(), ...VPD()]; // ALL tickets for this client — the real client board shows everything (including Finished), not just active items
   const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
@@ -2065,11 +2191,9 @@ async function renderSuperAdminBoardPreview(){
     const helpdesk = (m && m.helpdesk_status) || KANBAN_COLUMNS_ADMIN[0];
     (cols[helpdesk] || cols[KANBAN_COLUMNS_ADMIN[0]]).push(t);
   });
-  box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-      <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s board <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
-      <button class="btn btn-sm" style="margin-left:auto" onclick="viewAllClients()">✕ Choose a different client</button>
-    </div>
+  const isSheet = PORTAL_NATIVE_VIEW === 'sheet';
+  const tabBtn = (id, label) => `<button class="btn btn-sm" style="border-radius:999px;${PORTAL_NATIVE_VIEW===id?'background:var(--surface);border-color:var(--b2)':'background:transparent;border-color:transparent'}" onclick="setPortalNativeView('${id}')">${label}</button>`;
+  const boardHtml = `
     <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px">
       ${KANBAN_COLUMNS_ADMIN.map(colName=>`
         <div style="min-width:230px;flex:0 0 230px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;max-height:65vh">
@@ -2086,6 +2210,16 @@ async function renderSuperAdminBoardPreview(){
         </div>
       `).join('')}
     </div>`;
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s ${isSheet?'sheet':'board'} <span style="font-weight:400;font-size:12px;color:var(--t3)">— ${isSheet?'the Excel data this client admin sees':'exactly what this client sees when they sign in'}</span></div>
+      <div style="display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:999px;padding:3px">
+        ${tabBtn('board','▦ Board')}${tabBtn('sheet','▤ Sheet')}
+      </div>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="viewAllClients()">✕ Choose a different client</button>
+    </div>
+    ${STATUS_MAP_IS_FALLBACK && !isSheet ? '<div style="font-size:11px;color:var(--t3);margin:-4px 0 10px">Columns use the built-in default status mapping. To reflect a customised mapping exactly, paste your service role key under ⚙ Admin Settings.</div>' : ''}
+    ${isSheet ? nativeSheetHtml() : boardHtml}`;
 }
 
 // Same as viewClientDashboard, but stays on the Client Portal tab instead
@@ -2226,6 +2360,7 @@ const KANBAN_COLUMNS_ADMIN = [
 ];
 
 async function loadStatusMap() {
+  STATUS_MAP_CACHE = null; // mapping may have just been edited — re-read it next time the preview renders
   const key = getPortalServiceKey();
   const box = document.getElementById('portal-status-map-list');
   if (!key) { box.innerHTML = '<div style="font-size:13px;color:var(--t3)">Paste your service role key above first.</div>'; return; }
@@ -2640,6 +2775,8 @@ async function loadFromSupabase() {
     renderProfit();
     renderNCF();
     renderNotesList();
+    // If the Client Portal preview is already on screen, redraw it now that real data has arrived
+    if (isSuperAdmin() && document.getElementById('tab-portal')?.classList.contains('active') && document.getElementById('portal-client-pane')?.style.display !== 'none') renderSuperAdminBoardPreview();
   } catch(e) {
     showLoader(false);
     showToast('Failed to load from Supabase: '+e.message, 'red');
@@ -4002,19 +4139,11 @@ function searchTable(bodyId,q){
 // EXCEL EXPORT
 // ══════════════════════════════════════════════════════════════════════
 document.getElementById('exportBtn').addEventListener('click',()=>{
-  const rows=[['Tab','Month','Development','Requester','Est F','Act F','Est D','Act D','Completed','Status','Dev Pay','Client Pay','Invoice','Dev Pmt','Inv Func','Inv Dev','Inv Full','Profit']];
-  const addRows=(arr,tab)=>arr.forEach(d=>{
-    const c=tab==='func'?calcFuncFull(d):calcProj(d);
-    rows.push([tab,d.month||'',d.dev||'',d.req||'',d.estf||'',d.actf||'',d.estd||'',d.actd||'',d.comp||'',d.status||'',d.devpay||'',d.clipay||'',d.inv||'',c.devPmt||'',c.invF||'',c.invD||'',c.invFull||'',c.profit||'']);
-  });
-  addRows(VF(),'func'); addRows(VFD(),'func');
-  addRows(VP(),'proj'); addRows(VPD(),'proj');
-  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  const exportClient = ACTIVE_CLIENT_FILTER ? (CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER)?.company_name||'Client').replace(/[^a-z0-9]+/gi,'_') : 'AllClients';
-  a.download=`${exportClient}_Export.csv`; a.click();
-  showToast('Exported to CSV ✓','green');
+  // Client Admin gets exactly the 17 client-facing columns (no Profit, no
+  // internal-only SetOff rows). Super Admin keeps the full export incl. Profit.
+  const clientAdmin = isClientAdmin();
+  const { header, rows } = buildSheetData({ includeProfit: !clientAdmin, clientFacing: clientAdmin });
+  downloadSheetFile(exportFileBaseName() + '_Export', header, rows);
 });
 
 // ══════════════════════════════════════════════════════════════════════
