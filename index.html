@@ -1524,6 +1524,32 @@ function portalSbHeaders() {
   const key = getPortalServiceKey();
   return { 'Content-Type':'application/json', 'apikey':key, 'Authorization':'Bearer '+key };
 }
+
+// Whenever an action needs the service role key and it hasn't been pasted
+// yet, a plain toast alone leaves the person stuck — the key field lives
+// on a different tab (Client Portal → ⚙ Admin Settings) and is easy to
+// have scrolled past even when already on that tab. This jumps straight
+// to it and highlights it, so "paste your key" is something they can act
+// on immediately instead of having to go hunt for the field themselves.
+function requireServiceKeyOrFocus(message){
+  const key = getPortalServiceKey();
+  if (key) return key;
+  showToast(message || 'Paste your Supabase service role key first', 'red');
+  switchTab('portal');
+  showPortalSubTab('admin');
+  const el = document.getElementById('portal-service-key');
+  if (el) {
+    setTimeout(()=>{
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      el.focus();
+      const prevOutline = el.style.outline, prevShadow = el.style.boxShadow;
+      el.style.outline = '2px solid var(--red)';
+      el.style.boxShadow = '0 0 0 4px rgba(220,38,38,.25)';
+      setTimeout(()=>{ el.style.outline = prevOutline; el.style.boxShadow = prevShadow; }, 2000);
+    }, 50);
+  }
+  return null;
+}
 function generatePortalPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
   let pw = '';
@@ -1544,8 +1570,8 @@ function generateSuperAdminPassword() {
 // then inserts the admin_profiles row with role='super_admin' already
 // approved+active.
 async function createSuperAdminUser() {
-  const key = getPortalServiceKey();
-  if (!key) { showToast('Paste your Supabase service role key first (Client Portal tab)','red'); return; }
+  const key = requireServiceKeyOrFocus('Paste your Supabase service role key first (Client Portal tab)');
+  if (!key) return;
   const name = document.getElementById('superadmin-new-name').value.trim();
   const email = document.getElementById('superadmin-new-email').value.trim();
   const password = document.getElementById('superadmin-new-password').value.trim();
@@ -1911,7 +1937,7 @@ function copyBootstrapSql() {
 }
 
 async function execSqlRpc(sql) {
-  const key = getPortalServiceKey();
+  const key = requireServiceKeyOrFocus();
   if (!key) throw new Error('Paste your Supabase service role key first');
   const r = await fetch(`${SB_URL}/rest/v1/rpc/exec_sql`, {
     method:'POST', headers:{ ...portalSbHeaders(), 'Prefer':'return=minimal' },
@@ -1947,11 +1973,12 @@ async function runPortalSetupSql() {
     showToast('Database setup complete ✓','green');
     loadClientAccounts(); loadStatusMap(); loadRequesterMap(); loadPendingSignups();
   } catch(e) {
+    const isMissingKey = /service role key/i.test(e.message);
     log.textContent = '✗ Setup failed:\n\n' + e.message +
       (/exec_sql|function .* does not exist|42883/i.test(e.message)
         ? '\n\nThis usually means Step 1 (the one-time bootstrap) hasn\'t been run yet — copy the snippet above into Supabase SQL Editor and run it once, then try again.'
         : '');
-    showToast('Setup failed — see the log for details','red');
+    if (!isMissingKey) showToast('Setup failed — see the log for details','red');
   }
 }
 
@@ -2426,8 +2453,8 @@ async function rejectSignup(userId) {
 }
 
 async function createClientAccess() {
-  const key = getPortalServiceKey();
-  if (!key) { showToast('Paste your Supabase service role key first','red'); return; }
+  const key = requireServiceKeyOrFocus();
+  if (!key) return;
   const clientId = document.getElementById('portal-new-client-id').value;
   const role = 'client_admin';
   const fullName = document.getElementById('portal-new-name').value.trim();
