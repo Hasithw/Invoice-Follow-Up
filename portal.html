@@ -253,8 +253,6 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
   <div class="nav-tabs" id="navTabs" style="justify-content:space-between;align-items:center">
     <div style="display:flex;gap:2px;flex-wrap:wrap">
       <div class="nav-tab active" data-tab="board">Board</div>
-      <div class="nav-tab" data-tab="func-completed">Completed Support</div>
-      <div class="nav-tab" data-tab="proj-completed">Completed Projects</div>
       <div class="nav-tab" data-tab="pending-payment">Pending Payment</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin:8px 16px 8px auto;flex-wrap:nowrap">
@@ -283,19 +281,11 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <div class="section-title">Projects</div>
       <div id="proj-list"></div>
     </div>
-    <div class="tab-panel" id="tab-func-completed">
-      <div class="section-title">Completed Support</div>
-      <div id="func-completed-list"></div>
-    </div>
     <div class="tab-panel" id="tab-pending-payment">
       <div class="section-title">Pending Payment — Support</div>
       <div id="func-pending-list"></div>
       <div class="section-title" style="margin-top:14px">Pending Payment — Projects</div>
       <div id="proj-pending-list"></div>
-    </div>
-    <div class="tab-panel" id="tab-proj-completed">
-      <div class="section-title">Completed Projects</div>
-      <div id="proj-completed-list"></div>
     </div>
   </div>
 </div>
@@ -581,7 +571,6 @@ async function loadAllData(){
     );
     DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
     renderBoard(); renderOverview(); renderCategory('func'); renderCategory('proj');
-    renderCompleted('func'); renderCompleted('proj');
     renderPending();
   }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
 }
@@ -754,14 +743,6 @@ function monthIndex(m){
 function sortByMonthAsc(list){
   return list.slice().sort((a,b) =>
     (parseInt(a.year,10)||9999) - (parseInt(b.year,10)||9999) || monthIndex(a.month) - monthIndex(b.month));
-}
-
-// "Completed" = the request has reached the final Kanban stage ('Finished').
-function renderCompleted(cat){
-  const el = document.getElementById(cat+'-completed-list');
-  const list = sortByMonthAsc(DATA[cat].filter(r => r.helpdesk_status === 'Finished'));
-  el.innerHTML = list.length ? tableHtml(list, true) :
-    `<div class="empty-state">No completed ${cat==='func'?'support requests':'projects'} yet.</div>`;
 }
 
 // "Pending Payment" = the request is in the Pending Payment Kanban stage.
