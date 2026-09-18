@@ -1440,6 +1440,9 @@ function applyRoleUI(){
   });
   const adminSubBtn = document.getElementById('portal-subtab-btn-admin');
   if (adminSubBtn) adminSubBtn.style.display = clientAdmin ? 'none' : '';
+  // Client Admin has no Export button
+  const exportBtnEl = document.getElementById('exportBtn');
+  if (exportBtnEl) exportBtnEl.style.display = clientAdmin ? 'none' : '';
   if (clientAdmin) {
     switchTab('portal');
     if (typeof showPortalSubTab === 'function') showPortalSubTab('client');
@@ -4089,6 +4092,7 @@ function searchTable(bodyId,q){
 // EXCEL EXPORT
 // ══════════════════════════════════════════════════════════════════════
 document.getElementById('exportBtn').addEventListener('click',()=>{
+  if (isClientAdmin()) return;
   // Columns: Tab, Month, Development, Requester, Est F, Act F, Est D, Act D,
   // Completed, Status, Client Pay, Invoice, Inv Func, Inv Dev, Inv Full.
   // Client Admin never gets internal-only (hidden-status) rows.

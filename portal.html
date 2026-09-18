@@ -255,6 +255,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <div class="nav-tab active" data-tab="board">Board</div>
       <div class="nav-tab" data-tab="func-completed">Completed Support</div>
       <div class="nav-tab" data-tab="proj-completed">Completed Projects</div>
+      <div class="nav-tab" data-tab="pending-payment">Pending Payment</div>
     </div>
     <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="margin:8px 16px 8px auto;padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:220px;max-width:40vw;background:var(--surface);color:var(--text)"/>
   </div>
@@ -281,6 +282,12 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
     <div class="tab-panel" id="tab-func-completed">
       <div class="section-title">Completed Support</div>
       <div id="func-completed-list"></div>
+    </div>
+    <div class="tab-panel" id="tab-pending-payment">
+      <div class="section-title">Pending Payment — Support</div>
+      <div id="func-pending-list"></div>
+      <div class="section-title" style="margin-top:14px">Pending Payment — Projects</div>
+      <div id="proj-pending-list"></div>
     </div>
     <div class="tab-panel" id="tab-proj-completed">
       <div class="section-title">Completed Projects</div>
@@ -571,6 +578,7 @@ async function loadAllData(){
     DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
     renderBoard(); renderOverview(); renderCategory('func'); renderCategory('proj');
     renderCompleted('func'); renderCompleted('proj');
+    renderPending();
   }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
 }
 
@@ -685,12 +693,34 @@ function renderCategory(cat){
     `<div class="empty-state">No ${cat==='dev'?'dev support':cat==='func'?'support':'project'} requests yet.</div>`;
 }
 
+// Oldest first: by year, then January → December (1 January, 2 February, 3 March …).
+const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+function monthIndex(m){
+  const t = String(m||'').trim().toLowerCase();
+  if (!t) return 99;
+  const i = MONTH_NAMES.findIndex(n => n === t || n.startsWith(t.slice(0,3)));
+  return i < 0 ? 99 : i;
+}
+function sortByMonthAsc(list){
+  return list.slice().sort((a,b) =>
+    (parseInt(a.year,10)||9999) - (parseInt(b.year,10)||9999) || monthIndex(a.month) - monthIndex(b.month));
+}
+
 // "Completed" = the request has reached the final Kanban stage ('Finished').
 function renderCompleted(cat){
   const el = document.getElementById(cat+'-completed-list');
-  const list = DATA[cat].filter(r => r.helpdesk_status === 'Finished');
+  const list = sortByMonthAsc(DATA[cat].filter(r => r.helpdesk_status === 'Finished'));
   el.innerHTML = list.length ? tableHtml(list, true) :
     `<div class="empty-state">No completed ${cat==='func'?'support requests':'projects'} yet.</div>`;
+}
+
+// "Pending Payment" = the request is in the Pending Payment Kanban stage.
+function renderPending(){
+  [['func','Support'],['proj','Projects']].forEach(([cat,label])=>{
+    const el = document.getElementById(cat+'-pending-list');
+    const list = sortByMonthAsc(DATA[cat].filter(r => r.helpdesk_status === 'Pending Payment'));
+    el.innerHTML = list.length ? tableHtml(list, true) : `<div class="empty-state">No ${label.toLowerCase()} pending payment.</div>`;
+  });
 }
 
 function tableHtml(rows, withStatus){
