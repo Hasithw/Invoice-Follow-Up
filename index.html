@@ -2214,17 +2214,24 @@ function sortItemsMonthAsc(items){
   const mi = m => { const t = String(m||'').trim().toLowerCase(); const i = t ? MONTH_ORDER_FULL.findIndex(n => n===t || n.startsWith(t.slice(0,3))) : -1; return i < 0 ? 99 : i; };
   return items.slice().sort((a,b)=> (parseInt(a.t.year,10)||9999)-(parseInt(b.t.year,10)||9999) || mi(a.t.month)-mi(b.t.month));
 }
-// Same columns the client's own list shows
+// Same columns the client sees in their status tables
 function nativeTableHtml(items, emptyMsg){
   const rows = sortItemsMonthAsc(items);
-  const th = h => `<th style="text-align:left;padding:8px 12px;background:#eef2f7;color:#334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`;
-  const td = (v, nowrap) => `<td style="padding:8px 12px;border-bottom:1px solid var(--border);${nowrap?'white-space:nowrap;':''}">${esc(v||'—')}</td>`;
+  const NUM = new Set([6,7,8,9,10,11,12]);
+  const heads = ['Description','Month','Year','Completed Date','Invoice Number','Status','Est F','Act F','Est D','Act D','Inv Func','Inv Dev','Inv Full'];
+  const th = (h,i) => `<th style="text-align:${NUM.has(i)?'right':'left'};padding:8px 12px;background:#eef2f7;color:#334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`;
+  const td = (v, i, extra) => `<td style="padding:8px 12px;border-bottom:1px solid var(--border);${i===0?'white-space:normal;min-width:240px;max-width:360px;':'white-space:nowrap;'}${NUM.has(i)?"text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;":''}${extra||''}">${esc(v===''||v==null?'—':v)}</td>`;
+  const money = n => n ? Number(n).toLocaleString(undefined,{maximumFractionDigits:2}) : '—';
+  const cells = ({t,cat,col}) => {
+    const c = cat==='func' ? calcFuncFull(t) : calcProj(t);
+    return [t.dev, t.month, t.year, t.comp, t.inv, col, t.estf, t.actf, t.estd, t.actd, money(c.invF), money(c.invD), money(c.invFull)];
+  };
   return `
     <div style="overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r)">
       <table style="border-collapse:collapse;width:100%;font-size:12.5px">
-        <thead><tr>${['Description','Month','Year','Completed Date','Invoice Number','Status'].map(th).join('')}</tr></thead>
-        <tbody>${rows.length ? rows.map(({t,col})=>`<tr>${td(t.dev)}${td(t.month,1)}${td(t.year)}${td(t.comp,1)}${td(t.inv)}${td(col,1)}</tr>`).join('')
-          : `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--t3)">${esc(emptyMsg)}</td></tr>`}</tbody>
+        <thead><tr>${heads.map(th).join('')}</tr></thead>
+        <tbody>${rows.length ? rows.map(x=>`<tr>${cells(x).map((v,i)=>td(v,i)).join('')}</tr>`).join('')
+          : `<tr><td colspan="${heads.length}" style="padding:24px;text-align:center;color:var(--t3)">${esc(emptyMsg)}</td></tr>`}</tbody>
       </table>
     </div>`;
 }
