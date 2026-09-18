@@ -53,21 +53,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 .tab-panel#tab-board{width:100%}
 .tab-panel{display:none;flex-direction:column;gap:18px}
 .tab-panel.active{display:flex}
-.tab-panel:not(#tab-board):not(#tab-sheet){max-width:1000px;margin:0 auto;width:100%}
-.tab-panel#tab-sheet{width:100%}
-/* spreadsheet (Client Admin) */
-.sheet-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sheet-bar input{padding:8px 12px;font-size:13px;border:1px solid var(--border);border-radius:8px;width:240px;max-width:100%;background:var(--surface);font-family:Inter,sans-serif}
-.sheet-count{font-size:12px;color:var(--t3)}
-.sheet-scroll{overflow:auto;max-height:calc(100vh - 230px);border:1px solid var(--border);border-radius:var(--rlg);background:var(--surface)}
-.sheet-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px;white-space:nowrap}
-.sheet-table th{position:sticky;top:0;z-index:1;background:#eef2f7;color:#334155;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;user-select:none}
-.sheet-table td{padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
-.sheet-table tr:hover td{background:#f8fafc}
-.sheet-table .num{text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px}
-.sheet-table th.num{text-align:right;font-family:Inter,sans-serif}
-.sheet-table td.dev{white-space:normal;min-width:260px;max-width:420px}
-
+.tab-panel:not(#tab-board){max-width:1000px;margin:0 auto;width:100%}
 /* KPIs */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px 18px}
@@ -269,7 +255,6 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
       <div class="nav-tab active" data-tab="board">Board</div>
       <div class="nav-tab" data-tab="func-completed">Completed Support</div>
       <div class="nav-tab" data-tab="proj-completed">Completed Projects</div>
-      <div class="nav-tab hidden" data-tab="sheet" id="sheetNavTab">Spreadsheet</div>
     </div>
     <input type="text" id="boardSearchInput" placeholder="🔍 Search…" oninput="filterBoard(this.value)" style="margin:8px 16px 8px auto;padding:7px 12px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;width:220px;max-width:40vw;background:var(--surface);color:var(--text)"/>
   </div>
@@ -296,14 +281,6 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
     <div class="tab-panel" id="tab-func-completed">
       <div class="section-title">Completed Support</div>
       <div id="func-completed-list"></div>
-    </div>
-    <div class="tab-panel" id="tab-sheet">
-      <div class="sheet-bar">
-        <input type="text" id="sheetSearch" placeholder="🔍 Search rows…" oninput="renderSheet()"/>
-        <span class="sheet-count" id="sheetCount"></span>
-        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="downloadSheetExcel()">⬇ Download Excel</button>
-      </div>
-      <div class="sheet-scroll"><div id="sheet-wrap"><div class="empty-state">Loading…</div></div></div>
     </div>
     <div class="tab-panel" id="tab-proj-completed">
       <div class="section-title">Completed Projects</div>
@@ -572,8 +549,6 @@ async function boot(){
   hideAllAuth();
   document.getElementById('app').classList.add('show');
   document.getElementById('companyNameLabel').textContent = COMPANY + (PORTAL_ROLE==='client_admin' ? ' · Client Admin' : '');
-  // The Excel-style spreadsheet is a Client Admin feature (the database enforces this too — see client-portal-sheet.sql)
-  document.getElementById('sheetNavTab').classList.toggle('hidden', PORTAL_ROLE !== 'client_admin');
   await loadAllData();
 }
 
@@ -596,7 +571,6 @@ async function loadAllData(){
     DATA.func = Array.isArray(func)?func:[]; DATA.proj = Array.isArray(proj)?proj:[];
     renderBoard(); renderOverview(); renderCategory('func'); renderCategory('proj');
     renderCompleted('func'); renderCompleted('proj');
-    if (PORTAL_ROLE === 'client_admin') await loadSheet();
   }catch(e){ showToast('Failed to load your data — try refreshing'); console.error(e); }
 }
 
@@ -734,115 +708,6 @@ function tableHtml(rows, withStatus){
         ${withStatus ? `<div class="req-cell" data-label="Status">${esc(r.helpdesk_status||'—')}</div>` : ''}
       </div>`).join('')}
   </div>`;
-}
-
-// ── Spreadsheet (Client Admin only) ─────────────────────────────────
-// Same 17 columns as the Excel file: Tab, Month, Development, Requester,
-// Est F, Act F, Est D, Act D, Completed, Status, Dev Pay, Client Pay,
-// Invoice, Dev Pmt, Inv Func, Inv Dev, Inv Full. Comes from the locked-down
-// portal_sheet view (client-portal-sheet.sql), which only returns rows for
-// this login's own client and only to Client Admin logins.
-const SHEET_COLS = [
-  ['tab','Tab'],['month','Month'],['development','Development'],['requester','Requester'],
-  ['est_f','Est F',1],['act_f','Act F',1],['est_d','Est D',1],['act_d','Act D',1],
-  ['completed','Completed'],['status','Status'],['dev_pay','Dev Pay'],['client_pay','Client Pay'],['invoice','Invoice'],
-  ['dev_pmt','Dev Pmt',1],['inv_func','Inv Func',1],['inv_dev','Inv Dev',1],['inv_full','Inv Full',1]
-];
-const MONEY_KEYS = new Set(['dev_pmt','inv_func','inv_dev','inv_full']);
-let SHEET_DATA = [];
-let SHEET_ERROR = '';
-let SHEET_SORT = { key:null, dir:1 };
-const MONTH_ORDER = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-
-async function loadSheet(){
-  const hdrs = await authHeaders();
-  if (!hdrs) return;
-  SHEET_ERROR = '';
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/portal_sheet?select=*`, { headers: hdrs });
-    if (!r.ok) {
-      SHEET_DATA = [];
-      SHEET_ERROR = (r.status === 404 || r.status === 400)
-        ? 'The spreadsheet isn\u2019t switched on for this portal yet. Please ask Auwion to finish the one-time setup.'
-        : 'Couldn\u2019t load the spreadsheet (error ' + r.status + '). Try Refresh.';
-    } else {
-      const rows = await r.json();
-      SHEET_DATA = Array.isArray(rows) ? rows : [];
-      // Default order: year, then month, then tab — same reading order as the Excel file
-      const mi = m => { const i = MONTH_ORDER.indexOf(String(m||'').slice(0,3).toUpperCase()); return i < 0 ? 99 : i; };
-      SHEET_DATA.sort((a,b)=> String(a.year||'').localeCompare(String(b.year||'')) || mi(a.month)-mi(b.month) || String(a.tab).localeCompare(String(b.tab)));
-    }
-  }catch(e){ SHEET_DATA = []; SHEET_ERROR = 'Couldn\u2019t load the spreadsheet — check your connection and try Refresh.'; console.error(e); }
-  renderSheet();
-}
-
-function sheetCell(row, key){
-  const v = row[key];
-  if (v == null || v === '') return '';
-  if (MONEY_KEYS.has(key)) { const n = Number(v); return n ? n.toLocaleString(undefined,{maximumFractionDigits:2}) : ''; }
-  return v;
-}
-function sortSheet(key){
-  SHEET_SORT = { key, dir: SHEET_SORT.key === key ? -SHEET_SORT.dir : 1 };
-  const num = MONEY_KEYS.has(key) || ['est_f','act_f','est_d','act_d'].includes(key);
-  SHEET_DATA.sort((a,b)=>{
-    const x = a[key] ?? '', y = b[key] ?? '';
-    return (num ? (Number(x)||0) - (Number(y)||0) : String(x).localeCompare(String(y))) * SHEET_SORT.dir;
-  });
-  renderSheet();
-}
-function renderSheet(){
-  const wrap = document.getElementById('sheet-wrap');
-  if (!wrap) return;
-  if (SHEET_ERROR) { wrap.innerHTML = `<div class="empty-state">${esc(SHEET_ERROR)}</div>`; document.getElementById('sheetCount').textContent=''; return; }
-  const q = (document.getElementById('sheetSearch').value || '').trim().toLowerCase();
-  const rows = q ? SHEET_DATA.filter(r => SHEET_COLS.some(([k]) => String(r[k] ?? '').toLowerCase().includes(q))) : SHEET_DATA;
-  document.getElementById('sheetCount').textContent = rows.length + ' row' + (rows.length===1 ? '' : 's');
-  if (!rows.length) { wrap.innerHTML = `<div class="empty-state">${q ? 'No matching rows.' : 'No rows yet.'}</div>`; return; }
-  const arrow = k => SHEET_SORT.key === k ? (SHEET_SORT.dir > 0 ? ' ▲' : ' ▼') : '';
-  wrap.innerHTML = `<table class="sheet-table">
-    <thead><tr>${SHEET_COLS.map(([k,label,num])=>`<th class="${num?'num':''}" onclick="sortSheet('${k}')" title="Click to sort">${esc(label)}${arrow(k)}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(r=>`<tr>${SHEET_COLS.map(([k,,num])=>`<td class="${num?'num':''}${k==='development'?' dev':''}">${esc(sheetCell(r,k))}</td>`).join('')}</tr>`).join('')}</tbody>
-  </table>`;
-}
-
-// Real .xlsx download (SheetJS loaded on demand); CSV fallback if it can't load.
-function loadSheetJS(){
-  return new Promise((resolve, reject)=>{
-    if (window.XLSX) return resolve(window.XLSX);
-    const el = document.createElement('script');
-    el.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    el.onload = ()=> window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX missing'));
-    el.onerror = ()=> reject(new Error('Could not load Excel library'));
-    document.head.appendChild(el);
-  });
-}
-async function downloadSheetExcel(){
-  if (!SHEET_DATA.length) { showToast('Nothing to download yet'); return; }
-  const header = SHEET_COLS.map(([,label])=>label);
-  const numKeys = new Set(['est_f','act_f','est_d','act_d',...MONEY_KEYS]);
-  const rows = SHEET_DATA.map(r => SHEET_COLS.map(([k])=>{
-    const v = r[k];
-    if (v == null || v === '') return '';
-    if (numKeys.has(k)) { const n = Number(v); return isNaN(n) ? v : (MONEY_KEYS.has(k) && !n ? '' : n); }
-    return v;
-  }));
-  const base = (COMPANY || 'Client').replace(/[^a-z0-9]+/gi,'_') + '_Sheet';
-  try{
-    const X = await loadSheetJS();
-    const ws = X.utils.aoa_to_sheet([header, ...rows]);
-    ws['!cols'] = header.map((h,i)=>({ wch: i===2 ? 46 : Math.max(10, h.length+3) }));
-    const wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, ws, 'Export');
-    X.writeFile(wb, base + '.xlsx');
-    showToast('Downloaded ✓');
-  }catch(e){
-    const csv = [header, ...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-    a.download = base + '.csv'; a.click();
-    showToast('Downloaded as CSV (Excel library unavailable)');
-  }
 }
 
 // ── tab switching ──────────────────────────────────────────────────
