@@ -236,7 +236,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 <div class="auth-wrap hidden" id="noAccessScreen">
   <div class="auth-card">
     <div class="auth-logo"><div class="auth-logo-icon">T</div><div><div class="auth-title">Access Pending</div></div></div>
-    <div class="auth-error">Your account exists but hasn't been approved for portal access yet — this is normal right after signing up. If you just requested access, check back soon; otherwise contact Techstar.</div>
+    <div class="auth-error">Your account exists but hasn't been approved for portal access yet — this is normal right after signing up. Leave this page open — your board will load automatically the moment it's approved, no need to sign in again. If it's been a while, contact Techstar.</div>
     <button class="btn" onclick="logout()">Back to Sign In</button>
   </div>
 </div>
@@ -495,9 +495,32 @@ async function loadSignupCompanies(){
 }
 
 function logout(){
+  stopAccessPoll();
   clearSession();
   document.getElementById('app').classList.remove('show');
   showLogin();
+}
+
+// ── Auto sign-in once a pending signup gets approved ────────────────────
+// A session is already saved at this point (the person entered their
+// email/password correctly) — they just don't have an active
+// client_accounts row yet. Instead of making them keep coming back and
+// signing in again to check, quietly re-check every few seconds while
+// they're sitting on the "Access Pending" screen, and the moment the
+// account is approved, load the Client Portal board automatically.
+let _accessPollTimer = null;
+function stopAccessPoll(){ if (_accessPollTimer) { clearInterval(_accessPollTimer); _accessPollTimer = null; } }
+function startAccessPoll(){ stopAccessPoll(); _accessPollTimer = setInterval(checkAccessApproval, 5000); }
+async function checkAccessApproval(){
+  const hdrs = await authHeaders();
+  if (!hdrs) { stopAccessPoll(); return; } // session expired — they'll need to sign in again
+  try{
+    const s = getSession();
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=active`, { headers: hdrs });
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (rows.length && rows[0].active !== false) { stopAccessPoll(); await boot(); }
+  }catch(e){ /* transient error — try again next tick */ }
 }
 
 // ── data state ──────────────────────────────────────────────────────
@@ -517,12 +540,13 @@ async function boot(){
     const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=active,role,client_id,clients(company_name)`, { headers: hdrs });
     if (!r.ok) throw new Error('lookup failed');
     const rows = await r.json();
-    if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return; }
+    if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); startAccessPoll(); return; }
     CLIENT_ID = rows[0].client_id;
     PORTAL_ROLE = rows[0].role || 'client_user';
     COMPANY = (rows[0].clients && rows[0].clients.company_name) || '';
+    stopAccessPoll();
   }catch(e){
-    hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return;
+    hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); startAccessPoll(); return;
   }
   hideAllAuth();
   document.getElementById('app').classList.add('show');

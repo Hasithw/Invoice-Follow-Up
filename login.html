@@ -303,7 +303,7 @@ nav.links-mobile a{text-decoration:none;color:var(--text);font-size:15px;padding
 <div class="auth-wrap hidden" id="noAccessScreen">
   <div class="auth-card">
     <div class="auth-logo"><div class="auth-logo-icon">A</div><div><div class="auth-title">Access Pending</div></div></div>
-    <div class="auth-error">Your account exists but hasn't been approved for portal access yet — this is normal right after signing up. If you just requested access, check back soon; otherwise contact Auwion.</div>
+    <div class="auth-error">Your account exists but hasn't been approved for portal access yet — this is normal right after signing up. Leave this page open — the Client Portal will load automatically the moment it's approved, no need to sign in again. If it's been a while, contact Auwion.</div>
     <button class="btn" onclick="logout()">Back to Sign In</button>
   </div>
 </div>
@@ -532,9 +532,32 @@ function showSignup(){ hideAllAuth(); document.getElementById('signupScreen').cl
 function hideAllAuth(){ ['loginScreen','forgotScreen','resetScreen','noAccessScreen','signupScreen','signupReceivedScreen'].forEach(id=>document.getElementById(id).classList.add('hidden')); }
 
 function logout(){
+  stopAccessPoll();
   clearSession();
   document.getElementById('app').classList.remove('show');
   showLogin();
+}
+
+// ── Auto sign-in once a pending signup gets approved ────────────────────
+// A session is already saved at this point (the person entered their
+// email/password correctly) — they just don't have an active
+// client_accounts row yet. So instead of making them keep coming back and
+// signing in again to check, quietly re-check every few seconds while
+// they're sitting on the "Access Pending" screen, and the moment Auwion
+// approves the account, finish loading the Client Portal automatically.
+let _accessPollTimer = null;
+function stopAccessPoll(){ if (_accessPollTimer) { clearInterval(_accessPollTimer); _accessPollTimer = null; } }
+function startAccessPoll(){ stopAccessPoll(); _accessPollTimer = setInterval(checkAccessApproval, 5000); }
+async function checkAccessApproval(){
+  const hdrs = await authHeaders();
+  if (!hdrs) { stopAccessPoll(); return; } // session expired — they'll need to sign in again
+  try{
+    const s = getSession();
+    const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=company_name,active`, { headers: hdrs });
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (rows.length && rows[0].active !== false) { stopAccessPoll(); await boot(); }
+  }catch(e){ /* transient error — try again next tick */ }
 }
 
 // ── data state ──────────────────────────────────────────────────────
@@ -550,10 +573,11 @@ async function boot(){
     const r = await fetch(`${SB_URL}/rest/v1/client_accounts?id=eq.${s.user_id}&select=company_name,active`, { headers: hdrs });
     if (!r.ok) throw new Error('lookup failed');
     const rows = await r.json();
-    if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return; }
+    if (!rows.length || rows[0].active === false) { hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); startAccessPoll(); return; }
     COMPANY = rows[0].company_name;
+    stopAccessPoll();
   }catch(e){
-    hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); return;
+    hideAllAuth(); document.getElementById('noAccessScreen').classList.remove('hidden'); startAccessPoll(); return;
   }
   // Login verified (active client account) — hand off to the external
   // client portal instead of rendering the built-in board on this page.

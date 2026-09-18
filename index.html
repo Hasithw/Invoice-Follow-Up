@@ -243,7 +243,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 
     <div id="authPendingScreen" style="display:none">
       <div class="auth-title">Request submitted</div>
-      <p style="font-size:13px;color:var(--t2);line-height:1.6;margin:0">Your account has been created but needs approval from a Super Admin before you can sign in. You'll be able to log in as soon as it's approved.</p>
+      <p style="font-size:13px;color:var(--t2);line-height:1.6;margin:0 0 10px">Your account has been created but needs approval from a Super Admin before you can sign in. Leave this page open — as soon as it's approved you'll be signed in and taken straight to the Client Portal, no need to log in again.</p>
       <button class="btn" style="width:100%" onclick="showAuthForm('login')">Back to Sign In</button>
     </div>
 
@@ -1179,6 +1179,82 @@ function showAuthForm(which){
   const fs = document.getElementById('authForgotSuccess'); if (fs) { fs.style.display='none'; fs.textContent=''; }
   document.getElementById('authOverlay').style.display='flex';
   document.getElementById('appRoot').classList.remove('show');
+  // Leaving the pending screen (back to sign-in, deactivated, etc.) always
+  // cancels any in-flight approval poll — see startPendingApprovalPoll().
+  if (which !== 'pending') stopPendingApprovalPoll();
+}
+
+// ── Auto sign-in once a pending Client Admin gets approved ─────────────
+// While authPendingScreen is showing, we already hold a valid (if
+// unapproved) Supabase session for this user from the sign-in attempt
+// that got them here. Rather than making them come back and type their
+// email/password again, we quietly re-check their admin_profiles row
+// every few seconds and, the moment a Super Admin approves them, finish
+// signing them in automatically and drop them straight on the Client
+// Portal tab (see applyRoleUI()) — no re-entry of credentials needed.
+let _pendingApprovalAuth = null;
+let _pendingApprovalTimer = null;
+
+function stopPendingApprovalPoll(){
+  if (_pendingApprovalTimer) { clearInterval(_pendingApprovalTimer); _pendingApprovalTimer = null; }
+  _pendingApprovalAuth = null;
+}
+
+function startPendingApprovalPoll(auth){
+  stopPendingApprovalPoll();
+  _pendingApprovalAuth = auth;
+  _pendingApprovalTimer = setInterval(checkPendingApproval, 5000);
+}
+
+// Keeps the held-onto access token alive for as long as someone might
+// leave this tab open waiting for approval. expires_at of 0 (used when we
+// don't know the real expiry — e.g. restoring across a page reload) just
+// forces an immediate refresh on the next tick.
+async function ensurePendingAuthFresh(){
+  const a = _pendingApprovalAuth;
+  if (!a) return null;
+  if (Date.now() < (a.expires_at - 30000)) return a;
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body: JSON.stringify({ refresh_token: a.refresh_token })
+    });
+    if (!r.ok) { stopPendingApprovalPoll(); return null; }
+    const d = await r.json();
+    a.access_token = d.access_token; a.refresh_token = d.refresh_token;
+    a.expires_at = Date.now() + (d.expires_in*1000);
+    return a;
+  }catch(e){ return a; /* transient network hiccup — try again next tick */ }
+}
+
+async function checkPendingApproval(){
+  const auth = await ensurePendingAuthFresh();
+  if (!auth) return; // session died (e.g. refresh token expired) — they'll need to sign in again
+  try{
+    const hdrs = { 'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+auth.access_token };
+    const r = await fetch(`${SB_URL}/rest/v1/admin_profiles?id=eq.${auth.user_id}&select=*`, { headers: hdrs });
+    if (!r.ok) return;
+    const rows = await r.json();
+    const profile = rows[0];
+    if (!profile) return;
+    if (!profile.active) { stopPendingApprovalPoll(); showAuthForm('deactivated'); return; }
+    if (!profile.approved) return; // still waiting — check again next tick
+    // Approved! Complete the sign-in with the token we already have and
+    // go straight into the app — the user never has to type anything again.
+    stopPendingApprovalPoll();
+    setAdminSession({
+      access_token: auth.access_token, refresh_token: auth.refresh_token,
+      user_id: auth.user_id, email: auth.email, role: profile.role, full_name: profile.full_name||''
+    });
+    try {
+      localStorage.setItem('techstar_portal_session', JSON.stringify({
+        access_token: auth.access_token, refresh_token: auth.refresh_token,
+        user_id: auth.user_id, expires_at: auth.expires_at
+      }));
+    } catch(e){}
+    showToast('Account approved — welcome!','green');
+    enterApp();
+  }catch(e){ /* transient error — try again next tick */ }
 }
 
 // Looks up this user's admin_profiles row; if this is the very first time
@@ -1215,7 +1291,16 @@ async function doAdminLogin(){
     if (!r.ok) throw new Error(data.error_description || data.msg || 'Invalid email or password');
     const profile = await fetchOrCreateProfile(data.user.id, email, data.access_token);
     if (!profile || !profile.active) { showAuthForm('deactivated'); return; }
-    if (!profile.approved) { showAuthForm('pending'); return; }
+    if (!profile.approved) {
+      showAuthForm('pending');
+      // Keep the session we already have and quietly wait for a Super
+      // Admin to approve it — see startPendingApprovalPoll().
+      startPendingApprovalPoll({
+        access_token: data.access_token, refresh_token: data.refresh_token,
+        user_id: data.user.id, email, expires_at: Date.now() + (data.expires_in*1000)
+      });
+      return;
+    }
     setAdminSession({
       access_token: data.access_token, refresh_token: data.refresh_token,
       user_id: data.user.id, email, role: profile.role, full_name: profile.full_name||''
@@ -1396,7 +1481,18 @@ async function tryRestoreSession(){
     const rows = await r.json();
     const profile = rows[0];
     if (!profile || !profile.active) { clearAdminSession(); showAuthForm('deactivated'); return; }
-    if (!profile.approved) { clearAdminSession(); showAuthForm('pending'); return; }
+    if (!profile.approved) {
+      showAuthForm('pending');
+      // We don't know this stored token's exact remaining lifetime, so
+      // expires_at:0 forces an immediate refresh on the first poll tick
+      // to get an accurate one — see ensurePendingAuthFresh().
+      startPendingApprovalPoll({
+        access_token: s.access_token, refresh_token: s.refresh_token,
+        user_id: s.user_id, email: s.email, expires_at: 0
+      });
+      clearAdminSession();
+      return;
+    }
     setAdminSession({ ...s, role: profile.role, full_name: profile.full_name||'' });
     enterApp();
   }catch(e){
