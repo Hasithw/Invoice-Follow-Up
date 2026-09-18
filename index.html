@@ -6,6 +6,7 @@
 <title>Auwion Admin</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=swap');
 :root{
   --bg:#f0f4f8;--surface:#ffffff;--s2:#f1f5f9;--s3:#e8edf4;
   --border:#dde3ec;--b2:#c8d1de;
@@ -213,6 +214,29 @@ html.restoring #restoreLoader{display:flex;position:fixed;inset:0;z-index:2500;b
 html.restoring #restoreLoader .ld-spin{width:38px;height:38px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:ldspin .8s linear infinite}
 @keyframes ldspin{to{transform:rotate(360deg)}}
 html.restoring #authOverlay{display:none!important}
+
+/* ── Auwion website header, shown on the sign-in page only ── */
+.auth-overlay{align-items:flex-start;overflow-y:auto;padding-top:104px}
+.auth-overlay .auth-card{margin:auto}
+.aw-site{--aw-navy:#15024C;--aw-teal:#0FA898;--aw-grad:linear-gradient(90deg,var(--aw-navy),var(--aw-teal));--aw-soft:rgba(16,20,43,.07);
+  position:fixed;top:0;left:0;right:0;z-index:2;background:rgba(246,248,252,.94);backdrop-filter:saturate(140%) blur(10px);
+  -webkit-backdrop-filter:saturate(140%) blur(10px);border-bottom:1px solid var(--aw-soft);font-family:Inter,sans-serif}
+.aw-wrap{max-width:1456px;margin:0 auto;padding:0 28px}
+.aw-nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.aw-wordmark{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;text-decoration:none;color:#0f172a}
+.aw-wordmark span{background:var(--aw-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.aw-links{display:none;align-items:center;gap:32px}
+.aw-links a{text-decoration:none;font-size:14px;color:#475569;transition:color .15s ease}
+.aw-links a:hover{color:#0f172a}
+.aw-cta{display:none;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#fff;padding:10px 20px;border-radius:100px;text-decoration:none;background:var(--aw-grad);transition:opacity .15s ease,transform .15s ease}
+.aw-cta:hover{opacity:.9;transform:translateY(-1px)}
+.aw-menu-toggle{display:inline-flex;background:none;border:1px solid #dde3ec;border-radius:100px;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;color:#0f172a}
+.aw-mobile{display:none;flex-direction:column;gap:2px;border-top:1px solid var(--aw-soft);padding:10px 0 14px}
+.aw-mobile.open{display:flex}
+.aw-mobile a{text-decoration:none;color:#0f172a;font-size:15px;padding:10px 4px;border-bottom:1px solid var(--aw-soft)}
+@media(min-width:860px){
+  .aw-links{display:flex}.aw-cta{display:inline-flex}.aw-menu-toggle{display:none}.aw-mobile{display:none!important}
+}
 </style>
 <script>
 /* If a saved session exists, hide every sign-in screen until it has been verified (removed again by the app). */
@@ -225,6 +249,32 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
 
 <!-- ════ ADMIN AUTH (Login / Registration) ════ -->
 <div class="auth-overlay" id="authOverlay">
+  <header class="aw-site">
+    <div class="aw-wrap">
+      <div class="aw-nav">
+        <a href="https://www.auwion.com/" class="aw-wordmark" aria-label="Auwion home">AUW<span>I</span>ON</a>
+        <nav class="aw-links">
+          <a href="https://www.auwion.com/">Home</a>
+          <a href="https://www.auwion.com/about-us.html">About Us</a>
+          <a href="https://www.auwion.com/services.html">Services</a>
+          <a href="https://www.auwion.com/articles.html">Articles</a>
+          <a href="https://portal.auwion.com/">Client login</a>
+        </nav>
+        <div style="display:flex;align-items:center;gap:14px">
+          <a href="https://www.auwion.com/contact.html" class="aw-cta">Get in touch</a>
+          <button type="button" class="aw-menu-toggle" id="awMenuToggle" aria-expanded="false" aria-controls="awMobileNav">MENU</button>
+        </div>
+      </div>
+      <nav class="aw-mobile" id="awMobileNav">
+        <a href="https://www.auwion.com/">Home</a>
+        <a href="https://www.auwion.com/about-us.html">About Us</a>
+        <a href="https://www.auwion.com/services.html">Services</a>
+        <a href="https://www.auwion.com/articles.html">Articles</a>
+        <a href="https://portal.auwion.com/">Client login</a>
+        <a href="https://www.auwion.com/contact.html">Get in touch</a>
+      </nav>
+    </div>
+  </header>
   <div class="auth-card">
     <div class="auth-logo"><div style="font-weight:700;font-size:16px">Auwion Admin</div></div>
 
@@ -4907,6 +4957,11 @@ function startApp(){
   // Load fresh data from Supabase (updates UI when done)
   loadFromSupabase();
 }
+(function awHeaderMenu(){
+  const t=document.getElementById('awMenuToggle'), m=document.getElementById('awMobileNav');
+  if(!t||!m) return;
+  t.addEventListener('click',()=>{ const open=m.classList.toggle('open'); t.setAttribute('aria-expanded',open?'true':'false'); t.textContent=open?'CLOSE':'MENU'; });
+})();
 (function checkForRecoveryLink(){
   const hash = window.location.hash;
   if (hash && hash.includes('type=recovery')) {
