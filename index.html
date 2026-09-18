@@ -2120,38 +2120,56 @@ function exportFileBaseName(){
     ? (CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER)?.company_name||'Client').replace(/[^a-z0-9]+/gi,'_')
     : 'AllClients';
 }
-// Project-status filter for the Super Admin's client preview: pick a status to
-// list every ticket in it (oldest month first); "All statuses" shows the board.
+// ── Super Admin's "Client View": the same tabs the client sees ──────────
+// Board · Completed Support · Completed Projects · Pending Payment, plus the
+// project-status dropdown. Everything is drawn from data Super Admin already
+// has loaded for the selected client — no client login and no service key.
 let PORTAL_STATUS_FILTER = '';
-function setPortalStatusFilter(v){ PORTAL_STATUS_FILTER = v || ''; renderSuperAdminBoardPreview(); }
-const MONTH_ORDER_FULL = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-function sortTicketsMonthAsc(list){
-  const mi = m => { const t = String(m||'').trim().toLowerCase(); const i = t ? MONTH_ORDER_FULL.findIndex(n => n===t || n.startsWith(t.slice(0,3))) : -1; return i < 0 ? 99 : i; };
-  return list.slice().sort((a,b)=> (parseInt(a.year,10)||9999)-(parseInt(b.year,10)||9999) || mi(a.month)-mi(b.month));
+let PORTAL_NATIVE_TAB = 'board';   // 'board' | 'func-completed' | 'proj-completed' | 'pending'
+const PORTAL_NATIVE_TABS = [
+  ['board','Board'], ['func-completed','Completed Support'],
+  ['proj-completed','Completed Projects'], ['pending','Pending Payment']
+];
+function setPortalStatusFilter(v){
+  PORTAL_STATUS_FILTER = v || '';
+  if (PORTAL_STATUS_FILTER) PORTAL_NATIVE_TAB = 'board'; // status results show on the Board tab, like the client portal
+  renderSuperAdminBoardPreview();
 }
-function statusResultsHtml(list, statusName){
-  const rows = sortTicketsMonthAsc(list);
-  const th = h => `<th style="text-align:left;padding:8px 12px;background:#eef2f7;color:#334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">${h}</th>`;
+function setPortalNativeTab(t){ PORTAL_NATIVE_TAB = t; renderSuperAdminBoardPreview(); }
+
+const MONTH_ORDER_FULL = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+// Oldest first: by year, then January → December
+function sortItemsMonthAsc(items){
+  const mi = m => { const t = String(m||'').trim().toLowerCase(); const i = t ? MONTH_ORDER_FULL.findIndex(n => n===t || n.startsWith(t.slice(0,3))) : -1; return i < 0 ? 99 : i; };
+  return items.slice().sort((a,b)=> (parseInt(a.t.year,10)||9999)-(parseInt(b.t.year,10)||9999) || mi(a.t.month)-mi(b.t.month));
+}
+// Same columns the client's own list shows
+function nativeTableHtml(items, emptyMsg){
+  const rows = sortItemsMonthAsc(items);
+  const th = h => `<th style="text-align:left;padding:8px 12px;background:#eef2f7;color:#334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`;
+  const td = (v, nowrap) => `<td style="padding:8px 12px;border-bottom:1px solid var(--border);${nowrap?'white-space:nowrap;':''}">${esc(v||'—')}</td>`;
   return `
-    <div style="font-size:14px;font-weight:700;margin-bottom:8px">${esc(statusName)} <span style="font-weight:500;color:var(--t3);font-size:12px">— ${rows.length} request${rows.length===1?'':'s'}</span></div>
-    <div style="overflow:auto;max-height:65vh;border:1px solid var(--border);border-radius:var(--r)">
+    <div style="overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r)">
       <table style="border-collapse:collapse;width:100%;font-size:12.5px">
-        <thead><tr>${['Description','Month','Year','Requester','Completed','Invoice'].map(th).join('')}</tr></thead>
-        <tbody>${rows.length ? rows.map(t=>`<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${esc(t.dev||'—')}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">${esc(t.month||'—')}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${esc(t.year||'—')}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${esc(t.req||'—')}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">${esc(t.comp||'—')}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${esc(t.inv||'—')}</td></tr>`).join('')
-          : `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--t3)">No requests in this status.</td></tr>`}</tbody>
+        <thead><tr>${['Description','Month','Year','Completed Date','Invoice Number','Status'].map(th).join('')}</tr></thead>
+        <tbody>${rows.length ? rows.map(({t,col})=>`<tr>${td(t.dev)}${td(t.month,1)}${td(t.year)}${td(t.comp,1)}${td(t.inv)}${td(col,1)}</tr>`).join('')
+          : `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--t3)">${esc(emptyMsg)}</td></tr>`}</tbody>
       </table>
     </div>`;
 }
+// Support table + Projects table for a set of items
+function nativeSectionsHtml(items, what){
+  const sec = (label, cat) => {
+    const list = items.filter(x=>x.cat===cat);
+    return `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px">${label} (${list.length})</div>` +
+           nativeTableHtml(list, `No ${label.toLowerCase()} ${what}.`);
+  };
+  return sec('Support','func') + sec('Projects','proj');
+}
 
-// Renders the selected client's board natively using the
-// Support+Projects data Super Admin already has loaded, filtered to
-// ACTIVE_CLIENT_FILTER. Needs NO service key — see fetchStatusMapCached().
+// Renders the selected client's portal natively using the Support+Projects
+// data Super Admin already has loaded, filtered to ACTIVE_CLIENT_FILTER.
+// Needs NO service key — see fetchStatusMapCached().
 async function renderSuperAdminBoardPreview(){
   const box = document.getElementById('superadmin-native-board');
   if (!box) return;
@@ -2170,14 +2188,20 @@ async function renderSuperAdminBoardPreview(){
   box.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Loading…</div>';
   const map = await fetchStatusMapCached();
   const client = CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER);
-  const tickets = [...VF(), ...VFD(), ...VP(), ...VPD()]; // ALL tickets for this client — the real client board shows everything (including Finished), not just active items
-  const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
-  tickets.forEach(t=>{
+  // ALL of this client's tickets — the real client portal shows everything (including Finished).
+  // Each carries its category (Support / Projects) and the client-facing status column.
+  const items = [];
+  const addAll = (arr, cat) => arr.forEach(t=>{
     const m = map[t.status];
     if (m && m.hidden) return; // hidden statuses never shown to clients
-    const helpdesk = (m && m.helpdesk_status) || KANBAN_COLUMNS_ADMIN[0];
-    (cols[helpdesk] || cols[KANBAN_COLUMNS_ADMIN[0]]).push(t);
+    let col = (m && m.helpdesk_status) || KANBAN_COLUMNS_ADMIN[0];
+    if (!KANBAN_COLUMNS_ADMIN.includes(col)) col = KANBAN_COLUMNS_ADMIN[0];
+    items.push({ t, cat, col });
   });
+  addAll([...VF(), ...VFD()], 'func'); addAll([...VP(), ...VPD()], 'proj');
+  const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
+  items.forEach(x=>cols[x.col].push(x.t));
+
   const boardHtml = `
     <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px">
       ${KANBAN_COLUMNS_ADMIN.map(colName=>`
@@ -2195,17 +2219,43 @@ async function renderSuperAdminBoardPreview(){
         </div>
       `).join('')}
     </div>`;
+
+  // Body of whichever tab is open
+  let body;
+  const tab = PORTAL_NATIVE_TAB;
+  if (tab === 'board' && PORTAL_STATUS_FILTER && cols[PORTAL_STATUS_FILTER]) {
+    const sel = items.filter(x=>x.col===PORTAL_STATUS_FILTER);
+    body = `<div style="font-size:14px;font-weight:700">${esc(PORTAL_STATUS_FILTER)} <span style="font-weight:500;color:var(--t3);font-size:12px">— ${sel.length} request${sel.length===1?'':'s'}</span></div>`
+         + nativeSectionsHtml(sel, 'in this status');
+  } else if (tab === 'func-completed') {
+    body = `<div style="font-size:14px;font-weight:700;margin-bottom:8px">Completed Support</div>` +
+           nativeTableHtml(items.filter(x=>x.cat==='func' && x.col==='Finished'), 'No completed support requests yet.');
+  } else if (tab === 'proj-completed') {
+    body = `<div style="font-size:14px;font-weight:700;margin-bottom:8px">Completed Projects</div>` +
+           nativeTableHtml(items.filter(x=>x.cat==='proj' && x.col==='Finished'), 'No completed projects yet.');
+  } else if (tab === 'pending') {
+    body = `<div style="font-size:14px;font-weight:700">Pending Payment</div>` +
+           nativeSectionsHtml(items.filter(x=>x.col==='Pending Payment'), 'pending payment');
+  } else {
+    body = boardHtml;
+  }
+
+  const tabBtn = ([id,label]) => {
+    const on = tab === id;
+    return `<button onclick="setPortalNativeTab('${id}')" style="padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid ${on?'var(--border)':'transparent'};border-bottom:${on?'1px solid var(--surface)':'1px solid transparent'};margin-bottom:-1px;border-radius:8px 8px 0 0;background:${on?'var(--surface)':'transparent'};color:${on?'var(--accent)':'var(--t2)'}">${label}</button>`;
+  };
   box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-      <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s board <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s portal <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
       <select onchange="setPortalStatusFilter(this.value)" title="Show all requests in a project status" style="margin-left:auto;padding:6px 10px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);max-width:230px">
         <option value="">All statuses</option>
         ${KANBAN_COLUMNS_ADMIN.map(c=>`<option value="${esc(c)}" ${PORTAL_STATUS_FILTER===c?'selected':''}>${esc(c)} (${cols[c].length})</option>`).join('')}
       </select>
       <button class="btn btn-sm" onclick="viewAllClients()">✕ Choose a different client</button>
     </div>
-    ${STATUS_MAP_IS_FALLBACK ? '<div style="font-size:11px;color:var(--t3);margin:-4px 0 10px">Columns use the built-in default status mapping. To reflect a customised mapping exactly, paste your service role key under ⚙ Admin Settings.</div>' : ''}
-    ${PORTAL_STATUS_FILTER && cols[PORTAL_STATUS_FILTER] ? statusResultsHtml(cols[PORTAL_STATUS_FILTER], PORTAL_STATUS_FILTER) : boardHtml}`;
+    <div style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow-x:auto">${PORTAL_NATIVE_TABS.map(tabBtn).join('')}</div>
+    ${STATUS_MAP_IS_FALLBACK ? '<div style="font-size:11px;color:var(--t3);margin:-4px 0 10px">Statuses use the built-in default mapping. To reflect a customised mapping exactly, paste your service role key under ⚙ Admin Settings.</div>' : ''}
+    ${body}`;
 }
 
 // Same as viewClientDashboard, but stays on the Client Portal tab instead
