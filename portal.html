@@ -158,9 +158,21 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
 @media(max-width:640px){
   #toast{left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:none;text-align:center}
 }
+
+/* ── no login-screen flash while a saved session is being verified ── */
+#bootLoader{display:none}
+html.booting #bootLoader{display:flex;position:fixed;inset:0;z-index:3000;background:#f0f4f8;align-items:center;justify-content:center;flex-direction:column;gap:14px;font:500 14px Inter,system-ui,sans-serif;color:#475569}
+html.booting #bootLoader .ld-spin{width:38px;height:38px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:ldspin .8s linear infinite}
+@keyframes ldspin{to{transform:rotate(360deg)}}
+html.booting .auth-wrap{display:none!important}
 </style>
+<script>
+/* If a saved session exists, hide every sign-in screen until it has been verified (removed again by the app). */
+try{ if(localStorage.getItem('techstar_portal_session') && location.hash.indexOf('type=recovery')<0) document.documentElement.classList.add('booting'); }catch(e){}
+</script>
 </head>
 <body>
+<div id="bootLoader"><div class="ld-spin"></div><div>Loading your portal…</div></div>
 
 <!-- ══════════════════ LOGIN ══════════════════ -->
 <div class="auth-wrap" id="loginScreen">
@@ -796,7 +808,11 @@ document.getElementById('navTabs').addEventListener('click', (e)=>{
     }
   }
   const s = getSession();
-  if (s) { boot(); } else { showLogin(); }
+  if (s) {
+    const done = () => document.documentElement.classList.remove('booting');
+    boot().then(done, done);
+    setTimeout(done, 15000); // never leave the loader up if something hangs
+  } else { showLogin(); }
 })();
 </script>
 </body>

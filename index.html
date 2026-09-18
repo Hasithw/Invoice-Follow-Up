@@ -206,9 +206,22 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
 .calc-strip{background:#f8fafc;border-color:#dde3ec}
 /* overdue flag */
 .table-row.overdue-flag{border-left:3px solid #dc2626;background:#fff5f5}
+
+/* ── no login-screen flash while a saved session is being verified ── */
+#restoreLoader{display:none}
+html.restoring #restoreLoader{display:flex;position:fixed;inset:0;z-index:2500;background:#f4f6f9;align-items:center;justify-content:center;flex-direction:column;gap:14px;font:500 14px Inter,system-ui,sans-serif;color:#475569}
+html.restoring #restoreLoader .ld-spin{width:38px;height:38px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:ldspin .8s linear infinite}
+@keyframes ldspin{to{transform:rotate(360deg)}}
+html.restoring #authOverlay{display:none!important}
 </style>
+<script>
+/* If a saved session exists, hide every sign-in screen until it has been verified (removed again by the app). */
+try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf('type=recovery')<0) document.documentElement.classList.add('restoring'); }catch(e){}
+</script>
 </head>
 <body>
+<div id="restoreLoader"><div class="ld-spin"></div><div>Loading…</div></div>
+
 
 <!-- ════ ADMIN AUTH (Login / Registration) ════ -->
 <div class="auth-overlay" id="authOverlay">
@@ -833,7 +846,7 @@ input[type="date"].dp-input{cursor:pointer;color-scheme:light}
          no client is selected). ══ -->
     <div id="portal-client-pane" style="display:flex;flex-direction:column;gap:10px">
       <div id="superadmin-native-board" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px"></div>
-      <iframe id="portal-preview-iframe" src="portal.html" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:var(--rlg);background:#f0f4f8" title="Client Portal Preview"></iframe>
+      <iframe id="portal-preview-iframe" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:var(--rlg);background:#f0f4f8" title="Client Portal Preview"></iframe>
     </div>
 
     <!-- ══ ADMIN SETTINGS: manage logins, requesters, status mapping ══ -->
@@ -1423,6 +1436,10 @@ function openChangePasswordModal(){
 
 function doAdminLogout(){
   clearAdminSession();
+  // Also end the bridged portal session, otherwise portal.html would keep the previous client signed in
+  try{ localStorage.removeItem('techstar_portal_session'); }catch(e){}
+  const f = document.getElementById('portal-preview-iframe');
+  if (f) { delete f.dataset.loaded; f.src = 'about:blank'; }
   showAuthForm('login');
 }
 
@@ -2013,8 +2030,9 @@ function showPortalSubTab(which) {
     } else {
       nativeBox.style.display = 'none';
       iframe.style.display = 'block';
-      // Reload the iframe so it always starts fresh at the login screen
-      iframe.src = 'portal.html?_=' + Date.now();
+      // Load the embedded portal once per sign-in. (It used to be re-assigned on every
+      // tab switch / startup step, so it reloaded 2-3 times and flashed its login card.)
+      if (!iframe.dataset.loaded) { iframe.dataset.loaded = '1'; iframe.src = 'portal.html?_=' + Date.now(); }
     }
   } else {
     clientPane.style.display = 'none'; adminPane.style.display = 'flex';
@@ -2784,7 +2802,7 @@ function parseRow(table, row) {
 
 // ── Load all data from Supabase ────────────────────────────────────
 async function loadFromSupabase() {
-  showLoader(true);
+  if (!isClientAdmin()) showLoader(true); // Client Admin only sees the embedded portal, which has its own loader
   try {
     const [funcRows, projRows, soActive, soArch, noteRows, clientRows] = await Promise.all([
       sbGet('support'), sbGet('projects'),
@@ -4900,7 +4918,9 @@ function startApp(){
       return;
     }
   }
-  tryRestoreSession();
+  const doneRestoring = () => document.documentElement.classList.remove('restoring');
+  tryRestoreSession().then(doneRestoring, doneRestoring);
+  setTimeout(doneRestoring, 12000); // never leave the loader up if something hangs
 })();
 </script>
 </body>
