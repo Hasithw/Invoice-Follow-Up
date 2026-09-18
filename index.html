@@ -1440,6 +1440,12 @@ function applyRoleUI(){
   });
   const adminSubBtn = document.getElementById('portal-subtab-btn-admin');
   if (adminSubBtn) adminSubBtn.style.display = clientAdmin ? 'none' : '';
+  // Client Admin's single nav button is the Auwion home link (Super Admin keeps "Client Portal")
+  const portalNavTab = document.querySelector('.nav-tab[data-tab="portal"]');
+  if (portalNavTab) {
+    portalNavTab.textContent = clientAdmin ? 'Auwion' : 'Client Portal';
+    portalNavTab.title = clientAdmin ? 'Go to the Auwion website' : '';
+  }
   // Client Admin has no Export button
   const exportBtnEl = document.getElementById('exportBtn');
   if (exportBtnEl) exportBtnEl.style.display = clientAdmin ? 'none' : '';
@@ -4149,8 +4155,12 @@ function switchTab(t){
   document.querySelector('.body').classList.remove('with-sidebar');
 }
 
+const AUWION_SITE_URL = 'https://www.auwion.com/';
 document.getElementById('navTabs').addEventListener('click',e=>{
-  const tab=e.target.closest('[data-tab]'); if(tab) switchTab(tab.dataset.tab);
+  const tab=e.target.closest('[data-tab]'); if(!tab) return;
+  // For Client Admin the only button is "Auwion" → go to the Auwion website's home page
+  if (isClientAdmin() && tab.dataset.tab==='portal') { window.location.href = AUWION_SITE_URL; return; }
+  switchTab(tab.dataset.tab);
 });
 
 // ══════════════════════════════════════════════════════════════════════
