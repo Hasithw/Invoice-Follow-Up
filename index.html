@@ -3372,7 +3372,7 @@ function plainBadge(val,cls){ return `<span class="badge ${cls}">${val||'—'}</
 // in — everything else in that field keeps the field's normal color.
 const PROJECT_STATUS_RED = ['Payment Dispute','Pending Payment','With Developer'];
 const CLIENT_PAY_RED     = ['Customer NOT Paid','Invoice NOT Sent'];
-const DEV_PAY_RED        = ['Developer NOT Paid'];
+const DEV_PAY_RED        = ['Developer NOT Paid','Not Developer Task'];
 function statusBadge(val,redList,baseCls){
   return `<span class="badge ${redList.includes(val)?'b-red':baseCls}">${val||'—'}</span>`;
 }
