@@ -2232,27 +2232,34 @@ function exportFileBaseName(){
 // Each entry's `order` avoids sorting by created_at on tables that don't
 // have that column (client_requesters has no created_at; helpdesk_status_map
 // uses updated_at instead).
+// `needsServiceKey`: client_accounts, client_requesters and helpdesk_status_map
+// revoke direct SELECT from the authenticated role (see client-portal-setup.sql)
+// — the admin UI already reads them elsewhere via the pasted service role key
+// (portalSbHeaders), so the backup must do the same or it hits a 42501
+// "permission denied" error using the signed-in session's own token.
 const FULL_BACKUP_TABLES = [
   { table:'clients',             sheet:'Clients',              order:'company_name.asc' },
-  { table:'client_accounts',     sheet:'Client Logins',        order:'email.asc' },
-  { table:'client_requesters',   sheet:'Client Requesters',    order:'company_name.asc,requester_name.asc' },
+  { table:'client_accounts',     sheet:'Client Logins',        order:'email.asc', needsServiceKey:true },
+  { table:'client_requesters',   sheet:'Client Requesters',    order:'company_name.asc,requester_name.asc', needsServiceKey:true },
   { table:'support',             sheet:'Support',              order:'created_at.asc' },
   { table:'projects',            sheet:'Projects',             order:'created_at.asc' },
   { table:'setoff_active',       sheet:'Set Off Active',       order:'created_at.asc' },
   { table:'setoff_archived',     sheet:'Set Off Archived',     order:'created_at.asc' },
   { table:'project_notes',       sheet:'Notes',                order:'created_at.asc' },
-  { table:'helpdesk_status_map', sheet:'Status Mapping',       order:'internal_status.asc' },
+  { table:'helpdesk_status_map', sheet:'Status Mapping',       order:'internal_status.asc', needsServiceKey:true },
   { table:'admin_profiles',      sheet:'Admin Users',          order:'created_at.asc' },
 ];
 async function exportFullBackup(){
   if (!isSuperAdmin()) { showToast('Only Super Admin can download a full backup','red'); return; }
+  if (FULL_BACKUP_TABLES.some(t=>t.needsServiceKey) && !requireServiceKeyOrFocus('Paste your Supabase service role key first — it\'s needed to back up Client Logins, Client Requesters and Status Mapping')) return;
   const btn = document.getElementById('fullBackupBtn');
   const status = document.getElementById('fullBackupStatus');
   btn.disabled = true; btn.textContent = 'Preparing backup…';
   try{
     const X = await loadSheetJS();
     const results = await Promise.all(FULL_BACKUP_TABLES.map(async t=>{
-      const r = await fetch(`${SB_URL}/rest/v1/${t.table}?select=*&order=${t.order}`, { headers: authedHdrs() });
+      const headers = t.needsServiceKey ? portalSbHeaders() : authedHdrs();
+      const r = await fetch(`${SB_URL}/rest/v1/${t.table}?select=*&order=${t.order}`, { headers });
       if (!r.ok) throw new Error(`${t.table}: ${await r.text()}`);
       return { ...t, rows: await r.json() };
     }));
