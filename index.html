@@ -521,7 +521,7 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
         <div class="table-header" style="grid-template-columns:1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 150px">
           <div class="th">Description</div><div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
-          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
+          <div class="th">Completed Date</div><div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Pay Status</div>
           <div class="th">Invoice Number</div>
         </div>
         <div id="func-body"></div>
@@ -548,7 +548,7 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
           <div class="th">Requester</div>
           <div class="th">Est Func Hrs</div><div class="th">Act Func Hrs</div><div class="th">Est Dev Hrs</div><div class="th">Act Dev Hrs</div>
           <div class="th">Completed Date</div>
-          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Payment</div>
+          <div class="th">Project Status</div><div class="th">Dev Pay Status</div><div class="th">Client Pay Status</div>
           <div class="th">Invoice Number</div>
         </div>
         <div id="proj-body"></div>
@@ -665,7 +665,7 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
     <!-- Year filter -->
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="font-size:13px;font-weight:600;color:var(--text)">NCF — Net Cash Flow</div>
-      <div style="font-size:11px;color:var(--t3)">Cash basis: revenue counted only when Client Payment = Customer Paid · dev cost counted only when Dev Pay Status = Developer Paid</div>
+      <div style="font-size:11px;color:var(--t3)">Cash basis: revenue counted only when Client Pay Status = Customer Paid · dev cost counted only when Dev Pay Status = Developer Paid</div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <div style="font-size:12px;color:var(--t2)">Filter by year:</div>
         <select id="ncf-year-filter" onchange="renderNCF()"
@@ -3130,11 +3130,11 @@ async function removeAdminUser(id, email){
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// EDITABLE STATUS LISTS (Project Status / Client Payment / Dev Pay Status)
+// EDITABLE STATUS LISTS (Project Status / Client Pay Status / Dev Pay Status)
 // ══════════════════════════════════════════════════════════════════════
 const STATUS_LIST_DEFS = [
   { key:'statuses',          arr:()=>STATUSES,   label:'Project Status',  hint:'Used for the Project Status field on Dev, Func and Project tickets' },
-  { key:'clientPayStatuses', arr:()=>CLIENT_PAY,  label:'Client Payment',  hint:'Used for the Client Payment field on Dev, Func and Project tickets' },
+  { key:'clientPayStatuses', arr:()=>CLIENT_PAY,  label:'Client Pay Status',  hint:'Used for the Client Pay Status field on Dev, Func and Project tickets' },
   { key:'devPayStatuses',    arr:()=>DEV_PAY,     label:'Dev Pay Status',  hint:'Used for the Dev Pay Status field on Dev and Project tickets' },
 ];
 // Tracks which row index (if any) is currently being edited / pending delete-confirm, per list.
@@ -3364,6 +3364,10 @@ function badge(val,pos,neg){
   const ok=pos.some(p=>val&&val.includes(p));
   return `<span class="badge ${ok?'b-green':neg||'b-red'}">${val||'—'}</span>`;
 }
+// Fixed-color badges: unlike badge() above, these ignore the specific value and
+// always render the same color for a given column — Project Status is always
+// orange, Dev Pay Status always green, Client Pay Status always red.
+function plainBadge(val,cls){ return `<span class="badge ${cls}">${val||'—'}</span>`; }
 function mtag(d){ return d.month?`<span class="month-tag">${d.month.substring(0,3).toUpperCase()}</span>`:''; }
 
 // Precise check for "client hasn't paid" — matches ONLY the exact unpaid status text,
@@ -3383,9 +3387,9 @@ function rowFunc(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
-      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+      <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+      <div class="td">${plainBadge(d.devpay,'b-green')}</div>
+      <div class="td">${plainBadge(d.clipay,'b-red')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
       <div class="td mono">${fmt(c.invFull)}</div>
       <div class="td mono green">${fmt(c.profit)}</div>
@@ -3402,9 +3406,9 @@ function rowFunc(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
-    <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-    <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+    <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+    <div class="td">${plainBadge(d.devpay,'b-green')}</div>
+    <div class="td">${plainBadge(d.clipay,'b-red')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
 }
@@ -3418,9 +3422,9 @@ function rowProj(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${badge(d.status,['Finished'],'b-yellow')}</div>
-      <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-      <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+      <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+      <div class="td">${plainBadge(d.devpay,'b-green')}</div>
+      <div class="td">${plainBadge(d.clipay,'b-red')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
       <div class="td mono">${fmt(c.invFull)}</div>
       <div class="td mono green">${fmt(c.profit)}</div>
@@ -3437,9 +3441,9 @@ function rowProj(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${badge(d.status,['Pending Payment'],'b-yellow')}</div>
-    <div class="td">${badge(d.devpay,['Developer Paid'],'b-yellow')}</div>
-    <div class="td">${badge(d.clipay,['Customer Paid'],'b-red')}</div>
+    <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+    <div class="td">${plainBadge(d.devpay,'b-green')}</div>
+    <div class="td">${plainBadge(d.clipay,'b-red')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
   </div>`;
 }
@@ -3727,7 +3731,7 @@ function renderProfit(){
 
 // ══════════════════════════════════════════════════════════════════════
 // NCF (NET CASH FLOW) — same layout as Profit, but cash-basis figures:
-// revenue only counts once Client Payment = Customer Paid, and dev cost
+// revenue only counts once Client Pay Status = Customer Paid, and dev cost
 // only counts once Dev Pay Status = Developer Paid.
 // ══════════════════════════════════════════════════════════════════════
 function renderNCF(){
@@ -3891,7 +3895,7 @@ const SCHEMAS={
     {key:'comp',label:'Completed Date',type:'date'},
     {key:'status',label:'Project Status',type:'select',options:STATUSES},
     {key:'devpay',label:'Dev Pay Status',type:'select',options:DEV_PAY},
-    {key:'clipay',label:'Client Payment',type:'select',options:CLIENT_PAY},
+    {key:'clipay',label:'Client Pay Status',type:'select',options:CLIENT_PAY},
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
   proj:[
@@ -3905,7 +3909,7 @@ const SCHEMAS={
     {key:'comp',label:'Completed Date',type:'date'},
     {key:'status',label:'Project Status',type:'select',options:STATUSES},
     {key:'devpay',label:'Dev Pay Status',type:'select',options:DEV_PAY},
-    {key:'clipay',label:'Client Payment',type:'select',options:CLIENT_PAY},
+    {key:'clipay',label:'Client Pay Status',type:'select',options:CLIENT_PAY},
     {key:'inv',label:'Invoice Number',type:'text'},
   ],
 };
