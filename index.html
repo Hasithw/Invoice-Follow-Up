@@ -395,6 +395,22 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
       <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
+        Full Data Backup
+        <span style="font-size:11px;font-weight:400;color:var(--t3);margin-left:8px">Downloads every table in the database as one Excel file, one tab per table</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div class="info-bar" style="align-items:flex-start">
+          <span>⚡ Includes Support, Projects, Clients, Client Logins, Client Requesters, Notes, Set Off (Active &amp; Archived), the Help Desk Status Mapping, and Super Admin/Client Admin users — every table, exactly as stored, with no filtering by client.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="fullBackupBtn" onclick="exportFullBackup()">⬇ Download Full Backup (.xlsx)</button>
+          <span id="fullBackupStatus" style="font-size:12px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+      <div style="padding:14px 20px;background:#eef2f7;border-bottom:2px solid var(--b2);font-size:13px;font-weight:700;color:#334155;letter-spacing:.03em">
         Add New Company
       </div>
       <div style="padding:20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:640px">
@@ -2209,6 +2225,67 @@ function exportFileBaseName(){
   return ACTIVE_CLIENT_FILTER
     ? (CLIENTS.find(c=>c.id===ACTIVE_CLIENT_FILTER)?.company_name||'Client').replace(/[^a-z0-9]+/gi,'_')
     : 'AllClients';
+}
+
+// ── Full Data Backup (Super Admin panel): every table in the database,
+// raw and unfiltered by client, as one .xlsx with one tab per table.
+// Each entry's `order` avoids sorting by created_at on tables that don't
+// have that column (client_requesters has no created_at; helpdesk_status_map
+// uses updated_at instead).
+const FULL_BACKUP_TABLES = [
+  { table:'clients',             sheet:'Clients',              order:'company_name.asc' },
+  { table:'client_accounts',     sheet:'Client Logins',        order:'email.asc' },
+  { table:'client_requesters',   sheet:'Client Requesters',    order:'company_name.asc,requester_name.asc' },
+  { table:'support',             sheet:'Support',              order:'created_at.asc' },
+  { table:'projects',            sheet:'Projects',             order:'created_at.asc' },
+  { table:'setoff_active',       sheet:'Set Off Active',       order:'created_at.asc' },
+  { table:'setoff_archived',     sheet:'Set Off Archived',     order:'created_at.asc' },
+  { table:'project_notes',       sheet:'Notes',                order:'created_at.asc' },
+  { table:'helpdesk_status_map', sheet:'Status Mapping',       order:'internal_status.asc' },
+  { table:'admin_profiles',      sheet:'Admin Users',          order:'created_at.asc' },
+];
+async function exportFullBackup(){
+  if (!isSuperAdmin()) { showToast('Only Super Admin can download a full backup','red'); return; }
+  const btn = document.getElementById('fullBackupBtn');
+  const status = document.getElementById('fullBackupStatus');
+  btn.disabled = true; btn.textContent = 'Preparing backup…';
+  try{
+    const X = await loadSheetJS();
+    const results = await Promise.all(FULL_BACKUP_TABLES.map(async t=>{
+      const r = await fetch(`${SB_URL}/rest/v1/${t.table}?select=*&order=${t.order}`, { headers: authedHdrs() });
+      if (!r.ok) throw new Error(`${t.table}: ${await r.text()}`);
+      return { ...t, rows: await r.json() };
+    }));
+    const wb = X.utils.book_new();
+    const now = new Date();
+    const summaryRows = results.map(t=>[t.sheet, t.rows.length]);
+    const summaryWs = X.utils.aoa_to_sheet([
+      ['Invoice Follow Up — Full Data Backup'],
+      ['Generated', now.toLocaleString()],
+      [],
+      ['Tab','Row Count'],
+      ...summaryRows,
+    ]);
+    summaryWs['!cols'] = [{wch:24},{wch:14}];
+    X.utils.book_append_sheet(wb, summaryWs, 'Summary');
+    results.forEach(t=>{
+      const ws = t.rows.length ? X.utils.json_to_sheet(t.rows) : X.utils.aoa_to_sheet([['No rows']]);
+      if (t.rows.length) {
+        const cols = Object.keys(t.rows[0]);
+        ws['!cols'] = cols.map(c=>({ wch: Math.max(12, c.length+2) }));
+      }
+      X.utils.book_append_sheet(wb, ws, t.sheet.slice(0,31));
+    });
+    const stamp = now.toISOString().slice(0,10);
+    X.writeFile(wb, `InvoiceFollowUp_FullBackup_${stamp}.xlsx`);
+    showToast('Full backup downloaded ✓','green');
+    status.textContent = 'Last backup: ' + now.toLocaleString();
+  }catch(e){
+    console.error('exportFullBackup:', e);
+    showToast('Backup failed: '+e.message,'red');
+  }finally{
+    btn.disabled = false; btn.textContent = '⬇ Download Full Backup (.xlsx)';
+  }
 }
 // ── Super Admin's "Client View": the same tabs the client sees ──────────
 // Board · Pending Payment, plus the
