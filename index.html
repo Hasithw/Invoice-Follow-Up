@@ -1120,6 +1120,10 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════════════
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+// Extra option offered only in the Month picker (New Project / New Ticket / detail panel),
+// for work that hasn't been scheduled into a month yet. Kept separate from MONTHS itself
+// so charts, monthly totals, and month-index sorting (which all iterate MONTHS) are unaffected.
+const MONTH_SELECT_OPTIONS=['Not Started', ...MONTHS];
 let STATUSES=['With Developer','Client Testing','Prepare Quote/Scope','Approve Quote/Scope','Pending Payment','Finished'];
 let CLIENT_PAY=['Customer NOT Paid','Invoice NOT Sent','Invoice Sent','Customer Paid'];
 let DEV_PAY=['Developer NOT Paid','Developer Paid'];
@@ -1129,7 +1133,35 @@ const PROJ_COLS ='1fr 120px 120px 120px 110px 110px 130px 150px 155px 155px 170p
 
 // Group/sort rows by month (Jan→Dec). Records with no month go last; stable within a month.
 function monthIdx(m){ const i=MONTHS.indexOf(m); return i===-1?99:i; }
+
+// Project Status select: flag "Finished" and "Pending Payment" in red so they
+// stand out as needing invoicing / already awaiting payment. Applied on build
+// and re-applied on every change.
+const STATUS_RED_VALUES=['Finished','Pending Payment'];
+function applyStatusColor(selectEl){
+  if (STATUS_RED_VALUES.includes(selectEl.value)) {
+    selectEl.style.color='var(--red)';
+    selectEl.style.borderColor='var(--red)';
+    selectEl.style.fontWeight='600';
+  } else {
+    selectEl.style.color='';
+    selectEl.style.borderColor='';
+    selectEl.style.fontWeight='';
+  }
+}
 function sortByMonth(arr){ return [...arr].sort((a,b)=>monthIdx(a.month)-monthIdx(b.month)); }
+
+// Same idea, but groups/sorts by month *and* year together — used for the
+// Completed Support / Completed Projects tabs so "January 2025" and
+// "January 2026" show as separate categories instead of being merged.
+function monthYearLabel(d){ const m=d.month||'No Month'; const y=d.year||''; return y?`${m} ${y}`:m; }
+function sortByMonthYear(arr){
+  return [...arr].sort((a,b)=>{
+    const ay=parseInt(a.year)||0, by=parseInt(b.year)||0;
+    if(ay!==by) return ay-by;
+    return monthIdx(a.month)-monthIdx(b.month);
+  });
+}
 
 // Renders rows grouped into sub-sections with a month heading above each group.
 function renderGroupedByMonth(arr, rowFn){
@@ -1154,10 +1186,10 @@ function renderGroupedByMonth(arr, rowFn){
 // aligned under those columns using the same grid-template-columns as the data rows.
 function renderGroupedByMonthWithTotals(arr, rowFn, colsStr, labelSpan, calcFn){
   if (!arr.length) return '';
-  const sorted = sortByMonth(arr);
+  const sorted = sortByMonthYear(arr);
   const groups = [];
   sorted.forEach(d=>{
-    const m = d.month || 'No Month';
+    const m = monthYearLabel(d);
     let g = groups.find(g=>g.month===m);
     if (!g) { g = {month:m, items:[]}; groups.push(g); }
     g.items.push(d);
@@ -3869,7 +3901,7 @@ const SCHEMAS={
   func:[
     {key:'client_id',label:'Client',type:'client-select',wide:true},
     {key:'year',label:'Year',type:'select',options:YEARS},
-    {key:'month',label:'Month',type:'select',options:MONTHS},
+    {key:'month',label:'Month',type:'select',options:MONTH_SELECT_OPTIONS},
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
     {key:'estf',label:'Est Func Hrs',type:'number'},{key:'actf',label:'Act Func Hrs',type:'number'},
@@ -3883,7 +3915,7 @@ const SCHEMAS={
   proj:[
     {key:'client_id',label:'Client',type:'client-select',wide:true},
     {key:'year',label:'Year',type:'select',options:YEARS},
-    {key:'month',label:'Month',type:'select',options:MONTHS},
+    {key:'month',label:'Month',type:'select',options:MONTH_SELECT_OPTIONS},
     {key:'dev',label:'Description',type:'text',wide:true},
     {key:'req',label:'Requester',type:'text'},
     {key:'estf',label:'Est Func Hrs',type:'number'},{key:'actf',label:'Act Func Hrs',type:'number'},
@@ -4024,6 +4056,7 @@ function buildDpField(field,rec){
       if(recVal ? recVal===o : (field.key==='year' && o===CURRENT_YEAR)) opt.selected=true;
       inp.appendChild(opt);
     });
+    if(field.key==='status'){ applyStatusColor(inp); inp.addEventListener('change',()=>applyStatusColor(inp)); }
   } else {
     inp=document.createElement('input'); inp.className='dp-input';
     inp.type=field.type||'text'; inp.value=rec[field.key]||'';
@@ -4138,6 +4171,7 @@ function buildMField(field, rec){
       else if(rec && rec[field.key]===o) opt.selected=true;
       inp.appendChild(opt);
     });
+    if(field.key==='status'){ applyStatusColor(inp); inp.addEventListener('change',()=>applyStatusColor(inp)); }
   } else {
     inp=document.createElement('input'); inp.className='minput'; inp.type=field.type||'text';
     if(rec && rec[field.key]) inp.value=rec[field.key];
