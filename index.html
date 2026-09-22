@@ -3368,6 +3368,13 @@ function badge(val,pos,neg){
 // always render the same color for a given column — Project Status is always
 // orange, Dev Pay Status always green, Client Pay Status always red.
 function plainBadge(val,cls){ return `<span class="badge ${cls}">${val||'—'}</span>`; }
+// Some specific status values always render red, no matter which field they're
+// in — everything else in that field keeps the field's normal color.
+const PROJECT_STATUS_RED = ['Payment Dispute','Pending Payment','With Developer'];
+const CLIENT_PAY_RED     = ['Customer NOT Paid','Invoice NOT Sent'];
+function statusBadge(val,redList,baseCls){
+  return `<span class="badge ${redList.includes(val)?'b-red':baseCls}">${val||'—'}</span>`;
+}
 function mtag(d){ return d.month?`<span class="month-tag">${d.month.substring(0,3).toUpperCase()}</span>`:''; }
 
 // Precise check for "client hasn't paid" — matches ONLY the exact unpaid status text,
@@ -3387,9 +3394,9 @@ function rowFunc(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+      <div class="td">${statusBadge(d.status,PROJECT_STATUS_RED,'b-yellow')}</div>
       <div class="td">${plainBadge(d.devpay,'b-green')}</div>
-      <div class="td">${plainBadge(d.clipay,'b-red')}</div>
+      <div class="td">${statusBadge(d.clipay,CLIENT_PAY_RED,'b-yellow')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
       <div class="td mono">${fmt(c.invFull)}</div>
       <div class="td mono green">${fmt(c.profit)}</div>
@@ -3406,9 +3413,9 @@ function rowFunc(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+    <div class="td">${statusBadge(d.status,PROJECT_STATUS_RED,'b-yellow')}</div>
     <div class="td">${plainBadge(d.devpay,'b-green')}</div>
-    <div class="td">${plainBadge(d.clipay,'b-red')}</div>
+    <div class="td">${statusBadge(d.clipay,CLIENT_PAY_RED,'b-yellow')}</div>
     <div class="td muted">${d.inv||'—'}</div>
   </div>`;
 }
@@ -3422,9 +3429,9 @@ function rowProj(d){
       <div class="td" title="${d.dev}">${d.dev||'—'}</div>
       <div class="td muted">${d.req||'—'}</div>
       <div class="td muted">${d.actf||'—'}</div><div class="td muted">${d.actd||'—'}</div>
-      <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+      <div class="td">${statusBadge(d.status,PROJECT_STATUS_RED,'b-yellow')}</div>
       <div class="td">${plainBadge(d.devpay,'b-green')}</div>
-      <div class="td">${plainBadge(d.clipay,'b-red')}</div>
+      <div class="td">${statusBadge(d.clipay,CLIENT_PAY_RED,'b-yellow')}</div>
       <div class="td mono">${fmt(c.devPmt)}</div>
       <div class="td mono">${fmt(c.invFull)}</div>
       <div class="td mono green">${fmt(c.profit)}</div>
@@ -3441,9 +3448,9 @@ function rowProj(d){
     <div class="td muted">${d.estf||'—'}</div><div class="td muted">${d.actf||'—'}</div>
     <div class="td muted">${d.estd||'—'}</div><div class="td muted">${d.actd||'—'}</div>
     <div class="td muted">${d.comp||'—'}</div>
-    <div class="td">${plainBadge(d.status,'b-yellow')}</div>
+    <div class="td">${statusBadge(d.status,PROJECT_STATUS_RED,'b-yellow')}</div>
     <div class="td">${plainBadge(d.devpay,'b-green')}</div>
-    <div class="td">${plainBadge(d.clipay,'b-red')}</div>
+    <div class="td">${statusBadge(d.clipay,CLIENT_PAY_RED,'b-yellow')}</div>
     <div class="td muted mono">${d.inv||'—'}</div>
   </div>`;
 }
