@@ -1886,24 +1886,24 @@ create table if not exists public.helpdesk_status_map (
 -- internal accounting status with no client-facing meaning.
 insert into public.helpdesk_status_map (internal_status, helpdesk_status, hidden) values
   ('With Developer',      'With Developer',            false),
-  ('Prepare Quote/Scope',  'Scope & SRS In-Progress',  false),
-  ('Approve Quote/Scope',  'Pending Client Approval',  false),
+  ('Prepare Quote/Scope',  'Prepare Quote/Scope',      false),
+  ('Approve Quote/Scope',  'Pending Approval',         false),
   ('Client Testing',       'Client Testing',           false),
-  ('Deployed',             'Deployed Production',      false),
+  ('Deployed',             'Deployed to Production',   false),
   ('Pending Payment',     'Pending Payment', false),
   ('Finished',             'Finished',                  false),
   ('SetOff Action',        'With Developer',            true)
 on conflict (internal_status) do nothing;
 
--- The 8 valid Kanban columns, in board order. Enforced with a check
--- constraint so a typo in the admin UI can't silently create a 9th,
+-- The 9 valid Kanban columns, in board order. Enforced with a check
+-- constraint so a typo in the admin UI can't silently create a 10th,
 -- unrecognized column that would never render on the board.
 alter table public.helpdesk_status_map drop constraint if exists helpdesk_status_valid;
 alter table public.helpdesk_status_map add constraint helpdesk_status_valid
   check (helpdesk_status in (
-    'Scope & SRS In-Progress','Pending Client Approval','With Developer',
-    'Functional Testing','Client Testing','Deployed Production',
-    'Pending Payment','Finished'
+    'Prepare Quote/Scope','Pending Approval','With Developer',
+    'Functional Testing','Client Testing','Deployed to Production',
+    'Pending Payment','Finished','Payment Dispute'
   ));
 
 -- Not exposed to anon or authenticated directly — it's only ever read
