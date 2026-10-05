@@ -2138,6 +2138,7 @@ const DEFAULT_STATUS_MAP = {
   'Functional Testing':  { helpdesk_status:'Functional Testing',    hidden:false },
   'Client Testing':      { helpdesk_status:'Client Testing',        hidden:false },
   'Deployed':            { helpdesk_status:'Deployed to Production',hidden:false },
+  'Deployed to Production': { helpdesk_status:'Deployed to Production',hidden:false },
   'Pending Payment':     { helpdesk_status:'Pending Payment',       hidden:false },
   'Finished':            { helpdesk_status:'Finished',              hidden:false },
   'SetOff Action':       { helpdesk_status:'With Developer',        hidden:true  }
@@ -2372,7 +2373,8 @@ async function renderSuperAdminBoardPreview(){
   const addAll = (arr, cat) => arr.forEach(t=>{
     const m = map[t.status];
     if (m && m.hidden) return; // hidden statuses never shown to clients
-    let col = (m && m.helpdesk_status) || KANBAN_COLUMNS_ADMIN[0];
+    // No mapping row? If the status is itself a board column name, use it as-is.
+    let col = (m && m.helpdesk_status) || (KANBAN_COLUMNS_ADMIN.includes(t.status) ? t.status : KANBAN_COLUMNS_ADMIN[0]);
     if (!KANBAN_COLUMNS_ADMIN.includes(col)) col = KANBAN_COLUMNS_ADMIN[0];
     items.push({ t, cat, col });
   });
