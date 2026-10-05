@@ -317,7 +317,10 @@ const SESSION_KEY = 'techstar_portal_session';
 // client-portal-setup.sql) — the raw internal status is never sent here.
 const PORTAL_COLUMNS_BASE = 'id,description,month,year,completed_date,invoice_number,requester,helpdesk_status';
 // Hours + invoice amounts shown in the status tables (Est F, Act F, Est D, Act D, Inv Func, Inv Dev, Inv Full)
-const PORTAL_COLUMNS = PORTAL_COLUMNS_BASE + ',est_f,act_f,est_d,act_d,inv_func,inv_dev,inv_full';
+const PORTAL_COLUMNS_NOPAY = PORTAL_COLUMNS_BASE + ',est_f,act_f,est_d,act_d,inv_func,inv_dev,inv_full';
+// client_pay_status drives the Pending Payment tab
+const PORTAL_COLUMNS = PORTAL_COLUMNS_NOPAY + ',client_pay_status';
+let HAS_PAY_STATUS = true;
 const VIEW_MAP = { func:'portal_func_support', proj:'portal_projects' };
 
 // Fixed board order. Any request whose helpdesk_status doesn't match one
@@ -562,10 +565,12 @@ async function loadAllData(){
   const hdrs = await authHeaders();
   if (!hdrs) { logout(); return; }
   try{
+    HAS_PAY_STATUS = true;
     const [func, proj] = await Promise.all(
       ['func','proj'].map(cat =>
         fetch(`${SB_URL}/rest/v1/${VIEW_MAP[cat]}?select=${PORTAL_COLUMNS}`, { headers: hdrs })
           // If the database view doesn't have the new columns yet, still load everything else
+          .then(r => r.ok ? r : (HAS_PAY_STATUS = false, fetch(`${SB_URL}/rest/v1/${VIEW_MAP[cat]}?select=${PORTAL_COLUMNS_NOPAY}`, { headers: hdrs })))
           .then(r => r.ok ? r : fetch(`${SB_URL}/rest/v1/${VIEW_MAP[cat]}?select=${PORTAL_COLUMNS_BASE}`, { headers: hdrs }))
           .then(r=>r.ok ? r.json() : [])
       )
@@ -717,11 +722,18 @@ function statusTableHtml(rows){
   </table></div>`;
 }
 
-// "Pending Payment" = the request is in the Pending Payment Kanban stage.
+// "Pending Payment" = the client has not paid yet (Client Pay Status), whatever
+// Kanban stage the request is in. Falls back to the Kanban stage only if the
+// database view doesn't expose client_pay_status.
+const PENDING_PAY_STATUSES = ['customer not paid', 'pending payment'];
+function isPendingPayment(r){
+  if (!HAS_PAY_STATUS) return r.helpdesk_status === 'Pending Payment';
+  return PENDING_PAY_STATUSES.includes(String(r.client_pay_status||'').trim().toLowerCase());
+}
 function renderPending(){
   [['func','Support'],['proj','Projects']].forEach(([cat,label])=>{
     const el = document.getElementById(cat+'-pending-list');
-    const list = sortByMonthAsc(DATA[cat].filter(r => r.helpdesk_status === 'Pending Payment'));
+    const list = sortByMonthAsc(DATA[cat].filter(isPendingPayment));
     el.innerHTML = list.length ? statusTableHtml(list) : `<div class="empty-state">No ${label.toLowerCase()} pending payment.</div>`;
   });
 }

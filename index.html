@@ -2407,7 +2407,7 @@ async function renderSuperAdminBoardPreview(){
          + nativeSectionsHtml(sel, 'in this status');
   } else if (tab === 'pending') {
     body = `<div style="font-size:14px;font-weight:700">Pending Payment</div>` +
-           nativeSectionsHtml(items.filter(x=>x.col==='Pending Payment'), 'pending payment');
+           nativeSectionsHtml(items.filter(x=>['customer not paid','pending payment'].includes(String(x.t.clipay||'').trim().toLowerCase())), 'pending payment');
   } else {
     body = boardHtml;
   }
