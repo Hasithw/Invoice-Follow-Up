@@ -2319,13 +2319,13 @@ function sortItemsMonthAsc(items){
 function nativeTableHtml(items, emptyMsg){
   const rows = sortItemsMonthAsc(items);
   const NUM = new Set([6,7,8,9,10,11,12]);
-  const heads = ['Description','Month','Year','Completed Date','Invoice Number','Status','Est F','Act F','Est D','Act D','Inv Func','Inv Dev','Inv Full'];
+  const heads = ['Description','Month','Year','Invoice Number','Status','Client Payment Status','Est F','Act F','Est D','Act D','Inv Func','Inv Dev','Inv Full'];
   const th = (h,i) => `<th style="text-align:${NUM.has(i)?'right':'left'};padding:8px 12px;background:#eef2f7;color:#334155;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`;
   const td = (v, i, extra) => `<td style="padding:8px 12px;border-bottom:1px solid var(--border);${i===0?'white-space:normal;min-width:240px;max-width:360px;':'white-space:nowrap;'}${NUM.has(i)?"text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;":''}${extra||''}">${esc(v===''||v==null?'—':v)}</td>`;
   const money = n => n ? Number(n).toLocaleString(undefined,{maximumFractionDigits:2}) : '—';
   const cells = ({t,cat,col}) => {
     const c = cat==='func' ? calcFuncFull(t) : calcProj(t);
-    return [t.dev, t.month, t.year, t.comp, t.inv, col, t.estf, t.actf, t.estd, t.actd, money(c.invF), money(c.invD), money(c.invFull)];
+    return [t.dev, t.month, t.year, t.inv, col, t.clipay, t.estf, t.actf, t.estd, t.actd, money(c.invF), money(c.invD), money(c.invFull)];
   };
   return `
     <div style="overflow:auto;max-height:60vh;border:1px solid var(--border);border-radius:var(--r)">
