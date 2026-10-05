@@ -1105,7 +1105,7 @@ try{ if(localStorage.getItem('techstar_admin_session') && location.hash.indexOf(
               <option>Deployed to Production</option>
               <option>Pending Payment</option>
               <option>Finished</option>
-              <option>Payment Dispute</option>
+              <option>Cancel Projects</option>
             </select>
           </div>
           <button class="btn btn-primary" onclick="addStatusMapping()">+ Add / Update Mapping</button>
@@ -1919,7 +1919,7 @@ alter table public.helpdesk_status_map add constraint helpdesk_status_valid
   check (helpdesk_status in (
     'Prepare Quote/Scope','Pending Approval','With Developer',
     'Functional Testing','Client Testing','Deployed to Production',
-    'Pending Payment','Finished','Payment Dispute'
+    'Pending Payment','Finished','Cancel Projects'
   ));
 
 -- Not exposed to anon or authenticated directly — it's only ever read
@@ -2141,6 +2141,8 @@ const DEFAULT_STATUS_MAP = {
   'Deployed to Production': { helpdesk_status:'Deployed to Production',hidden:false },
   'Pending Payment':     { helpdesk_status:'Pending Payment',       hidden:false },
   'Finished':            { helpdesk_status:'Finished',              hidden:false },
+  'Cancel Projects':     { helpdesk_status:'Cancel Projects',       hidden:false },
+  'Payment Dispute':     { helpdesk_status:'Cancel Projects',       hidden:false },
   'SetOff Action':       { helpdesk_status:'With Developer',        hidden:true  }
 };
 let STATUS_MAP_CACHE = null;      // only ever holds the REAL mapping from the DB
@@ -2567,7 +2569,7 @@ async function toggleClientActive(id, makeActive) {
 const KANBAN_COLUMNS_ADMIN = [
   'Prepare Quote/Scope','Pending Approval','With Developer',
   'Functional Testing','Client Testing','Deployed to Production',
-  'Pending Payment','Finished','Payment Dispute'
+  'Pending Payment','Finished','Cancel Projects'
 ];
 
 async function loadStatusMap() {
@@ -3457,7 +3459,7 @@ function badge(val,pos,neg){
 function plainBadge(val,cls){ return `<span class="badge ${cls}">${val||'—'}</span>`; }
 // Some specific status values always render red, no matter which field they're
 // in — everything else in that field keeps the field's normal color.
-const PROJECT_STATUS_RED = ['Payment Dispute','Pending Payment','With Developer'];
+const PROJECT_STATUS_RED = ['Cancel Projects','Payment Dispute','Pending Payment','With Developer'];
 const CLIENT_PAY_RED     = ['Customer NOT Paid','Invoice NOT Sent'];
 const DEV_PAY_RED        = ['Developer NOT Paid','Not Developer Task'];
 function statusBadge(val,redList,baseCls){
