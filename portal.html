@@ -587,15 +587,17 @@ let BOARD_SEARCH = '';
 // Pick a status (same names as the board columns) to see EVERY request in it,
 // support + projects, oldest month first. "All statuses" brings the board back.
 let STATUS_FILTER = '';
+// Board + status dropdown leave out Pending Payment (it has its own tab)
+const BOARD_COLUMNS = KANBAN_COLUMNS.filter(c => c !== 'Pending Payment');
 function boardColOf(r){ return KANBAN_COLUMNS.includes(r.helpdesk_status) ? r.helpdesk_status : KANBAN_COLUMNS[0]; }
 function populateStatusFilter(){
   const sel = document.getElementById('statusFilter');
   if (!sel) return;
   const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
-  const counts = {}; KANBAN_COLUMNS.forEach(c => counts[c] = 0);
+  const counts = {}; BOARD_COLUMNS.forEach(c => counts[c] = 0);
   all.forEach(r => counts[boardColOf(r)]++);
   sel.innerHTML = '<option value="">All statuses</option>' +
-    KANBAN_COLUMNS.map(c => `<option value="${esc(c)}">${esc(c)} (${counts[c]})</option>`).join('');
+    BOARD_COLUMNS.map(c => `<option value="${esc(c)}">${esc(c)} (${counts[c]})</option>`).join('');
   sel.value = STATUS_FILTER;
 }
 function setStatusFilter(v){
@@ -632,14 +634,15 @@ function renderBoard(){
   resEl.style.display = 'none'; wrapEl.style.display = '';
   const all = [...DATA.dev, ...DATA.func, ...DATA.proj];
   const byCol = {};
-  KANBAN_COLUMNS.forEach(c => byCol[c] = []);
+  BOARD_COLUMNS.forEach(c => byCol[c] = []);
   all.forEach(r => {
+    if (r.helpdesk_status === 'Pending Payment') return; // no board column — see the Pending Payment tab
     const col = KANBAN_COLUMNS.includes(r.helpdesk_status) ? r.helpdesk_status : KANBAN_COLUMNS[0];
     byCol[col].push(r);
   });
   const q = BOARD_SEARCH.trim().toLowerCase();
-  const maxCount = Math.max(1, ...KANBAN_COLUMNS.map(c => byCol[c].length));
-  document.getElementById('board-wrap').innerHTML = KANBAN_COLUMNS.map(col => {
+  const maxCount = Math.max(1, ...BOARD_COLUMNS.map(c => byCol[c].length));
+  document.getElementById('board-wrap').innerHTML = BOARD_COLUMNS.map(col => {
     const items = q ? byCol[col].filter(r => (r.description||'').toLowerCase().includes(q)) : byCol[col];
     const pct = Math.round((byCol[col].length / maxCount) * 100);
     return `

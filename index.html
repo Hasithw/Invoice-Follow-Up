@@ -2379,12 +2379,13 @@ async function renderSuperAdminBoardPreview(){
     items.push({ t, cat, col });
   });
   addAll([...VF(), ...VFD()], 'func'); addAll([...VP(), ...VPD()], 'proj');
-  const cols = {}; KANBAN_COLUMNS_ADMIN.forEach(c=>cols[c]=[]);
-  items.forEach(x=>cols[x.col].push(x.t));
+  const BOARD_COLS = KANBAN_COLUMNS_ADMIN.filter(c=>c!=='Pending Payment'); // Pending Payment has its own tab
+  const cols = {}; BOARD_COLS.forEach(c=>cols[c]=[]);
+  items.forEach(x=>{ if (cols[x.col]) cols[x.col].push(x.t); });
 
   const boardHtml = `
     <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px">
-      ${KANBAN_COLUMNS_ADMIN.map(colName=>`
+      ${BOARD_COLS.map(colName=>`
         <div style="min-width:230px;flex:0 0 230px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;max-height:65vh">
           <div style="padding:10px 12px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
             <span>${esc(colName)}</span><span style="color:var(--t3)">${cols[colName].length}</span>
@@ -2423,7 +2424,7 @@ async function renderSuperAdminBoardPreview(){
       <div style="font-size:14px;font-weight:700">${esc(client?client.company_name:'')}'s portal <span style="font-weight:400;font-size:12px;color:var(--t3)">— exactly what this client sees when they sign in</span></div>
       <select onchange="setPortalStatusFilter(this.value)" title="Show all requests in a project status" style="margin-left:auto;padding:6px 10px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);max-width:230px">
         <option value="">All statuses</option>
-        ${KANBAN_COLUMNS_ADMIN.map(c=>`<option value="${esc(c)}" ${PORTAL_STATUS_FILTER===c?'selected':''}>${esc(c)} (${cols[c].length})</option>`).join('')}
+        ${BOARD_COLS.map(c=>`<option value="${esc(c)}" ${PORTAL_STATUS_FILTER===c?'selected':''}>${esc(c)} (${cols[c].length})</option>`).join('')}
       </select>
       <button class="btn btn-sm" onclick="viewAllClients()">✕ Choose a different client</button>
     </div>
